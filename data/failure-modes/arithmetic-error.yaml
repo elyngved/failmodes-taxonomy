@@ -5,6 +5,8 @@ def: |-
   Computes or transforms numeric inputs incorrectly, including arithmetic, aggregation, unit conversion, comparison, or formula application.
 
   Unlike Numerical Hallucination, the relevant numbers are grounded or supplied but the calculation over them is wrong. Unlike Reasoning Error, this mode is specifically about numeric operations.
+updatedAt: "2026-06-13T09:00:00-04:00"
+
 searchPhrases:
   - got the math wrong
   - added it up wrong

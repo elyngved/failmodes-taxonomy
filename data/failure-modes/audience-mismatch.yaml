@@ -5,6 +5,8 @@ def: |-
   Uses terminology, assumptions, depth, examples, tone, or framing that does not fit the intended reader's expertise, role, goals, or context.
 
   Unlike Verbosity Failure or Concision Failure, the issue is reader fit rather than simply too much or too little detail. Unlike Localization Failure, the mismatch is audience expertise and situation rather than locale conventions.
+updatedAt: "2026-06-13T09:00:00-04:00"
+
 searchPhrases:
   - too technical for the reader
   - wrong reading level

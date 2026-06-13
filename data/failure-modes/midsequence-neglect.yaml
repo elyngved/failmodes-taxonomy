@@ -1,10 +1,12 @@
-id: midsequence-neglect-lost-in-the-middle
+id: midsequence-neglect
 categoryId: context
-name: Midsequence Neglect/Lost in the Middle
+name: Midsequence Neglect
 def: |-
-  Overlooks or underuses information located in the middle of a long prompt, document set, or conversation context.
+  Overlooks or underuses information located in the middle of a long prompt, document set, or conversation context. (Also known as Lost in the Middle.)
 
   Unlike Recency Bias, the neglected information is not necessarily earlier than the competing context; its position in the middle is the salient factor. Unlike Context Dilution, the problem is positional neglect rather than broad signal weakening.
+updatedAt: "2026-06-13T09:00:00-04:00"
+
 searchPhrases:
   - ignored the middle of the document
   - lost in the middle

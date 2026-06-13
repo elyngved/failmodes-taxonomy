@@ -5,6 +5,8 @@ def: |-
   Behavior, quality, or compliance shifts when the underlying model is updated, swapped, or silently revised, breaking prompts and pipelines tuned against the previous version.
 
   Unlike Prompt Brittleness, the input is held constant while the model changes underneath it. Unlike Index Drift, the divergence is in the model layer rather than the retrieval index.
+updatedAt: "2026-06-13T09:00:00-04:00"
+
 searchPhrases:
   - model update broke my prompts
   - new model behaves differently

@@ -5,6 +5,8 @@ def: |-
   Ignores or misapplies locale-specific language, spelling, units, currencies, laws, formats, idioms, accessibility expectations, or cultural conventions.
 
   Unlike Audience Mismatch, the issue is geographic, linguistic, cultural, or jurisdictional fit. Unlike Date/Deadline Confusion, temporal formatting is only one possible localization concern.
+updatedAt: "2026-06-13T09:00:00-04:00"
+
 searchPhrases:
   - wrong currency
   - wrong units

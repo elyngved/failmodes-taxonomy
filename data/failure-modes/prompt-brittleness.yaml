@@ -5,6 +5,8 @@ def: |-
   Produces materially different answers when the prompt is reworded, reformatted, or rerun, even though nothing meaningful about the request changed.
 
   Unlike Self-Contradiction, the inconsistency appears across separate runs or phrasings rather than within one response. Unlike Instruction Noncompliance, each individual response may follow the instructions; what fails is stability across immaterial variation.
+updatedAt: "2026-06-13T09:00:00-04:00"
+
 searchPhrases:
   - different answer every time
   - rephrasing flipped the answer

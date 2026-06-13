@@ -5,6 +5,8 @@ def: |-
   Proceeds without asking when missing or ambiguous information materially affects correctness, safety, or user intent, committing to an interpretation that should have been confirmed first.
 
   Unlike Clarification Overuse, the error is acting on unresolved ambiguity rather than asking when the task is already clear. Unlike Goal Misinterpretation, the model has not necessarily misread a clear goal; it failed to resolve genuine ambiguity before acting.
+updatedAt: "2026-06-13T09:00:00-04:00"
+
 searchPhrases:
   - should have asked first
   - assumed instead of asking

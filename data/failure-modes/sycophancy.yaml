@@ -5,6 +5,8 @@ def: |-
   Abandons or reverses a well-supported answer when the user expresses disagreement, doubt, or pressure, conceding to keep the user comfortable rather than holding the correct position.
 
   Unlike User Conformity, the model caves in response to pushback against an answer it already gave, rather than shaping its first answer to the user's stated beliefs or desires.
+updatedAt: "2026-06-13T09:00:00-04:00"
+
 searchPhrases:
   - caved when I pushed back
   - changed its answer under pressure

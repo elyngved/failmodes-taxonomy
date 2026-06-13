@@ -5,6 +5,8 @@ def: |-
   Produces output that is unsafe for downstream rendering, execution, storage, parsing, logging, or human trust without sanitization or validation.
 
   Unlike Unsafe Tool Call, the risk is in what the model emits for another system or person to handle. Unlike Supply Chain Vulnerability, the risk does not necessarily come from a dependency or upstream package.
+updatedAt: "2026-06-13T09:00:00-04:00"
+
 searchPhrases:
   - output wasn't sanitized
   - unsafe output for downstream

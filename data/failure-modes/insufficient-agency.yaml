@@ -5,6 +5,8 @@ def: |-
   Fails to take obvious, low-risk next steps that are required or strongly implied by the task.
 
   Unlike Missing Tool Invocation, the omitted action need not involve a tool. Unlike Clarification Overuse, the issue is silent passivity rather than asking an unnecessary clarifying question.
+updatedAt: "2026-06-13T09:00:00-04:00"
+
 searchPhrases:
   - did nothing
   - stopped short of the obvious step

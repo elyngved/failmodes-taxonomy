@@ -5,6 +5,8 @@ def: |-
   States a claim that contradicts information available to the model: the user's explicit input or supplied data, or facts elsewhere in the active context such as prior turns, retrieved text, summaries, or tool outputs.
 
   Unlike Extrinsic Hallucination, the claim contradicts available information rather than merely going beyond it unsupported. Unlike Self-Contradiction, the conflict is against provided input or context the model should have used, not only against its own generated statements.
+updatedAt: "2026-06-13T09:00:00-04:00"
+
 searchPhrases:
   - contradicted my input
   - ignored what I told it

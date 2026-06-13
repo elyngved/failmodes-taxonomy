@@ -5,6 +5,8 @@ def: |-
   Includes content that does not materially help answer the user's question, solve the task, or support the needed decision.
 
   Unlike Genericism, irrelevant content may be specific but off-target. Unlike Verbosity Failure, the issue is topical fit rather than length alone.
+updatedAt: "2026-06-13T09:00:00-04:00"
+
 searchPhrases:
   - off-topic answer
   - didn't answer the question

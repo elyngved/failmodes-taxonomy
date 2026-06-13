@@ -5,6 +5,8 @@ def: |-
   Consumes or triggers excessive tokens, compute, time, bandwidth, money, API quota, storage, or external resources without adequate limits or stopping conditions.
 
   Unlike Runaway Agent Loop, the defining harm is resource exhaustion even if the process is not cyclic. Unlike Tool Loop, the consumption may come from generation, retrieval, delegation, or broad execution.
+updatedAt: "2026-06-13T09:00:00-04:00"
+
 searchPhrases:
   - burned too many tokens
   - ran up the cost

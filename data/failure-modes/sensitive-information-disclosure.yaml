@@ -5,6 +5,8 @@ def: |-
   Exposes secrets, credentials, personal data, confidential business information, private user content, or other protected information.
 
   Unlike System Prompt Leakage, the exposed data is not necessarily prompt content. Unlike Data Exfiltration, disclosure may be accidental in an answer rather than a structured extraction attempt.
+updatedAt: "2026-06-13T09:00:00-04:00"
+
 searchPhrases:
   - leaked private data
   - exposed a secret

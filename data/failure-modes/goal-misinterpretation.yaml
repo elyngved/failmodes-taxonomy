@@ -5,6 +5,8 @@ def: |-
   Solves the wrong problem because it misunderstood the user's objective, success condition, scope, or intended outcome.
 
   Unlike Query Rewrite Failure, the misunderstanding is not limited to search or retrieval queries. Unlike Objective Gaming, the model is mistaken about the goal rather than optimizing a proxy while ignoring the real goal.
+updatedAt: "2026-06-13T09:00:00-04:00"
+
 searchPhrases:
   - solved the wrong problem
   - misunderstood what I wanted

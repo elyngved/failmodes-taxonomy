@@ -5,6 +5,8 @@ def: |-
   Repeats, retries, or replays a side-effecting tool action without deduplication or idempotency safeguards, causing duplicate or inconsistent effects.
 
   Unlike Tool Loop, the problem is unsafe repeated side effects, not just wasted calls. Unlike Unsafe Tool Call, the first call may be safe while repetition makes it unsafe.
+updatedAt: "2026-06-13T09:00:00-04:00"
+
 searchPhrases:
   - ran the action twice
   - duplicate side effects

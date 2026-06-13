@@ -5,6 +5,8 @@ def: |-
   Reveals hidden system, developer, policy, tool, chain-of-thought, or other protected prompt content that should not be exposed.
 
   Unlike Sensitive Information Disclosure, the protected material is prompt or control-plane content. Unlike Data Exfiltration, leakage can occur in a normal text answer without extracting from tools or storage.
+updatedAt: "2026-06-13T09:00:00-04:00"
+
 searchPhrases:
   - leaked the system prompt
   - revealed its instructions

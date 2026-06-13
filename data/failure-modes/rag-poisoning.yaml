@@ -5,6 +5,8 @@ def: |-
   Uses retrieved content that is malicious, deceptive, corrupted, or intentionally crafted to manipulate the answer.
 
   Unlike Retrieval Distractor, the harmful evidence is adversarial or contaminated rather than merely irrelevant. Unlike Indirect Prompt Injection, the poisoning may mislead through false facts or corrupted data, not only embedded instructions.
+updatedAt: "2026-06-13T09:00:00-04:00"
+
 searchPhrases:
   - poisoned retrieval
   - malicious retrieved content

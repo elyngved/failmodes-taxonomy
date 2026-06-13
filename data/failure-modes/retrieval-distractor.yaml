@@ -5,6 +5,8 @@ def: |-
   Retrieves or elevates irrelevant, superficially similar, or misleading evidence that pulls the answer away from the user's actual need.
 
   Unlike RAG Poisoning, the distractor need not be malicious or corrupted. Unlike Query Rewrite Failure, the retrieval may match the issued query while the selected evidence is still the wrong evidence to trust.
+updatedAt: "2026-06-13T09:00:00-04:00"
+
 searchPhrases:
   - retrieved a misleading doc
   - distracted by similar content

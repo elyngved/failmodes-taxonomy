@@ -5,6 +5,8 @@ def: |-
   Lets the retrieval index diverge from the source corpus, permissions, metadata, embeddings, or current document state.
 
   Unlike Outdated Source Reliance, this describes an indexing-system mismatch rather than a model decision to trust an old source. Unlike Retrieval Miss, the missing result is caused by the index no longer representing the corpus correctly.
+updatedAt: "2026-06-13T09:00:00-04:00"
+
 searchPhrases:
   - search index out of date
   - index doesn't match the docs

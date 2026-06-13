@@ -5,6 +5,8 @@ def: |-
   Organizes information in a way that makes the answer hard to scan, compare, execute, or verify.
 
   Unlike Format Failure, the response may satisfy the requested format while still being poorly organized. Unlike Verbosity Failure, the issue is arrangement and hierarchy rather than amount of content.
+updatedAt: "2026-06-13T09:00:00-04:00"
+
 searchPhrases:
   - hard to read layout
   - disorganized answer

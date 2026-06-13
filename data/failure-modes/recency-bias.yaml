@@ -5,6 +5,8 @@ def: |-
   Overweights newer context while underweighting earlier information that remains valid and important.
 
   Unlike Context Rot, the model actively favors recent material rather than generally degrading earlier context. Unlike Memory Conflict, this happens within active context rather than across stored memories.
+updatedAt: "2026-06-13T09:00:00-04:00"
+
 searchPhrases:
   - overweighted the latest info
   - focused only on recent
@@ -65,5 +67,5 @@ mitigation:
 
 related:
   - id: context-rot
-  - id: midsequence-neglect-lost-in-the-middle
+  - id: midsequence-neglect
   - id: memory-conflict

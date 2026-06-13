@@ -5,6 +5,8 @@ def: |-
   Chooses a tool that is inappropriate for the user's goal, data type, risk level, environment, or required operation.
 
   Unlike Missing Tool Invocation, the system does use a tool but selects the wrong one. Unlike Unsafe Tool Call, the tool may be merely ineffective rather than risky.
+updatedAt: "2026-06-13T09:00:00-04:00"
+
 searchPhrases:
   - called the wrong tool
   - picked the wrong tool

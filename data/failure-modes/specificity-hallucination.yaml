@@ -5,6 +5,8 @@ def: |-
   Adds precise-looking details, qualifiers, names, settings, mechanisms, or examples that were not established by the input or evidence.
 
   Unlike Entity Hallucination or Numerical Hallucination, the unsupported precision may be descriptive rather than a named entity or number. Unlike Extrinsic Hallucination, this mode emphasizes false specificity whether or not the answer is framed as source-grounded.
+updatedAt: "2026-06-13T09:00:00-04:00"
+
 searchPhrases:
   - made up specific details
   - added false precision

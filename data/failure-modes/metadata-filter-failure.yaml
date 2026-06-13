@@ -5,6 +5,8 @@ def: |-
   Applies tags, permissions, tenancy, recency, jurisdiction, document type, or other metadata filters incorrectly, excluding needed records or including forbidden or irrelevant ones.
 
   Unlike Retrieval Miss, the retrieval failure is caused by filter logic or metadata quality. Unlike Memory Scope Leakage, this concerns retrieval access boundaries, not persisted memory crossing scopes.
+updatedAt: "2026-06-13T09:00:00-04:00"
+
 searchPhrases:
   - wrong filter excluded results
   - filtered out the right docs

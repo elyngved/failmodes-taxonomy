@@ -5,6 +5,8 @@ def: |-
   Misses, fragments, or misinterprets evidence because relevant information was split across retrieval chunks or separated from needed context.
 
   Unlike Partial Retrieval, this identifies chunking as the mechanism. Unlike Context Dilution, the issue happens before or during retrieval packaging rather than after too much context reaches the model.
+updatedAt: "2026-06-13T09:00:00-04:00"
+
 searchPhrases:
   - answer cut off between chunks
   - split the document badly

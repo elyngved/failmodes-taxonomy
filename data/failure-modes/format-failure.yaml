@@ -5,6 +5,8 @@ def: |-
   Produces an answer in the wrong shape, organization, medium, style, or presentation format for the requested output.
 
   Unlike JSON/Schema Failure, the output may be valid text but in the wrong form. Unlike Poor Structure, the issue is failing a requested or expected format, not merely being hard to scan.
+updatedAt: "2026-06-13T09:00:00-04:00"
+
 searchPhrases:
   - wrong output format
   - didn't follow the format

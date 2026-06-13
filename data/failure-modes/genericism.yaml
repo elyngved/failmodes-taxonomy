@@ -5,6 +5,8 @@ def: |-
   Gives vague, boilerplate, or template-like guidance that is too nonspecific or abstract for the user to act on, instead of concrete help grounded in their task.
 
   Unlike Irrelevance, generic content may be on topic but too nonspecific to be useful. Unlike Incompleteness, the topic may be covered while the answer still offers nothing the user can actually execute.
+updatedAt: "2026-06-13T09:00:00-04:00"
+
 searchPhrases:
   - generic boilerplate answer
   - too vague to act on

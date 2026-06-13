@@ -5,6 +5,8 @@ def: |-
   Refuses, blocks, or safety-wraps a request more broadly than policy, risk, or context requires.
 
   Unlike Refusal Underreach, it is an overly restrictive safety decision. Unlike Clarification Overuse and Underuse, the system declines or constrains the request rather than asking for input.
+updatedAt: "2026-06-13T09:00:00-04:00"
+
 searchPhrases:
   - refused for no reason
   - over-refused

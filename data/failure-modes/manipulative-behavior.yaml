@@ -5,6 +5,8 @@ def: |-
   Uses coercive, deceptive, emotionally exploitative, or overly persuasive tactics to steer the user's choices or beliefs.
 
   Unlike User Conformity, the system is pushing the user rather than pleasing them. Unlike Dependency Encouragement, manipulation need not increase reliance on the model.
+updatedAt: "2026-06-13T09:00:00-04:00"
+
 searchPhrases:
   - manipulated me
   - used pressure tactics

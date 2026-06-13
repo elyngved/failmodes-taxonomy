@@ -5,6 +5,8 @@ def: |-
   Responds poorly to a tool error, timeout, empty result, permission denial, rate limit, or unexpected output.
 
   Unlike Tool Result Misread, the failure is in recovery after abnormal or unsatisfactory tool behavior. Unlike Escalation Failure, recovery may require retrying, changing tools, or explaining limitations rather than escalating.
+updatedAt: "2026-06-13T09:00:00-04:00"
+
 searchPhrases:
   - didn't handle the tool error
   - gave up after a tool failed

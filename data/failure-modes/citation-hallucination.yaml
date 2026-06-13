@@ -5,6 +5,8 @@ def: |-
   Invents or fabricates a source artifact such as a citation, URL, paper, author listing, or bibliography entry and presents it as real.
 
   Unlike Citation Span Mismatch, the cited object itself is nonexistent or fabricated. Unlike Authority Hallucination, the failure is the fake reference artifact rather than a vague or false appeal to institutional authority.
+updatedAt: "2026-06-13T09:00:00-04:00"
+
 searchPhrases:
   - made up a citation
   - fake citation

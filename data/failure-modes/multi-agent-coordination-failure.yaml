@@ -5,6 +5,8 @@ def: |-
   Multiple agents, roles, tools, or handoff stages duplicate work, conflict, drop context, misassign ownership, or fail to coordinate toward a shared goal.
 
   Unlike Workflow Misalignment, this specifically involves coordination across actors or roles. Unlike Memory Conflict, the disagreement may come from handoff and ownership failures rather than persisted memories.
+updatedAt: "2026-06-13T09:00:00-04:00"
+
 searchPhrases:
   - agents stepped on each other
   - duplicated work across agents

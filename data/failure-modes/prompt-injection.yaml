@@ -5,6 +5,8 @@ def: |-
   Lets untrusted input attempt to override, weaken, or redirect the system's intended instructions, policies, tool-use rules, or data boundaries.
 
   Unlike Indirect Prompt Injection, the malicious instruction is typically in the user's direct input or an explicitly supplied payload. Unlike Jailbreak, the attack vector is instruction contamination rather than broad safety-control bypass.
+updatedAt: "2026-06-13T09:00:00-04:00"
+
 searchPhrases:
   - prompt injection
   - user input overrode the rules

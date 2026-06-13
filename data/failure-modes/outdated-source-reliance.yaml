@@ -5,6 +5,8 @@ def: |-
   Bases an answer on sources that are too old for the user's freshness requirement or for the domain's rate of change.
 
   Unlike Temporal Hallucination, this names the grounding failure — the system selected or trusted a stale source — rather than the temporally wrong claim itself. Unlike Index Drift, the stale source may be retrieved correctly from an index that is itself functioning as designed.
+updatedAt: "2026-06-13T09:00:00-04:00"
+
 searchPhrases:
   - used an outdated source
   - relied on old info

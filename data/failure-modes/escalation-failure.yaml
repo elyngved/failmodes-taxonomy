@@ -5,6 +5,8 @@ def: |-
   Does not escalate, pause, ask for approval, or route to a human or higher-authority actor when risk, uncertainty, policy, permissions, or irreversible impact require it, including skipping a review or approval checkpoint that should gate the action.
 
   Unlike Clarification Underuse, the missing pause is required by authority or risk, not just missing information. Unlike Unsafe Tool Call, the central failure is the absent oversight even if the action itself could be safe once approved.
+updatedAt: "2026-06-13T09:00:00-04:00"
+
 searchPhrases:
   - didn't ask for approval
   - should have escalated to a human

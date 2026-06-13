@@ -5,6 +5,8 @@ def: |-
   Allows small mistakes, approximations, stale assumptions, or unverified intermediate results to compound across a multi-step task until the final output fails.
 
   Unlike Reasoning Error, no single inference may be obviously catastrophic. Unlike Tool Context Overload, the drift comes from compounding errors rather than too much intermediate state.
+updatedAt: "2026-06-13T09:00:00-04:00"
+
 searchPhrases:
   - small errors piled up
   - drifted off over many steps

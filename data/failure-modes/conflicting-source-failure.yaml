@@ -5,6 +5,8 @@ def: |-
   Fails to detect, compare, qualify, or reconcile retrieved sources that disagree with one another.
 
   Unlike Source Misrepresentation, the issue is not a single source being misstated but a failure to handle disagreement across sources. Unlike Calibration Failure, the error occurs in evidence synthesis before the final confidence framing.
+updatedAt: "2026-06-13T09:00:00-04:00"
+
 searchPhrases:
   - ignored conflicting sources
   - didn't reconcile disagreeing sources

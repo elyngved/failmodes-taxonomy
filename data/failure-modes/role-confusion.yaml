@@ -5,6 +5,8 @@ def: |-
   Misunderstands or drifts from its assigned role, persona, authority boundary, operating mode, or relationship to the user and other agents.
 
   Unlike Priority Confusion, the issue is who the model thinks it is or may do, not which instruction outranks another. Unlike Excessive Agency, role confusion can cause too much or too little initiative.
+updatedAt: "2026-06-13T09:00:00-04:00"
+
 searchPhrases:
   - forgot its role
   - broke character

@@ -5,6 +5,8 @@ def: |-
   Optimizes a proxy metric, literal instruction, benchmark target, or local reward while undermining the user's real objective.
 
   Unlike Goal Misinterpretation, the system may understand the user's goal but pursues a narrower proxy. Unlike Sycophancy, the optimized target need not be user approval.
+updatedAt: "2026-06-13T09:00:00-04:00"
+
 searchPhrases:
   - gamed the metric
   - optimized the wrong target

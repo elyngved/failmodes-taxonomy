@@ -5,6 +5,8 @@ def: |-
   Repeats tool calls unnecessarily or redundantly without gaining new information, changing strategy, or progressing toward completion.
 
   Unlike Runaway Agent Loop, this is specifically a loop in tool use and may be bounded to one task phase. Unlike Tool Recovery Failure, repetition is not necessarily caused by an error response.
+updatedAt: "2026-06-13T09:00:00-04:00"
+
 searchPhrases:
   - called the same tool over and over
   - stuck repeating tool calls

@@ -5,6 +5,8 @@ def: |-
   Invents or misstates code interfaces, libraries, methods, parameters, endpoint behavior, configuration keys, or platform capabilities.
 
   Unlike Version Hallucination, the core failure is an unsupported API or behavior, though version confusion may be the cause. Unlike Tool Argument Error, this describes advice or generated code, not a live tool call with bad arguments.
+updatedAt: "2026-06-13T09:00:00-04:00"
+
 searchPhrases:
   - made up an API
   - invented a function

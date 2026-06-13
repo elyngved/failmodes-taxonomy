@@ -5,6 +5,8 @@ def: |-
   Makes mutually inconsistent claims within the same response or across closely related turns without resolving the conflict.
 
   Unlike Context-Conflicting Hallucination, the inconsistency is internal to the model's own outputs rather than a conflict with provided input or context. Unlike Memory Conflict, the source of disagreement is not necessarily stored memory.
+updatedAt: "2026-06-13T09:00:00-04:00"
+
 searchPhrases:
   - contradicted itself
   - said two opposite things

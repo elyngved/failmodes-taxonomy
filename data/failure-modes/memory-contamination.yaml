@@ -5,6 +5,8 @@ def: |-
   Applies irrelevant, incorrect, or cross-task information from prior interactions as if it belonged to the current task.
 
   Unlike Memory Scope Leakage, the emphasis is semantic contamination of the current answer, not necessarily a privacy or isolation boundary breach. Unlike Memory Hallucination, the bad memory may have originated from a real prior context.
+updatedAt: "2026-06-13T09:00:00-04:00"
+
 searchPhrases:
   - mixed up another task's info
   - bled info from a different chat

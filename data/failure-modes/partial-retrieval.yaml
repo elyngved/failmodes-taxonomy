@@ -5,6 +5,8 @@ def: |-
   Retrieves some relevant evidence but misses other required pieces, leading to incomplete or under-grounded answers.
 
   Unlike Retrieval Miss, the system did retrieve part of the right material. Unlike Chunk Boundary Failure, the missing pieces are not necessarily caused by how the corpus was split.
+updatedAt: "2026-06-13T09:00:00-04:00"
+
 searchPhrases:
   - only retrieved part of it
   - missed some of the evidence

@@ -67,6 +67,7 @@ related:
 ## Optional Metadata
 
 - `status: string` - Suggested values: `draft`, `review`, `published`.
+- `updatedAt: string` - ISO-8601 timestamp of when this failure mode was last substantively updated (e.g. `"2026-06-13T09:00:00-04:00"`). Update this field whenever content changes so consumers can detect freshness without re-fetching everything.
 - `searchPhrases: string[]` - Plain-language symptom phrases that help people discover a mode through search.
 
 Search phrases should sound like how a frustrated user would describe the issue: short, concrete, lowercase, and distinct.
@@ -141,6 +142,16 @@ Fields:
 - `gloss?: string`
 
 The required `id` field should point to another failure mode file. Optional fields are reserved for authored relationship notes and compatibility with older entries.
+
+## Taxonomy File (`data/taxonomy.yaml`)
+
+The taxonomy file is a YAML object with the following top-level fields:
+
+- `taxonomyVersion: string` - Semver version of the taxonomy (e.g. `"0.0.1"`). Bump on any structural change.
+- `updatedAt: string` - ISO-8601 timestamp of the last taxonomy-level change (not a build timestamp).
+- `categories: Category[]` - Ordered list of category definitions.
+
+Each `Category` has `id`, `name`, `blurb`, `desc`, and `modes` (ordered list of failure mode ids).
 
 ## Rendering Contract
 

@@ -5,6 +5,8 @@ def: |-
   Asks the user for clarification when the task is already sufficiently specified, stalling on details the system could reasonably infer or safely proceed without.
 
   Unlike Clarification Underuse, the error is asking when it should act, not acting when it should ask. Unlike Insufficient Agency, the system does respond, by asking, rather than failing silently to make an obvious next move.
+updatedAt: "2026-06-13T09:00:00-04:00"
+
 searchPhrases:
   - asked too many questions
   - kept asking instead of doing

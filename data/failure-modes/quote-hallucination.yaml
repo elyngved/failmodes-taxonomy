@@ -5,6 +5,8 @@ def: |-
   Presents fabricated, paraphrased, or materially altered wording as an exact quote from a person, document, source, tool result, or prior conversation.
 
   Unlike Citation Hallucination, the reference may be real while the quoted span is not. Unlike Citation Span Mismatch, the failure is the quoted text itself, not only whether a citation supports the surrounding claim.
+updatedAt: "2026-06-13T09:00:00-04:00"
+
 searchPhrases:
   - made up a quote
   - fabricated a quote

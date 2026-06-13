@@ -5,6 +5,8 @@ def: |-
   Introduces a named person, organization, product, place, dataset, model, or other entity that is not supported by the available evidence.
 
   Unlike Specificity Hallucination, the unsupported detail is a named entity. Unlike Citation Hallucination, the fabricated object is part of the answer's factual content rather than a reference used to support it.
+updatedAt: "2026-06-13T09:00:00-04:00"
+
 searchPhrases:
   - made up a name
   - invented a company

@@ -5,6 +5,8 @@ def: |-
   Compresses the answer so aggressively that necessary context, reasoning, caveats, instructions, or operational detail is lost.
 
   Unlike Incompleteness, the omission is caused by over-compression or an inappropriate brevity target. Unlike Summarization Loss, this concerns the final response style, not necessarily compression of prior context.
+updatedAt: "2026-06-13T09:00:00-04:00"
+
 searchPhrases:
   - too short to be useful
   - cut out important details

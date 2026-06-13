@@ -5,6 +5,8 @@ def: |-
   Calls a tool with arguments that are malformed, incomplete, unauthorized, stale, poorly scoped, or semantically wrong for the intended operation.
 
   Unlike Wrong Tool Selection, the chosen tool may be appropriate while the call parameters are not. Unlike JSON/Schema Failure, the malformed structure is sent to a tool rather than returned as final output.
+updatedAt: "2026-06-13T09:00:00-04:00"
+
 searchPhrases:
   - wrong tool arguments
   - bad parameters to the tool

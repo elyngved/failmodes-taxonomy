@@ -5,6 +5,8 @@ def: |-
   Fails to refuse, limit, redirect, or safety-constrain a request that requires stronger boundaries.
 
   Unlike Refusal Overreach, it is an insufficient safety response. Unlike Unsafe Tool Call, the failure can occur in pure text without executing an unsafe action.
+updatedAt: "2026-06-13T09:00:00-04:00"
+
 searchPhrases:
   - should have refused
   - didn't refuse a harmful request

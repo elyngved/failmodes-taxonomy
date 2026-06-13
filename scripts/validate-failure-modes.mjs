@@ -8,9 +8,14 @@ const taxonomyFilePath = join(process.cwd(), "data", "taxonomy.yaml");
 
 const errors = [];
 
-const categories = readYaml(taxonomyFilePath);
-if (!Array.isArray(categories)) {
-  errors.push("data/taxonomy.yaml must contain an array of categories");
+const taxonomyDoc = readYaml(taxonomyFilePath);
+const categories =
+  taxonomyDoc && typeof taxonomyDoc === "object" && !Array.isArray(taxonomyDoc) && Array.isArray(taxonomyDoc.categories)
+    ? taxonomyDoc.categories
+    : null;
+
+if (!categories) {
+  errors.push('data/taxonomy.yaml must be an object with a "categories" array');
 }
 
 const categoryIds = new Set(

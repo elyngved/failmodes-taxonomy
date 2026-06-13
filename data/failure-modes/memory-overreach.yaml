@@ -5,6 +5,8 @@ def: |-
   Applies a valid memory beyond the user, task, project, role, time, or domain scope where it should influence behavior.
 
   Unlike Memory Scope Leakage, the memory may be visible and nonsecret but used too broadly. Unlike User Conformity, the issue is improper memory generalization, not tailoring claims to please the user.
+updatedAt: "2026-06-13T09:00:00-04:00"
+
 searchPhrases:
   - applied a preference too broadly
   - used a memory out of context

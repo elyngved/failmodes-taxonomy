@@ -5,6 +5,8 @@ def: |-
   Lets excess surrounding material weaken the influence of the most relevant context, causing important signals to be underweighted.
 
   Unlike Midsequence Neglect, the issue is crowding and low signal-to-noise rather than position alone. Unlike Tool Context Overload, the excessive material need not come from tools.
+updatedAt: "2026-06-13T09:00:00-04:00"
+
 searchPhrases:
   - lost the point in too much text
   - important info got buried
@@ -64,6 +66,6 @@ mitigation:
     body: Gate material before it enters the prompt — judge each retrieved passage, tool result, and pasted document for whether it bears on the task, and exclude what doesn't. Irrelevant content measurably degrades answers even when the model is told it may ignore it.
 
 related:
-  - id: midsequence-neglect-lost-in-the-middle
+  - id: midsequence-neglect
   - id: tool-context-overload
   - id: context-rot

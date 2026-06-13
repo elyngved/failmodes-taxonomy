@@ -5,6 +5,8 @@ def: |-
   Misinterprets, ignores, overgeneralizes, or incorrectly transforms the result returned by a tool.
 
   Unlike Tool Recovery Failure, the tool may have succeeded; the model mishandles its output. Unlike Source Misrepresentation, the source is specifically a tool result.
+updatedAt: "2026-06-13T09:00:00-04:00"
+
 searchPhrases:
   - misread the tool output
   - misinterpreted the tool result

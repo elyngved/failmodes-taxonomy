@@ -5,6 +5,8 @@ def: |-
   Provides more detail, repetition, caveats, background, or explanation than the task, user, medium, or decision requires.
 
   Unlike Irrelevance, the extra material may be relevant but excessive. Unlike Audience Mismatch, the problem is length and density rather than reader fit overall.
+updatedAt: "2026-06-13T09:00:00-04:00"
+
 searchPhrases:
   - way too long
   - too verbose

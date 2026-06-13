@@ -5,6 +5,8 @@ def: |-
   Applies the wrong hierarchy among system, developer, user, tool, policy, memory, or task-level instructions.
 
   Unlike Instruction Noncompliance, the model may follow an instruction, but the wrong one. Unlike Prompt Injection, the competing instruction need not be adversarial.
+updatedAt: "2026-06-13T09:00:00-04:00"
+
 searchPhrases:
   - followed the wrong instruction
   - wrong instruction took priority

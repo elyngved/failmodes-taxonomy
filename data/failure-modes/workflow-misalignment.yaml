@@ -5,6 +5,8 @@ def: |-
   Uses an execution pattern, cadence, handoff style, approval flow, or collaboration process that conflicts with the user's expected workflow or the task's operational structure.
 
   Unlike Planning Failure, the steps may be logically valid but mismatched to how the work should be done. Unlike Escalation Failure, it can include over-involving, under-involving, or sequencing people incorrectly, not only failing to pause for required oversight.
+updatedAt: "2026-06-13T09:00:00-04:00"
+
 searchPhrases:
   - didn't fit my workflow
   - wrong process

@@ -5,6 +5,8 @@ def: |-
   Draws the wrong conclusion through invalid inference, faulty assumptions, mistaken causal reasoning, unsupported logical steps, or framing the problem with the wrong representation or abstraction.
 
   Unlike Arithmetic Error, the faulty operation is general reasoning rather than numerical calculation. Unlike Verification Failure, the error is the bad reasoning itself, not only the missing check that would have caught it.
+updatedAt: "2026-06-13T09:00:00-04:00"
+
 searchPhrases:
   - faulty reasoning
   - invalid logic

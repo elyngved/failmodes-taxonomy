@@ -5,6 +5,8 @@ def: |-
   Misstates confidence, uncertainty, evidence strength, risk, tradeoffs, or likelihood in the final answer.
 
   Unlike Unknown-Answer Fabrication, calibration failure can occur even when the answer is mostly correct. Unlike Unsafe Reassurance, it includes both overconfidence and excessive hedging, not only under-cautious reassurance.
+updatedAt: "2026-06-13T09:00:00-04:00"
+
 searchPhrases:
   - sounded way too confident
   - too sure of itself

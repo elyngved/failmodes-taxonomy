@@ -5,6 +5,8 @@ def: |-
   Gives a confident answer when the system lacks enough evidence, access, or uncertainty resolution to know the answer.
 
   Unlike content-specific hallucinations such as Entity Hallucination or Numerical Hallucination, this mode describes the decision to answer instead of acknowledge uncertainty; the fabricated content can take many forms.
+updatedAt: "2026-06-13T09:00:00-04:00"
+
 searchPhrases:
   - made up an answer instead of saying it didn't know
   - guessed confidently

@@ -5,6 +5,8 @@ def: |-
   Misreads or mixes up dates, deadlines, time zones, relative dates, durations, recency windows, or scheduling boundaries in a task.
 
   Unlike Temporal Hallucination, the failure is tied to interpreting or applying temporal constraints for the task. Unlike Numerical Hallucination, the date or duration may be present but used incorrectly.
+updatedAt: "2026-06-13T09:00:00-04:00"
+
 searchPhrases:
   - mixed up the dates
   - got the deadline wrong

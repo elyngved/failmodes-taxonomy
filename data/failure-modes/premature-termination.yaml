@@ -5,6 +5,8 @@ def: |-
   Stops, summarizes, or hands back control before the user's task is actually complete, whether by simply halting early or by mistakenly treating unfinished work as done.
 
   Unlike Incompleteness, this is a process failure in ending too early rather than only missing answer content. Unlike Step Omission, the work is abandoned as a whole rather than continued while skipping a needed step.
+updatedAt: "2026-06-13T09:00:00-04:00"
+
 searchPhrases:
   - stopped before finishing
   - quit too early

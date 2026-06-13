@@ -5,6 +5,8 @@ def: |-
   Fails to combine multiple facts, constraints, operations, sources, or subproblem results into a coherent answer.
 
   Unlike Partial Retrieval, the needed pieces may be present but not integrated. Unlike Reasoning Error, the problem is integration across parts rather than a flawed inference or wrong problem framing.
+updatedAt: "2026-06-13T09:00:00-04:00"
+
 searchPhrases:
   - didn't combine the steps
   - failed to put it together

@@ -5,6 +5,8 @@ def: |-
   Delivers a response cut off mid-thought by a token limit, stop sequence, or timeout — often without the system or the model registering that the output is incomplete.
 
   Unlike Premature Termination, the model did not decide to stop; the cutoff is mechanical. Unlike Incompleteness, the missing content was never generated rather than omitted from an otherwise finished answer.
+updatedAt: "2026-06-13T09:00:00-04:00"
+
 searchPhrases:
   - response got cut off
   - stopped mid-sentence

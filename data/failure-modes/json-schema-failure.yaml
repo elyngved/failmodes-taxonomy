@@ -5,6 +5,8 @@ def: |-
   Emits invalid JSON, malformed structured data, or output that does not satisfy the required schema.
 
   Unlike Format Failure, this is specifically about machine-parseable structure and schema conformance. Unlike Tool Argument Error, the malformed structure is the model's output rather than a submitted tool call.
+updatedAt: "2026-06-13T09:00:00-04:00"
+
 searchPhrases:
   - invalid JSON
   - malformed JSON

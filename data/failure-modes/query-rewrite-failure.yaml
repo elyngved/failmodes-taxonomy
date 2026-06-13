@@ -5,6 +5,8 @@ def: |-
   Reformulates a user's search, retrieval, or tool query in a way that drops intent, adds false constraints, or searches the wrong concept.
 
   Unlike Retrieval Miss, the failure originates in the rewritten query rather than only in retrieval ranking or coverage. Unlike Goal Misinterpretation, the misunderstanding is expressed specifically through the query sent downstream.
+updatedAt: "2026-06-13T09:00:00-04:00"
+
 searchPhrases:
   - rewrote my search badly
   - dropped my intent in the query

@@ -5,6 +5,8 @@ def: |-
   Produces unfair, stereotyped, essentializing, or unsupported assumptions about people or groups based on protected or socially salient attributes.
 
   Unlike Social Sycophancy, the model is not merely mirroring the user's identity or tone; it is generating biased content. Unlike User Conformity, the distortion concerns group-based assumptions even if the user did not state that belief.
+updatedAt: "2026-06-13T09:00:00-04:00"
+
 searchPhrases:
   - made a biased assumption
   - stereotyped a group

@@ -5,6 +5,8 @@ def: |-
   Tracks different parts of the active task state inconsistently, causing the response to use mutually incompatible assumptions about progress, variables, files, decisions, or environment.
 
   Unlike Temporal Hallucination, this is an inconsistency in how the task's own state is tracked, not a wrong claim about the external current state of the world. Unlike Self-Contradiction, the inconsistency may appear in actions or assumptions rather than explicit claims.
+updatedAt: "2026-06-13T09:00:00-04:00"
+
 searchPhrases:
   - lost track of the task state
   - inconsistent assumptions about progress

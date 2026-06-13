@@ -5,6 +5,8 @@ def: |-
   Does not adequately check whether intermediate steps, tool results, cited evidence, assumptions, or the final answer are correct before relying on them.
 
   Unlike Reasoning Error, the primary failure is missing or ineffective checking. Unlike Tool Result Misread, the problem can involve any evidence or reasoning step, not only tool output.
+updatedAt: "2026-06-13T09:00:00-04:00"
+
 searchPhrases:
   - didn't double-check
   - skipped verification

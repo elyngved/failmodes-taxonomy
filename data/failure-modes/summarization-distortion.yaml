@@ -5,6 +5,8 @@ def: |-
   Compresses source material in a way that changes its meaning, emphasis, causal structure, uncertainty, or implications.
 
   Unlike Summarization Loss, the issue is not just omission of nuance but an altered meaning. Unlike Source Misrepresentation, it specifically occurs during summarization or compression.
+updatedAt: "2026-06-13T09:00:00-04:00"
+
 searchPhrases:
   - summary changed the meaning
   - distorted the summary

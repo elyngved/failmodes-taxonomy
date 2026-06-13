@@ -5,6 +5,8 @@ def: |-
   Manipulates the model into bypassing safety, policy, or behavioral controls that should remain enforced.
 
   Unlike Prompt Injection, a jailbreak may use persuasion, roleplay, obfuscation, multi-turn pressure, or policy confusion rather than simply injecting a competing instruction. Unlike Refusal Underreach, this names the adversarial bypass pattern that causes the unsafe compliance.
+updatedAt: "2026-06-13T09:00:00-04:00"
+
 searchPhrases:
   - got jailbroken
   - bypassed safety

@@ -5,6 +5,8 @@ def: |-
   Leaves out information, constraints, caveats, steps, options, or outputs needed to satisfy the user's task.
 
   Unlike Step Omission, the missing material appears in the final answer rather than necessarily in the work process. Unlike Concision Failure, incompleteness can happen even when the answer is not especially brief.
+updatedAt: "2026-06-13T09:00:00-04:00"
+
 searchPhrases:
   - left out part of the answer
   - incomplete answer

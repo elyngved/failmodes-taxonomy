@@ -5,6 +5,8 @@ def: |-
   Falsely strengthens a claim by attributing it to an expert, institution, official source, benchmark, policy, or consensus that does not actually support it.
 
   Unlike Citation Hallucination, the issue can occur without a formal citation. Unlike Source Misrepresentation, the authority may be invented, misassigned, or invoked without checking what it actually says.
+updatedAt: "2026-06-13T09:00:00-04:00"
+
 searchPhrases:
   - cited a fake expert
   - made up an official source

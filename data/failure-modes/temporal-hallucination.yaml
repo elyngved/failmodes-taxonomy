@@ -5,6 +5,8 @@ def: |-
   Presents outdated or temporally wrong information as current, including incorrect present-day facts, timelines, sequence, recency, release status, or the current state of a system, organization, or event.
 
   Unlike Outdated Source Reliance, this describes the generated claim itself, whatever its cause (training data, memory, retrieval, or reasoning), not a decision to trust a stale source. Unlike Date/Deadline Confusion, it concerns factual claims about time and current state rather than scheduling boundaries within a task.
+updatedAt: "2026-06-13T09:00:00-04:00"
+
 searchPhrases:
   - out of date answer
   - said old info is current

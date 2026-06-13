@@ -5,6 +5,8 @@ def: |-
   Fails to retrieve relevant material that exists in the available corpus and should have been used.
 
   Unlike Partial Retrieval, the key evidence is absent from the retrieved set rather than only incomplete. Unlike Metadata Filter Failure, the cause is not necessarily an incorrect filter or access predicate.
+updatedAt: "2026-06-13T09:00:00-04:00"
+
 searchPhrases:
   - didn't find the document
   - missed the relevant source

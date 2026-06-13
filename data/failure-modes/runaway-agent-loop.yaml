@@ -5,6 +5,8 @@ def: |-
   Continues acting autonomously in repeated cycles without converging, reassessing, or handing control back when progress stalls.
 
   Unlike Tool Loop, the loop can include planning, messaging, delegation, or other actions beyond tool calls. Unlike Unbounded Consumption, the defining issue is autonomous non-convergence, not resource use alone.
+updatedAt: "2026-06-13T09:00:00-04:00"
+
 searchPhrases:
   - agent stuck in a loop
   - kept going without stopping

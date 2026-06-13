@@ -5,6 +5,8 @@ def: |-
   Misstates, exaggerates, reverses, or selectively distorts what a cited, retrieved, uploaded, or tool-returned source actually says.
 
   Unlike Citation Span Mismatch, the problem is the model's interpretation of the source, not merely an unsupported citation attachment. Unlike Quote Hallucination, the failure can occur without fabricating exact quoted wording.
+updatedAt: "2026-06-13T09:00:00-04:00"
+
 searchPhrases:
   - misrepresented the source
   - twisted what the source said

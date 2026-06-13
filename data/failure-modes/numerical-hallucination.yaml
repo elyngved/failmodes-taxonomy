@@ -5,6 +5,8 @@ def: |-
   Produces a number, metric, count, date, measurement, or quantitative claim that is not grounded in the input, sources, or a valid computation.
 
   Unlike Arithmetic Error, the problem is that the number lacks support, not that a supplied numeric operation was computed incorrectly. Unlike Date/Deadline Confusion, it is about unsupported quantitative content rather than misreading a temporal boundary in the task.
+updatedAt: "2026-06-13T09:00:00-04:00"
+
 searchPhrases:
   - made up a number
   - invented a statistic

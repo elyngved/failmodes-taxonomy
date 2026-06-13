@@ -5,6 +5,8 @@ def: |-
   Enables unauthorized extraction, transfer, or reconstruction of protected data from tools, files, memory, retrieval systems, databases, or context.
 
   Unlike Sensitive Information Disclosure, this emphasizes the extraction pathway or action, not just the presence of exposed data in an answer. Unlike Memory Scope Leakage, the data may come from any connected resource.
+updatedAt: "2026-06-13T09:00:00-04:00"
+
 searchPhrases:
   - leaked data through a tool
   - extracted private data

@@ -5,6 +5,8 @@ def: |-
   Drops important facts, constraints, uncertainty, or nuance when compressing earlier context into a summary.
 
   Unlike Summarization Distortion, the retained meaning is not necessarily changed; too much is simply missing. Unlike Context Rot, the degradation is introduced by the summarization step.
+updatedAt: "2026-06-13T09:00:00-04:00"
+
 searchPhrases:
   - summary dropped key facts
   - lost detail in the summary

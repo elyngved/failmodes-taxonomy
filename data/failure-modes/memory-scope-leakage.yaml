@@ -5,6 +5,8 @@ def: |-
   Carries memory across users, tenants, sessions, roles, projects, or tasks that should remain isolated.
 
   Unlike Memory Overreach, this involves a scope or isolation boundary, often with privacy or authorization implications. Unlike Data Exfiltration, the failure is improper memory use even if no external extraction occurs.
+updatedAt: "2026-06-13T09:00:00-04:00"
+
 searchPhrases:
   - leaked memory across users
   - remembered another tenant's data

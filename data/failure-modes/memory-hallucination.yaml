@@ -5,6 +5,8 @@ def: |-
   Treats an unstored, unstated, or imagined detail as if it were a real memory.
 
   Unlike Memory Contamination, the remembered detail need not come from another task or user; it may be entirely fabricated. Unlike Entity Hallucination, the error is specifically framed as remembered state.
+updatedAt: "2026-06-13T09:00:00-04:00"
+
 searchPhrases:
   - remembered something I never said
   - made up a memory

@@ -5,6 +5,8 @@ def: |-
   Mishandles competing memories: fails to notice that stored memories, preferences, prior decisions, or persisted state disagree, or resolves the conflict with the wrong precedence, freshness, authority, or specificity rule.
 
   Unlike Memory Staleness, more than one stored memory is in play rather than a single outdated one. Unlike Self-Contradiction, the conflicting claims come from persisted memory rather than the model's own outputs.
+updatedAt: "2026-06-13T09:00:00-04:00"
+
 searchPhrases:
   - conflicting saved preferences
   - didn't resolve memory conflict

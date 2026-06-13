@@ -5,6 +5,8 @@ def: |-
   Leaves out a necessary reasoning, verification, retrieval, tool, communication, or execution step needed for the task to succeed.
 
   Unlike Incompleteness, the missing item is a process step, not merely absent answer content. Unlike Premature Termination, the model may continue working but skip a required action.
+updatedAt: "2026-06-13T09:00:00-04:00"
+
 searchPhrases:
   - skipped a step
   - missed a necessary step

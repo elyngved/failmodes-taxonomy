@@ -5,6 +5,8 @@ def: |-
   Feeds the model so much tool output, intermediate state, logs, or scratch data that it loses track of the user's goal or relevant evidence.
 
   Unlike Context Dilution, the overload specifically comes from tool-mediated work. Unlike Tool Result Misread, the issue is volume and state management rather than misunderstanding one result.
+updatedAt: "2026-06-13T09:00:00-04:00"
+
 searchPhrases:
   - too much tool output
   - drowned in tool results

@@ -5,6 +5,8 @@ def: |-
   Lets retrieved, browsed, uploaded, tool-supplied, or otherwise external content carry malicious instructions into the model's context.
 
   Unlike Prompt Injection, the attacker uses third-party or tool-mediated content rather than direct user instructions. Unlike RAG Poisoning, the harmful payload is an instruction to the model, not only corrupted evidence.
+updatedAt: "2026-06-13T09:00:00-04:00"
+
 searchPhrases:
   - webpage hijacked the model
   - malicious instructions in a document

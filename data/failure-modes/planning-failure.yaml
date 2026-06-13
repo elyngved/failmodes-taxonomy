@@ -5,6 +5,8 @@ def: |-
   Builds an ineffective, unsafe, incomplete, or poorly ordered plan for achieving the user's goal.
 
   Unlike Step Omission, the whole sequence or strategy is flawed, not only one missing step. Unlike Workflow Misalignment, the plan may be logically poor even if it follows the expected process style.
+updatedAt: "2026-06-13T09:00:00-04:00"
+
 searchPhrases:
   - bad plan
   - poorly ordered steps

@@ -5,6 +5,8 @@ def: |-
   Uses remembered information that was once valid but has been superseded by newer state, preferences, facts, or instructions.
 
   Unlike Temporal Hallucination, this specifically involves persisted memory rather than a temporally wrong claim from any source. Unlike Memory Conflict, the old memory may not visibly conflict with another stored memory; it is just outdated relative to reality.
+updatedAt: "2026-06-13T09:00:00-04:00"
+
 searchPhrases:
   - used an outdated preference
   - old saved info

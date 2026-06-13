@@ -5,6 +5,8 @@ def: |-
   Attaches a citation to a claim, sentence, or paragraph that the referenced passage does not fully support.
 
   Unlike Citation Hallucination, the cited source may exist. Unlike Source Misrepresentation, the source may be described accurately elsewhere while the local citation span fails to substantiate the attached claim.
+updatedAt: "2026-06-13T09:00:00-04:00"
+
 searchPhrases:
   - citation doesn't support the claim
   - wrong passage cited

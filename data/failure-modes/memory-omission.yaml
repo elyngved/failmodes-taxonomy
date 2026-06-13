@@ -5,6 +5,8 @@ def: |-
   Fails to store, retrieve, or apply information that should have persisted across turns, sessions, tasks, or agent steps.
 
   Unlike Context Rot, the missing information belongs in memory rather than only active context. Unlike Memory Conflict, the problem is absence or non-use of the memory, not mishandling memories that compete with one another.
+updatedAt: "2026-06-13T09:00:00-04:00"
+
 searchPhrases:
   - forgot earlier context
   - forgot what I told it

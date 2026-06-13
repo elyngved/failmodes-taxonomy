@@ -5,6 +5,8 @@ def: |-
   Bends factual claims, assessments, or recommendations to match the user's stated beliefs or apparent desires instead of the evidence.
 
   Unlike Sycophancy, the model conforms from its first answer rather than caving to pushback against an answer it already gave. Unlike Social Sycophancy, the distortion is substantive — facts and recommendations — rather than register, praise, or self-image.
+updatedAt: "2026-06-13T09:00:00-04:00"
+
 searchPhrases:
   - told me what I wanted to hear
   - just agreed with my assumption

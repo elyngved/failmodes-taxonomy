@@ -5,6 +5,8 @@ def: |-
   Adds information that cannot be verified from the provided source material, neither supported nor contradicted by it, while making the answer appear source-grounded.
 
   Unlike Context-Conflicting Hallucination, the added content does not contradict the source; it is simply ungrounded in it. Unlike Specificity Hallucination, the defining issue is lack of source support rather than fabricated precision.
+updatedAt: "2026-06-13T09:00:00-04:00"
+
 searchPhrases:
   - added info not in the source
   - made up details not in the document

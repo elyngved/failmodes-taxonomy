@@ -5,6 +5,8 @@ def: |-
   Invokes a tool in a way that creates avoidable security, privacy, financial, operational, data-integrity, or user-consent risk.
 
   Unlike Refusal Underreach, this involves an actual or proposed tool action. Unlike Escalation Failure, the defining problem is the risky action itself, not the missing approval or oversight step.
+updatedAt: "2026-06-13T09:00:00-04:00"
+
 searchPhrases:
   - ran a dangerous command
   - unsafe tool call

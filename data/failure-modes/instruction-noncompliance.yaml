@@ -5,6 +5,8 @@ def: |-
   Fails to follow an explicit, applicable instruction from the governing prompt, user request, or task procedure.
 
   Unlike Constraint Violation, this covers any instruction, not only limits or requirements. Unlike Context Rot, the failure is observed noncompliance with an applicable instruction, regardless of whether fading context salience caused it.
+updatedAt: "2026-06-13T09:00:00-04:00"
+
 searchPhrases:
   - ignored my instruction
   - didn't do what I asked

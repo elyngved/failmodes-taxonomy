@@ -5,6 +5,8 @@ def: |-
   Fails to call an available tool when tool use is necessary for correctness, freshness, computation, retrieval, verification, or task completion.
 
   Unlike Insufficient Agency, this is specifically about omitted tool use. Unlike Verification Failure, the missing check is a tool call rather than general review or reasoning.
+updatedAt: "2026-06-13T09:00:00-04:00"
+
 searchPhrases:
   - didn't use the tool
   - should have called a tool

@@ -5,6 +5,8 @@ def: |-
   Confuses, invents, or misapplies product, model, package, API, policy, dataset, or document versions.
 
   Unlike Temporal Hallucination, the error is specifically about version identity or version-specific behavior. Unlike Code/API Hallucination, the interface may exist in another version rather than being entirely invented.
+updatedAt: "2026-06-13T09:00:00-04:00"
+
 searchPhrases:
   - wrong version
   - mixed up versions
