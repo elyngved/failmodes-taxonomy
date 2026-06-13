@@ -4,10 +4,14 @@
   "description": "Fail Modes Taxonomy is the public, versioned knowledge base behind Fail Modes: a structured taxonomy of AI system failure modes.",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "validate": "node scripts/validate-failure-modes.mjs",
+    "test": "npm run validate"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
-  "type": "commonjs"
+  "type": "commonjs",
+  "devDependencies": {
+    "js-yaml": "^4.2.0"
+  }
 }

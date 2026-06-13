@@ -1,6 +1,6 @@
 # Failure Mode Schema
 
-This document defines the canonical content schema for files in `failure-modes/`.
+This document defines the canonical content schema for files in `data/failure-modes/`.
 
 ## Goals
 
@@ -60,7 +60,7 @@ related:
 ## Required Core Fields
 
 - `id: string` - Stable slug for the failure mode.
-- `categoryId: string` - References a category in `taxonomy.yaml`.
+- `categoryId: string` - References a category in `data/taxonomy.yaml`.
 - `name: string` - Display name for the failure mode.
 - `def: string` - Short canonical definition.
 

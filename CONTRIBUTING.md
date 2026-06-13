@@ -18,7 +18,7 @@ This repository is curated as a canonical knowledge base, so contributions shoul
 - Follow `SCHEMA.md`.
 - Keep YAML structured; do not add Markdown bodies inside failure mode files.
 - Use stable, lowercase slug IDs.
-- Keep `categoryId` aligned with `taxonomy.yaml`.
+- Keep `categoryId` aligned with `data/taxonomy.yaml`.
 - Write definitions as concepts, not incidents.
 - Prefer implementation-agnostic language unless a failure is specific to a system pattern such as retrieval, tools, memory, or agents.
 - Keep examples short and diagnostic.
@@ -27,7 +27,7 @@ This repository is curated as a canonical knowledge base, so contributions shoul
 ## Pull Request Checklist
 
 - [ ] New or changed failure mode files follow `SCHEMA.md`.
-- [ ] `taxonomy.yaml` includes every failure mode exactly once.
+- [ ] `data/taxonomy.yaml` includes every failure mode exactly once.
 - [ ] Related modes use existing failure mode IDs.
 - [ ] Examples are short enough to scan.
 - [ ] Detection and mitigation entries name concrete signals, controls, or enforcement points.

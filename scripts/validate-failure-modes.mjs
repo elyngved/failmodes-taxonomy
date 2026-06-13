@@ -3,8 +3,8 @@ import { basename, join } from "node:path";
 
 import { load } from "js-yaml";
 
-const failureModesDirectoryPath = join(process.cwd(), "failure-modes");
-const taxonomyFilePath = join(process.cwd(), "taxonomy.yaml");
+const failureModesDirectoryPath = join(process.cwd(), "data", "failure-modes");
+const taxonomyFilePath = join(process.cwd(), "data", "taxonomy.yaml");
 
 const errors = [];
 
