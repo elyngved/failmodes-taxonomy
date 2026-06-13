@@ -1,0 +1,74 @@
+id: rag-poisoning
+categoryId: retrieval
+name: RAG Poisoning
+def: |-
+  Uses retrieved content that is malicious, deceptive, corrupted, or intentionally crafted to manipulate the answer.
+
+  Unlike Retrieval Distractor, the harmful evidence is adversarial or contaminated rather than merely irrelevant. Unlike Indirect Prompt Injection, the poisoning may mislead through false facts or corrupted data, not only embedded instructions.
+searchPhrases:
+  - poisoned retrieval
+  - malicious retrieved content
+  - corrupted source data
+  - retrieved content crafted to mislead
+
+why:
+  - Retrieval grants corpus content the model's trust. RAG systems are built to prefer retrieved text over parametric knowledge, so anything that gets into the corpus inherits the authority of evidence, with no distinction between a vetted document and an attacker's upload.
+  - Poisoning is cheap and precise. Injecting a handful of crafted passages into a large corpus is enough to control the answer to a targeted question, because the attacker only needs to win the similarity ranking for that one query — and embedding models are public enough to optimize against directly (Zou et al., 2024, "PoisonedRAG").
+  - Corpus ingestion is built for coverage, not provenance. Pipelines crawl wikis, tickets, shared drives, and the open web, where write access is broad and content review is thin, so the attack surface is every place anyone can publish text the indexer will reach.
+  - Models judge evidence by its style, not its origin. Confident, well-formatted, citation-laden text is weighted as credible, and crafted misinformation can outcompete genuine documents in the model's synthesis even when both are retrieved (Wan et al., 2024, "What Evidence Do Language Models Find Convincing?").
+
+examples:
+  - kind: fail
+    label: Planted fact wins the ranking
+    text: An attacker edits a public wiki page the indexer crawls, planting a fraudulent support number. The passage wins the similarity ranking for support queries and the assistant relays it with full confidence.
+    quote: |-
+      User: What's the official support number for my bank?
+      [… top retrieved passage comes from a crawled wiki edit planting an attacker-controlled phone number …]
+      Assistant: You can reach official support at 1-888-555-0147, available 24/7.
+  - kind: fail
+    label: Crafted passage outweighs the genuine one
+    text: Both the real document and an adversarial one are retrieved. The poisoned passage is confident, well-formatted, and citation-laden, and the synthesis sides with it over the plainer genuine source.
+    quote: |-
+      User: Is the v2 migration safe to run on production data?
+      [… retrieval returns the official runbook ("take a backup first; migration is irreversible") and a planted doc styled as an updated runbook ("backups are no longer required as of v2.3") …]
+      Assistant: Yes — as of v2.3 the migration handles rollback automatically, so no backup is needed.
+  - kind: warn
+    label: Unvetted content blended with vetted
+    text: The corpus mixes signed internal docs with an open wiki anyone can edit, and the answer draws on both with no provenance distinction. Nothing here is yet false — but the trust boundary is already gone.
+    quote: |-
+      User: What's the procedure for granting production database access?
+      [… answer synthesizes a signed security policy and an unreviewed wiki page, citing both identically …]
+      Assistant: Per the documentation, access requires manager approval, and temporary credentials can also be self-issued via the legacy admin panel.
+  - kind: ok
+    label: Provenance gates the answer
+    text: Sources carry trust tiers, and claims that only appear in unvetted content are flagged rather than asserted.
+    quote: |-
+      User: Is the v2 migration safe to run on production data?
+      Assistant: The signed runbook says to take a backup first — the migration is irreversible. One unverified document claims backups are no longer needed as of v2.3, but it isn't from a trusted source and contradicts the official runbook, so I'd disregard it and back up first.
+
+detection:
+  - icon: 🛡️
+    heading: Provenance auditing
+    body: Track origin, author, and trust tier for every indexed document, and flag answers whose load-bearing claims rest only on unvetted or anonymously editable sources. An answer that contradicts a signed runbook on the authority of a recently edited wiki page is the signature to alert on.
+  - icon: 🔍
+    heading: Corpus anomaly scanning
+    body: Watch for the shape of an attack rather than its content — newly added or edited documents that suddenly win rankings for high-value queries, passages that contradict trusted documents on the same topic, text with unusually high similarity to known sensitive queries. Poison reads as fluent prose, so the anomaly is in ranking behavior and recency, not style.
+  - icon: 🧪
+    heading: Golden-set evals
+    body: Run red-team poisoning drills — inject marked adversarial passages targeting specific queries, PoisonedRAG-style, and measure whether answers flip. The injection success rate is the system's measured susceptibility, and it regression-tests provenance and reranking defenses directly.
+
+mitigation:
+  - icon: 🛡️
+    heading: Provenance tiering
+    body: Assign every indexed source a trust tier and gate what each tier can do — claims appearing only in anonymously editable or unvetted content get flagged or dropped, and a recently edited wiki page never silently overrides a signed runbook, however confident its prose.
+  - icon: 🚧
+    heading: Ingestion vetting
+    body: Narrow what the indexer will ingest — review or quarantine new and edited documents from low-trust sources before they serve, and keep open-write surfaces like public wikis out of the corpus that answers high-stakes queries. The attack surface is everywhere anyone can publish text the crawler reaches.
+  - icon: 📝
+    heading: Instruction constraints
+    body: Instruct the model to weigh evidence by its provenance markers rather than its style — confident, citation-laden formatting is what crafted passages optimize — and to surface rather than adopt any retrieved claim that contradicts a higher-trust document on the same topic.
+
+related:
+  - id: retrieval-distractor
+  - id: indirect-prompt-injection
+  - id: supply-chain-vulnerability

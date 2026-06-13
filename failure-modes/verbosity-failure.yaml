@@ -1,0 +1,63 @@
+id: verbosity-failure
+categoryId: response-integrity
+name: Verbosity Failure
+def: |-
+  Provides more detail, repetition, caveats, background, or explanation than the task, user, medium, or decision requires.
+
+  Unlike Irrelevance, the extra material may be relevant but excessive. Unlike Audience Mismatch, the problem is length and density rather than reader fit overall.
+searchPhrases:
+  - way too long
+  - too verbose
+  - rambled on
+  - more detail than needed
+why:
+  - >-
+    Reward models prefer longer responses. Length correlates strongly with reward scores in RLHF pipelines, so optimization inflates output length even when no new information is added (Singhal et al., 2023, "A Long Way to Go: Investigating Length Correlations in RLHF").
+  - Automated judges share the bias. LLM-as-judge evaluation favors longer, more elaborate answers, so model comparisons and fine-tuning loops built on these judges reinforce verbosity rather than penalizing it (Zheng et al., 2023, "Judging LLM-as-a-Judge with MT-Bench and Chatbot Arena").
+  - Padding hedges against unknown needs. The model cannot see which detail matters to this user, and including everything is never scored as wrong, while omitting the one needed point is, so the asymmetry favors exhaustive answers.
+  - Chat formatting conventions add fixed overhead. Tuned-in habits such as restating the question, announcing the structure, listing caveats, and closing with a summary attach to responses regardless of whether the content warrants them.
+examples:
+  - kind: fail
+    label: Padding around a one-word answer
+    text: Wraps a single fact in restatement, background, caveats, and a closing summary none of which was asked for.
+    quote: |-
+      User: What's the capital of Australia?
+      Assistant: Great question! The capital of Australia is a common point of confusion, as many people assume it's Sydney or Melbourne, both larger and better-known cities. In fact, the capital is Canberra, a planned city purpose-built in 1913 as a compromise between the two rivals. So, to summarize: the capital of Australia is Canberra.
+  - kind: warn
+    label: Fixed chat overhead
+    text: The content is right-sized, but tuned-in framing habits add boilerplate at both ends.
+    quote: |-
+      User: What's the capital of Australia?
+      Assistant: I'd be happy to help with that! The capital of Australia is Canberra. Let me know if you'd like to learn more about Australian geography!
+  - kind: ok
+    label: Sized to the question
+    text: Delivers the fact at the length the question warrants.
+    quote: |-
+      User: What's the capital of Australia?
+      Assistant: Canberra.
+detection:
+  - icon: 📏
+    heading: Compression testing
+    body: Have a model compress the response to its minimal sufficient form and measure what fraction survives. An answer that reduces from 150 words to one with nothing lost was padding by construction — compressibility is a direct, mechanical measure of the overhead.
+  - icon: ⚖️
+    heading: LLM-as-judge evaluation
+    body: Judges share the length bias that causes this failure, so the rubric has to fight it explicitly — score information per token, or compare the response pairwise against its compressed version and ask what the extra words bought. A judge asked simply to rate quality will reward the verbosity it was meant to catch.
+  - icon: 🧪
+    heading: Golden-set evals
+    body: Maintain questions with known minimal sufficient answers and measure token overhead above that floor, tracking boilerplate markers — restated questions, announced structure, closing summaries — separately from content. Fixed chat overhead shows up as a constant tax across every answer regardless of the question's size.
+mitigation:
+  - icon: 📝
+    heading: Instruction constraints
+    body: Size the answer to the question and ban the fixed overhead by name — no restating the question, no announcing the structure, no closing summary, no "great question." The boilerplate is tuned-in habit, not judgment, so naming the specific patterns removes them more reliably than a general plea for brevity.
+  - icon: 🧹
+    heading: Output post-processing
+    body: Run the compression test as a fix instead of a metric — reduce the draft to its minimal sufficient form and ship that version. The 150 words around "Canberra" survive because generation has no revision pass; a compression pass is that revision, and what it cannot remove without losing information was the actual answer.
+  - icon: 🧑‍🏫
+    heading: Preference data curation
+    body: Break the length-reward correlation at its source — penalize length in the reward model, score information per token rather than coverage, and check judge models for the same bias before trusting their ratings. Verbosity is what optimization against length-loving signals produces; every loop that keeps the bias keeps the failure.
+
+related:
+  - id: concision-failure
+  - id: irrelevance
+  - id: audience-mismatch
+  - id: poor-structure

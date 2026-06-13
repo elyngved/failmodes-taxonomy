@@ -1,0 +1,75 @@
+id: context-conflicting-hallucination
+categoryId: faithfulness
+name: Context-Conflicting Hallucination
+def: |-
+  States a claim that contradicts information available to the model: the user's explicit input or supplied data, or facts elsewhere in the active context such as prior turns, retrieved text, summaries, or tool outputs.
+
+  Unlike Extrinsic Hallucination, the claim contradicts available information rather than merely going beyond it unsupported. Unlike Self-Contradiction, the conflict is against provided input or context the model should have used, not only against its own generated statements.
+searchPhrases:
+  - contradicted my input
+  - ignored what I told it
+  - said something against the document
+  - contradicted the source
+
+why:
+  - When supplied context disagrees with what the model memorized during pretraining, the model often prefers its parametric knowledge, especially when the context contradicts popular or frequently repeated facts (Longpre et al., 2021, "Entity-Based Knowledge Conflicts in Question Answering").
+  - Attention over long contexts is uneven. Information placed in the middle of a long prompt is used far less reliably than information at the start or end, so the model can simply fail to weight the passage it ends up contradicting (Liu et al., 2023, "Lost in the Middle").
+  - In multi-turn or agentic settings, earlier facts get compressed, summarized, or pushed out of the effective context. The model then regenerates the fact from priors instead of from the original statement, and the regeneration can flip details.
+  - Instruction tuning teaches models to answer confidently rather than to flag conflicts. When the prompt and the model's prior disagree, surfacing the tension is rarely rewarded, so the model silently picks one side.
+
+examples:
+  - kind: fail
+    label: Prior overrides the document
+    text: The uploaded document states the current fact, but the model answers from its stronger pretraining prior and contradicts the source it was given.
+    quote: |-
+      [… uploaded company profile reads: "Maria Chen was appointed CEO in January 2025." …]
+      User: According to this profile, who is the CEO?
+      Assistant: The CEO is David Okafor, who has led the company since 2018.
+  - kind: fail
+    label: Contradicting an earlier turn
+    text: A fact the user stated early in the session falls out of effective context, and the model regenerates a detail that flips it.
+    quote: |-
+      User: For all of this trip planning — I'm vegetarian, please keep that in mind.
+      [… 30 turns later …]
+      Assistant: For your last night, I'd book Asador El Toro — their signature beef tasting menu is the best in the city.
+  - kind: warn
+    label: Silent side-taking
+    text: The supplied document and the model's prior disagree, and the model quietly picks the document without surfacing the conflict — right this time, but by luck rather than policy.
+    quote: |-
+      [… uploaded profile reads: "Maria Chen was appointed CEO in January 2025." …]
+      User: Who is the CEO?
+      Assistant: The CEO is Maria Chen.
+  - kind: ok
+    label: Conflict surfaced
+    text: Follows the provided source and explicitly flags that it differs from what the model would have said from memory.
+    quote: |-
+      [… uploaded profile reads: "Maria Chen was appointed CEO in January 2025." …]
+      User: Who is the CEO?
+      Assistant: According to the profile you uploaded, Maria Chen, appointed in January 2025. Note that this is more recent than my background knowledge, which still associates the role with David Okafor — the document is the better source here.
+
+detection:
+  - icon: 🔗
+    heading: Entailment checking
+    body: Run an NLI model between each output claim and the supplied context — the uploaded document, prior turns, tool results. A contradiction label is a direct hit for this mode, and unlike extrinsic additions, these conflicts are exactly what entailment models are best at catching.
+  - icon: ⚖️
+    heading: LLM-as-judge evaluation
+    body: Run a judge with the full supplied context in view and ask it to flag any claim the context contradicts. Prompt it specifically for prior-override patterns — answers that swap in a more famous or more typical fact than the one the document states.
+  - icon: 🧪
+    heading: Golden-set evals
+    body: Maintain counterfactual documents whose facts deliberately contradict popular pretraining priors — a different CEO, a changed policy, an updated date — and regression-test whether answers come from the document or from the model's memorized version.
+
+mitigation:
+  - icon: 📝
+    heading: Instruction constraints
+    body: Instruct the model to treat supplied context as authoritative over its background knowledge and to surface disagreement rather than silently pick a side — "the document says X; my background knowledge says Y; the document is the better source" instead of letting the stronger prior win.
+  - icon: 📌
+    heading: Context pinning
+    body: Keep durable facts — user constraints like "I'm vegetarian," key document claims — restated in the system prompt or near the active end of context rather than buried mid-prompt, where uneven attention lets the model regenerate them from priors and flip details.
+  - icon: ✅
+    heading: Self-check pass
+    body: Before answering, have the model re-read the supplied context and check its draft against it claim by claim — specifically asking whether any answer swapped in a more famous or more typical fact than the one the document actually states.
+
+related:
+  - id: extrinsic-hallucination
+  - id: self-contradiction
+  - id: tool-result-misread

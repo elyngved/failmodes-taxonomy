@@ -1,0 +1,76 @@
+id: overthinking
+categoryId: reasoning
+name: Overthinking
+def: |-
+  Spends far more reasoning than the problem warrants — long deliberation on trivial questions, redundant re-derivations, or second-guessing that talks the model out of a correct answer.
+
+  Unlike Verbosity Failure, the excess is in the reasoning process and its token and latency cost, not the final answer's length. Unlike Unbounded Consumption, the spend terminates on its own; it is disproportionate rather than unlimited, and the harm can include a worse answer, not just a bigger bill.
+searchPhrases:
+  - thought way too long
+  - overthought a simple question
+  - reasoned itself out of the right answer
+  - burned tokens thinking
+why:
+  - Reasoning training rewards long chains. Test-time scaling teaches that more thinking improves hard-problem success, and the learned policy applies extended deliberation indiscriminately — including to problems solved correctly in the first hundred tokens (Chen et al., 2024, "Do NOT Think That Much for 2+3=?").
+  - Allocating a thinking budget requires estimating difficulty before solving, which is itself the judgment the thinking was supposed to produce. With no reliable difficulty signal, the trained default is to deliberate.
+  - >-
+    Extended reasoning can make answers worse, not just slower. Models second-guess correct intermediate conclusions, drift to alternative framings, and in agentic settings substitute simulating outcomes for taking the one cheap action that would settle the question (Cuadron et al., 2025, "The Danger of Overthinking: Examining the Reasoning-Action Dilemma in Agentic Tasks").
+  - Reasoning traces are often hidden or unread, so the cost is invisible in the feedback loop. Raters and evals score the final answer, and nothing charges the 2,400 tokens it took to get there.
+
+examples:
+  - kind: fail
+    label: Trivial question, massive deliberation
+    text: The answer is right, but it arrives after thousands of reasoning tokens and many seconds of latency that a one-line computation never needed.
+    quote: |-
+      User: What's 15% of 80?
+      [… model reasons for 2,400 tokens — computes 0.15 × 80, re-derives it via 10% + 5%, cross-checks by computing 80 × 3/20, then reverifies each method …]
+      Assistant: 12.
+  - kind: fail
+    label: Second-guessed out of the right answer
+    text: The first conclusion was correct, but continued deliberation surfaces a plausible alternative and the model talks itself into it.
+    quote: |-
+      User: Which config change caused the latency spike — A, B, or C?
+      [… reasoning trace: "B aligns with the timeline exactly… but wait, let me reconsider C…" 1,800 tokens later …]
+      Assistant: It was C — the connection-pool change.
+      [… B was correct, and the trace had established it before the reconsideration began …]
+  - kind: warn
+    label: Simulation instead of action
+    text: The agent could settle the question with one cheap tool call, but spends its turn reasoning about what the call would probably return.
+    quote: |-
+      User: Is the staging deploy finished?
+      Assistant: Based on the deploy starting around 14:02 and typical build times of 6–9 minutes, accounting for the cache being warm, it has most likely completed by now — though the migration step can add time…
+      [… a one-line status check tool was available the entire time …]
+  - kind: ok
+    label: Effort matched to difficulty
+    text: Trivial parts get answered directly, and the deliberation budget is spent where the problem actually lives.
+    quote: |-
+      User: What's 15% of 80, and which of these three configs caused the latency spike?
+      Assistant: 15% of 80 is 12. The config question needs actual care — comparing each change's timestamp against the spike onset… Change B landed at 14:01, ninety seconds before the spike, and it's the only one touching the request path. It's B.
+
+detection:
+  - icon: 📊
+    heading: Reasoning budget monitoring
+    body: Track reasoning tokens per request against task class and outcome, and flag the distribution's tail — especially spend on items a no-reasoning baseline already answers correctly. The 2,400-token percentage calculation is a metering hit, not a quality judgment.
+  - icon: 📉
+    heading: Accuracy-versus-length auditing
+    body: On a labeled set, chart correctness against reasoning length. Accuracy that falls as traces grow is second-guessing measured directly — and diffing traces against final answers finds the cases where a correct intermediate conclusion was deliberated away.
+  - icon: 🧪
+    heading: Golden-set evals
+    body: Include deliberately trivial items alongside hard ones and score budget proportionality, not just correctness — tokens-to-answer on the easy half, accuracy on the hard half. A system tuned only on hard-problem accuracy will pass while burning its budget on the items that needed none.
+
+mitigation:
+  - icon: 🚦
+    heading: Difficulty-based routing
+    body: Route requests by estimated difficulty — a cheap or no-reasoning path for trivial queries, extended thinking reserved for problems that earn it — using the reasoning-effort controls most providers now expose. The model won't self-allocate; the router has to.
+  - icon: 🛑
+    heading: Thinking budget caps
+    body: Set per-request reasoning-token budgets matched to task class, forcing commitment when the budget is spent. Capping also bounds the second-guessing window — the reconsideration that talked the model out of B needed 1,800 tokens of room to happen in.
+  - icon: 📝
+    heading: Instruction constraints
+    body: Instruct the model to answer directly when confident, to stop at the first verified conclusion rather than re-deriving it by other methods, and — in agentic settings — to prefer one cheap observation over reasoning about what the observation would show. "Check the deploy status" beats a paragraph estimating it.
+
+related:
+  - id: unbounded-consumption
+  - id: verbosity-failure
+  - id: runaway-agent-loop
+  - id: missing-tool-invocation

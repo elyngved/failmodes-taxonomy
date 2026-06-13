@@ -1,0 +1,67 @@
+id: output-truncation
+categoryId: response-integrity
+name: Output Truncation
+def: |-
+  Delivers a response cut off mid-thought by a token limit, stop sequence, or timeout — often without the system or the model registering that the output is incomplete.
+
+  Unlike Premature Termination, the model did not decide to stop; the cutoff is mechanical. Unlike Incompleteness, the missing content was never generated rather than omitted from an otherwise finished answer.
+searchPhrases:
+  - response got cut off
+  - stopped mid-sentence
+  - truncated output
+  - JSON cut off halfway
+why:
+  - Token limits are hard stops invisible to generation. The model does not plan its output within the budget — decoding simply ends when the limit is hit, wherever that lands, mid-sentence or mid-structure.
+  - The truncation signal lives in response metadata, not the text. The API reports a stop reason of "length," but many pipelines never check it, so the partial output is consumed downstream as if it were complete.
+  - Models have no reliable sense of their remaining budget. Nothing in training teaches pacing an answer to a token allowance, and long structured outputs — full-file code rewrites, large extractions — routinely exceed limits sized for conversational replies.
+  - Truncated output often still looks plausible. A list missing its trailing items or a summary missing its final sections reads as complete, and a lenient parser can even salvage a cut-off JSON array — silently delivering 28 of 40 records as if they were all of them.
+
+examples:
+  - kind: fail
+    label: Truncated JSON consumed downstream
+    text: The extraction hits the token limit mid-array, the stop reason goes unchecked, and a lenient parser delivers a silently partial result.
+    quote: |-
+      User: Extract all 40 line items from this invoice as JSON.
+      Assistant: [{"item": "Server hosting", "amount": 1200}, {"item": "SSL certificates", "amount": 340}, {"item": "Backup stor
+      [… stop reason: "length"; a lenient parser recovers 28 complete items and the pipeline records the invoice as fully processed …]
+  - kind: warn
+    label: Prose cut where no one notices
+    text: The summary covers the document in order until the budget runs out, so the last sections simply never appear — and nothing in the text marks the absence.
+    quote: |-
+      User: Summarize each section of this 60-page contract.
+      Assistant: …Section 9 covers indemnification, with mutual caps at twelve months of fees. Section 10 addresses
+      [… sections 10–14, including the termination and liability clauses, are never summarized …]
+  - kind: ok
+    label: Cutoff detected and handled
+    text: The scaffold checks the stop reason, continues generation from the cut, and only then delivers a verified-complete result.
+    quote: |-
+      User: Extract all 40 line items from this invoice as JSON.
+      Tool: generate → stop reason "length" at item 28; continuation requested → items 29–40 returned
+      Assistant: All 40 line items extracted — the output exceeded one response, so it was generated in two passes and validated for completeness against the invoice's line count.
+
+detection:
+  - icon: 📊
+    heading: Stop-reason monitoring
+    body: Check the stop reason on every API response and alert on "length" rates per route. This is the one failure mode the platform reports explicitly on every call — a pipeline that never reads the field is choosing not to know.
+  - icon: ✅
+    heading: Schema validation
+    body: Parse and validate structured output before anything consumes it, with strict parsers — truncation usually breaks well-formedness, and a lenient parser that salvages the parseable prefix converts an obvious failure into a silent partial result.
+  - icon: 🧪
+    heading: Golden-set evals
+    body: Include tasks whose expected output size sits near and above the configured limit — full-document summaries, large extractions with known item counts — and score delivered completeness against ground truth. The 28-of-40 case only registers when the eval knows the answer was 40.
+
+mitigation:
+  - icon: 📐
+    heading: Token budget sizing
+    body: Set max-token limits per route from observed output-size distributions rather than chat defaults, and for enumerable tasks estimate the output size before generating — 40 line items at ~30 tokens each does not fit a 1,000-token budget, and that arithmetic is knowable before the call.
+  - icon: 🔁
+    heading: Continuation handling
+    body: Treat a "length" stop reason as a signal, not a result — automatically continue generation from the cut point or retry with a raised limit, and never pass partial output downstream. The ok example is this working — two passes, then a completeness check against the known count.
+  - icon: 🪜
+    heading: Task decomposition
+    body: For outputs that cannot fit one response, paginate by design — extract ten line items per call, summarize the contract section by section — so no single response needs to approach the limit and each chunk is validated on its own.
+
+related:
+  - id: incompleteness
+  - id: premature-termination
+  - id: json-schema-failure

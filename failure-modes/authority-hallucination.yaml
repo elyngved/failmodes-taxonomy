@@ -1,0 +1,70 @@
+id: authority-hallucination
+categoryId: fabrication
+name: Authority Hallucination
+def: |-
+  Falsely strengthens a claim by attributing it to an expert, institution, official source, benchmark, policy, or consensus that does not actually support it.
+
+  Unlike Citation Hallucination, the issue can occur without a formal citation. Unlike Source Misrepresentation, the authority may be invented, misassigned, or invoked without checking what it actually says.
+searchPhrases:
+  - cited a fake expert
+  - made up an official source
+  - falsely claimed experts agree
+  - attributed it to the wrong authority
+why:
+  - Training data is full of phrases like "experts say" and "studies show" used as a writing style. The model learns this as a pattern of persuasive text, not as a claim that needs checking.
+  - Human raters tend to score confident, authority-backed answers as more helpful than hedged ones. Preference tuning then pushes the model toward assertive attribution (Sharma et al., 2023, "Towards Understanding Sycophancy in Language Models").
+  - Models repeat "imitative falsehoods" — claims about consensus or official positions that are common in training data but wrong — because pretraining optimizes for matching that data (Lin et al., 2022, TruthfulQA).
+  - The model stores who-said-what as loose statistical associations, not linked records. It can easily attach a real claim to a more famous or more relevant-sounding authority.
+
+examples:
+  - kind: fail
+    label: Invented endorsement
+    text: Fabricates an official institutional position to settle the question.
+    quote: |-
+      User: Is intermittent fasting safe for someone with a heart condition?
+      Assistant: Yes — the American Heart Association officially recommends intermittent fasting for patients with heart conditions.
+  - kind: fail
+    label: Misassigned authority
+    text: Attaches a real-sounding claim to a famous figure who never said it, because the pairing is statistically plausible.
+    quote: |-
+      User: Why is starting to invest early such a big deal?
+      Assistant: As Einstein said, compound interest is the eighth wonder of the world.
+  - kind: warn
+    label: Vague consensus appeal
+    text: Leans on unnamed experts to strengthen the same fasting claim. Nothing is checkably false, but the authority is doing work the evidence hasn't earned.
+    quote: |-
+      User: Is intermittent fasting safe for someone with a heart condition?
+      Assistant: Experts widely agree that intermittent fasting is safe for most adults.
+  - kind: ok
+    label: Calibrated attribution
+    text: Answers the same question at the strength the evidence supports, and only invokes authorities for positions they verifiably hold.
+    quote: |-
+      User: Is intermittent fasting safe for someone with a heart condition?
+      Assistant: Some studies report benefits, but major health organizations haven't issued a recommendation either way. A doctor can advise for your situation.
+
+detection:
+  - icon: 🔎
+    heading: Claim-to-source verification
+    body: Extract every named authority — experts, institutions, policies, benchmarks — and look up whether the source exists and actually holds the attributed position. Invented endorsements and misassigned quotes fail the lookup outright.
+  - icon: ⚖️
+    heading: LLM-as-judge evaluation
+    body: Run a judge prompted to flag authority-invoking language ("experts agree", "officially recommends", "as X said") and score whether the response provides checkable support for the attribution or uses the authority as unearned rhetorical weight.
+  - icon: 🧪
+    heading: Golden-set evals
+    body: Maintain a test set of questions known to elicit imitative falsehoods — misattributed quotes, fabricated institutional positions, false consensus claims — and regression-test that the model declines to invoke authorities it cannot support.
+
+mitigation:
+  - icon: 📚
+    heading: Retrieval grounding
+    body: Require the model to attribute positions only to sources present in retrieved context, rather than from parametric memory. If no source backs the claim, the answer must drop the authority rather than the claim.
+  - icon: 📝
+    heading: Instruction constraints
+    body: Instruct the model to state claims at the strength of its evidence and to avoid naming experts, institutions, or consensus unless it can also say where the position comes from. Calibrated hedging beats confident attribution.
+  - icon: ✅
+    heading: Self-check pass
+    body: Before answering, have the model re-read its draft and strip or downgrade any attribution it cannot verify — converting "the AHA recommends" into "some studies report" when the institutional position is unconfirmed.
+
+related:
+  - id: citation-hallucination
+  - id: source-misrepresentation
+  - id: unknown-answer-fabrication

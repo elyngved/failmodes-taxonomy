@@ -1,0 +1,66 @@
+id: unknown-answer-fabrication
+categoryId: fabrication
+name: Unknown-Answer Fabrication
+def: |-
+  Gives a confident answer when the system lacks enough evidence, access, or uncertainty resolution to know the answer.
+
+  Unlike content-specific hallucinations such as Entity Hallucination or Numerical Hallucination, this mode describes the decision to answer instead of acknowledge uncertainty; the fabricated content can take many forms.
+searchPhrases:
+  - made up an answer instead of saying it didn't know
+  - guessed confidently
+  - should have said it didn't know
+  - fabricated when unsure
+why:
+  - Most benchmarks grade answers as right or wrong with no credit for "I don't know." Under that scoring, guessing always beats abstaining, and models are optimized accordingly (Kalai et al., 2025, "Why Language Models Hallucinate").
+  - In training data, questions are almost always followed by answers, and preference tuning reinforces the pattern because "I don't know" feels unhelpful to raters. The model learns that some answer rates better than no answer (Sharma et al., 2023, "Towards Understanding Sycophancy in Language Models").
+  - Models often carry internal signals about how likely they are to be right, but standard generation never consults them. The uncertainty exists in the weights and goes unused (Kadavath et al., 2022, "Language Models (Mostly) Know What They Know").
+  - The model cannot reliably tell what it knows from what it can merely render fluently. Familiar-sounding territory produces the same confident generation whether the underlying knowledge is solid or absent.
+
+examples:
+  - kind: fail
+    label: Confident answer without access
+    text: The model has no visibility into the user's account, but answers as if it had checked — inventing both the diagnosis and a policy to support it.
+    quote: |-
+      User: Why is my API key suddenly returning 403 errors?
+      Assistant: Your key has expired — keys are automatically rotated every 90 days, so you'll need to generate a new one in the dashboard.
+      [… the system has no access to the user's account, and no such rotation policy exists …]
+  - kind: warn
+    label: Guess dressed as a leading answer
+    text: Offers one plausible cause as "most likely" without acknowledging it cannot inspect anything, so a guess inherits the authority of a diagnosis.
+    quote: |-
+      User: Why is my API key suddenly returning 403 errors?
+      Assistant: This is most likely a billing issue — 403s usually mean your plan lapsed. Check your payment method first.
+  - kind: ok
+    label: Calibrated non-answer
+    text: States what it cannot see, then converts the unknown into a checkable list instead of a fabricated answer.
+    quote: |-
+      User: Why is my API key suddenly returning 403 errors?
+      Assistant: I can't see your account, so I can't say which it is — but 403s on a previously working key usually come down to a revoked or rotated key, an expired plan, or a new IP/permission restriction. The response body's error code will narrow it down; can you paste it?
+
+detection:
+  - icon: 🎲
+    heading: Self-consistency sampling
+    body: Sample the same question several times at nonzero temperature. When the model knows the answer, the samples agree; when it is guessing, they scatter across different confident answers — divergence is a direct signal that the response is fabrication rather than knowledge.
+  - icon: ⚖️
+    heading: LLM-as-judge evaluation
+    body: Run a judge that asks whether the system had the evidence or access needed to answer at all — could it actually see the user's account, the file, the current state? — and flags confident answers built on inspection the system never performed.
+  - icon: 🧪
+    heading: Golden-set evals
+    body: Maintain a test set of questions that are unanswerable by construction — missing access, withheld context, genuinely unsettled questions — and regression-test the abstention rate. Any confident answer on this set is a fabrication by definition.
+
+mitigation:
+  - icon: 📝
+    heading: Instruction constraints
+    body: Explicitly authorize "I don't know" and "I can't see that" as good answers, and instruct the model to state what it would need — access, context, an error message — before diagnosing. This counters the training-time pattern where every question is followed by an answer.
+  - icon: 🎚️
+    heading: Confidence-based abstention
+    body: Consult the uncertainty signals the model already carries — token probabilities, self-rated confidence, or agreement across samples — and route low-confidence answers to abstention or hedged framing instead of letting standard generation ignore them (Kadavath et al., 2022, "Language Models (Mostly) Know What They Know").
+  - icon: 🛠️
+    heading: Tool-backed lookup
+    body: Give the system the access the question requires — account state, logs, search — so it can check instead of guess. Many unknown-answer fabrications are really missing-tool problems; a model that can read the 403 response body doesn't need to invent a rotation policy.
+
+related:
+  - id: calibration-failure
+  - id: extrinsic-hallucination
+  - id: entity-hallucination
+  - id: missing-tool-invocation

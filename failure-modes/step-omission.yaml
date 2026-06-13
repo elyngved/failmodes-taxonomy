@@ -1,0 +1,63 @@
+id: step-omission
+categoryId: reasoning
+name: Step Omission
+def: |-
+  Leaves out a necessary reasoning, verification, retrieval, tool, communication, or execution step needed for the task to succeed.
+
+  Unlike Incompleteness, the missing item is a process step, not merely absent answer content. Unlike Premature Termination, the model may continue working but skip a required action.
+searchPhrases:
+  - skipped a step
+  - missed a necessary step
+  - left out a step
+  - omitted a required action
+examples:
+  - kind: fail
+    label: Required action never emitted
+    text: The release procedure includes running migrations; everything else happens in order, but that one step silently never occurs.
+    quote: |-
+      User: Ship the 2.4 release — the runbook is in DEPLOY.md.
+      Assistant: Built the artifacts, tagged v2.4, deployed to production, and confirmed the pods are healthy. Done!
+      [… service starts throwing errors: the release's database migration was never run …]
+  - kind: warn
+    label: Shortcut survives by luck
+    text: The skipped verification step didn't bite this time, which is exactly how the shortcut gets reinforced.
+    quote: |-
+      User: Ship the 2.4 release — the runbook is in DEPLOY.md.
+      Assistant: Built, migrated, tagged, and deployed. I skipped the staging smoke test since the change was small — production looks fine.
+  - kind: ok
+    label: Procedure executed as a checklist
+    text: The model treats the runbook as a dependency list, tracks each item explicitly, and reports them — including the ones that found nothing.
+    quote: |-
+      User: Ship the 2.4 release — the runbook is in DEPLOY.md.
+      Assistant: Runbook complete: artifacts built, migration applied (2 schema changes), staging smoke test passed, tagged v2.4, deployed, post-deploy health checks green. All 6 steps done in order.
+why:
+  - Written procedures in training data are compressed. Experts skip steps they consider obvious, so the model learns abbreviated versions of processes in which "everyone knows" actions were never written down.
+  - Generation proceeds step to locally plausible next step. There is no global checklist or dependency graph tracking what must still happen, so a step with no strong textual cue from the previous one simply never gets emitted.
+  - Verification and communication steps are nearly invisible in training demonstrations. People do not narrate double-checking or status updates in written accounts, so these steps carry a low prior even when the task requires them.
+  - Outcome-based supervision does not penalize a skipped process step when the final answer happens to be right, so shortcuts that usually work are actively reinforced (Lightman et al., 2023, "Let's Verify Step by Step").
+detection:
+  - icon: 📋
+    heading: Instruction checklist scoring
+    body: Decompose the governing procedure — the runbook, the task spec — into required steps and diff the executed action log against it. A migration step that never ran is visible in the diff regardless of whether anything has broken yet.
+  - icon: ⚖️
+    heading: LLM-as-judge evaluation
+    body: Run a judge with the procedure in view and score process compliance blind to outcome — a skipped staging test is a failure even when production happened to survive, because outcome-based scoring is precisely what reinforces the shortcut.
+  - icon: 🧪
+    heading: Golden-set evals
+    body: Maintain procedure-following tasks where every required step leaves a checkable trace — a tool call, a log line, an artifact — and score step completion rather than final state, so shortcuts that survive by luck still register as failures.
+mitigation:
+  - icon: 📋
+    heading: Checklist-driven execution
+    body: Convert the procedure into an explicit checklist the model maintains and marks off as it works, reporting each item — including checks that found nothing. Generation has no global dependency tracker, only a locally plausible next step; the checklist is that tracker, externalized where the migration step can't silently vanish between build and deploy.
+  - icon: 📌
+    heading: Context pinning
+    body: Keep the governing procedure restated near the active end of context in long tasks rather than referenced once at the start. A required step listed early in DEPLOY.md loses attention share as the session grows, and the model's working version of the plan quietly compresses toward the steps with strong textual cues.
+  - icon: 🔁
+    heading: Validate-and-retry loops
+    body: Gate completion on the action log — diff executed steps against the required procedure before "done" is accepted, and bounce the task back with the missing step named. This also blocks the lucky shortcut, where a skipped staging test survives this release and gets reinforced for the next one.
+
+related:
+  - id: incompleteness
+  - id: premature-termination
+  - id: planning-failure
+  - id: missing-tool-invocation

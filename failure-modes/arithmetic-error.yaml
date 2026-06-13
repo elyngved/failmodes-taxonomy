@@ -1,0 +1,69 @@
+id: arithmetic-error
+categoryId: reasoning
+name: Arithmetic Error
+def: |-
+  Computes or transforms numeric inputs incorrectly, including arithmetic, aggregation, unit conversion, comparison, or formula application.
+
+  Unlike Numerical Hallucination, the relevant numbers are grounded or supplied but the calculation over them is wrong. Unlike Reasoning Error, this mode is specifically about numeric operations.
+searchPhrases:
+  - got the math wrong
+  - added it up wrong
+  - miscalculated the total
+  - wrong sum
+examples:
+  - kind: fail
+    label: Incorrect total
+    text: All inputs are supplied and unambiguous; the addition over them is simply wrong.
+    quote: |-
+      User: What does the invoice come to? Line items are $52, $48, and $46.
+      Assistant: The total is $142.
+  - kind: fail
+    label: Botched unit conversion
+    text: The model reproduces the shape of a conversion it has seen but with the wrong factor, then builds on the bad number.
+    quote: |-
+      User: The tank holds 380 liters. How many gallons is that, and how many 5-gallon jugs do we need?
+      Assistant: 380 liters is about 84 gallons, so you'll need 17 jugs.
+  - kind: warn
+    label: Unchecked inline math
+    text: The total happens to be right, but it was computed inline with no steps or verification — the same path that produces the failures above.
+    quote: |-
+      User: What does the invoice come to? Line items are $52, $48, and $46.
+      Assistant: The total is $146.
+  - kind: ok
+    label: Tool-backed calculation
+    text: The arithmetic is routed to deterministic execution and the result is grounded in the computation.
+    quote: |-
+      User: What does the invoice come to? Line items are $52, $48, and $46.
+      Tool: calculate(52 + 48 + 46) → 146
+      Assistant: The total is $146.
+why:
+  - Tokenizers split numbers into arbitrary fragments, so models represent digits poorly and arithmetic does not generalize the way it would on a calculator (Nogueira et al., 2021, "Investigating the Limitations of Transformers with Simple Arithmetic Tasks").
+  - >-
+    Models learn arithmetic as statistical association, not algorithm execution. Accuracy tracks how often an operation and its operands appear in training data, so common results are memorized while rare operand combinations are interpolated and often wrong (McCoy et al., 2023, "Embers of Autoregression: Understanding Large Language Models Through the Problem They Are Trained to Solve").
+  - >-
+    Multi-digit operations require precise intermediate bookkeeping such as carries and partial products. Attention performs this tracking only approximately, and accuracy collapses as the number of required intermediate steps grows (Dziri et al., 2023, "Faith and Fate: Limits of Transformers on Compositionality").
+  - Many systems answer numeric questions inline instead of routing them to a calculator or code execution, so nothing deterministic checks the result before it reaches the user.
+detection:
+  - icon: 🧮
+    heading: Deterministic recomputation
+    body: Extract every numeric operation from the output — sums, conversions, formula applications — and recompute it with code or a calculator. Inputs and operations are visible in the response, so mismatches are mechanically detectable with no judgment call involved.
+  - icon: 🪜
+    heading: Step-level validation
+    body: Check intermediate values, not just the final answer. A botched conversion factor or a dropped carry is visible at the step where it happens, and a final answer that is accidentally right can still hide broken arithmetic that will fail on the next input.
+  - icon: 🧪
+    heading: Golden-set evals
+    body: Weight the eval toward rare operand combinations, multi-digit operations, and conversions with uncommon factors — accuracy tracks training-data frequency, so round numbers and familiar pairs the model has memorized will overstate reliability.
+mitigation:
+  - icon: 🧮
+    heading: Tool-backed math
+    body: Route every numeric operation — sums, conversions, formula applications — to a calculator or code execution instead of computing inline. Arithmetic is the rare failure with a complete mechanical fix; the model's job becomes setting up the right computation, which is what it's actually good at, and the digits come from something deterministic.
+  - icon: 📝
+    heading: Instruction constraints
+    body: Forbid silent inline arithmetic — require each operation written out with its operands and intermediate values, including conversion factors stated before they're applied. The accidentally-right inline total travels the same path as the wrong ones; making the work explicit gives a recomputation check something to bind to and surfaces the wrong factor before it gets built on.
+  - icon: 🔁
+    heading: Validate-and-retry loops
+    body: Where tool routing isn't available, extract the operations from the draft, recompute them deterministically, and regenerate on mismatch with the wrong value named. Per-attempt accuracy is a function of training-data frequency, but the check converts that into a guarantee at the cost of an occasional retry.
+
+related:
+  - id: numerical-hallucination
+  - id: reasoning-error

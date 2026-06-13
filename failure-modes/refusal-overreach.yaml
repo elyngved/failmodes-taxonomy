@@ -1,0 +1,61 @@
+id: refusal-overreach
+categoryId: control
+name: Refusal Overreach
+def: |-
+  Refuses, blocks, or safety-wraps a request more broadly than policy, risk, or context requires.
+
+  Unlike Refusal Underreach, it is an overly restrictive safety decision. Unlike Clarification Overuse and Underuse, the system declines or constrains the request rather than asking for input.
+searchPhrases:
+  - refused for no reason
+  - over-refused
+  - blocked a safe request
+  - too cautious refusal
+examples:
+  - kind: fail
+    label: Lexical trigger, benign request
+    text: An everyday developer task is refused because the request happens to contain the word "kill."
+    quote: |-
+      User: Something is stuck on port 3000 — how do I kill it?
+      Assistant: I can't help with causing harm to any person or process. If you're experiencing a conflict, I'd encourage resolving it through appropriate channels.
+  - kind: warn
+    label: Answer buried in safety wrapping
+    text: The model does help, but swaddles a routine answer in disclaimers and hedges that add friction without adding safety.
+    quote: |-
+      User: Something is stuck on port 3000 — how do I kill it?
+      Assistant: Terminating processes can have unintended consequences, so please proceed with extreme caution and consult your system administrator if unsure. With those caveats firmly in mind: lsof -ti :3000 | xargs kill
+  - kind: ok
+    label: Risk read correctly
+    text: The model recognizes the request as routine and answers directly.
+    quote: |-
+      User: Something is stuck on port 3000 — how do I kill it?
+      Assistant: lsof -ti :3000 | xargs kill — add -9 if it doesn't respond to the default signal.
+why:
+  - >-
+    Safety tuning teaches refusal partly as shallow lexical pattern matching. Benign requests that merely mention weapons, drugs, or violence trigger the refusal behavior regardless of actual intent or risk (Röttger et al., 2024, "XSTest: A Test Suite for Identifying Exaggerated Safety Behaviours in Large Language Models").
+  - The penalty structure is asymmetric for the developer. One harmful output is a headline incident while an unnecessary refusal is a minor annoyance, so tuning rationally errs toward refusing when uncertain.
+  - Refusal is learned as a reusable template that generalizes to adjacent topics, while legitimate sensitive-domain requests — medical questions, security education, harm reduction — are underrepresented in tuning data as things to answer well, leaving the refusal pattern uncontested there.
+  - Guardrails stack. Conservative system prompts, input classifiers, and output filters each contribute their own false positives, and a request need only trip one layer to be blocked.
+detection:
+  - icon: 🧪
+    heading: Golden-set evals
+    body: Maintain benign prompts carrying surface-level trigger features — killing a process, medical dosage questions, security education — and score for direct answers. Pair them with genuinely harmful twins so improvement here cannot come from simply lowering the threshold.
+  - icon: ⚖️
+    heading: LLM-as-judge evaluation
+    body: Judge each refusal against the actual policy and ask what, specifically, was disallowed. Score the warn case separately — routine answers swaddled in disclaimers add friction without adding safety and signal the same miscalibration.
+  - icon: 📊
+    heading: Refusal rate monitoring
+    body: Track refusal rates segmented by topic and watch for spikes after guardrail or prompt changes — stacked filters mean one layer's new false positives can block requests every other layer would pass. Users rephrasing and retrying after a refusal is the lagging signal.
+mitigation:
+  - icon: 📝
+    heading: Instruction constraints
+    body: Instruct the model to judge intent and actual risk rather than surface features — killing a process, medical dosages, and security education are routine in their contexts — and to answer routine requests directly instead of swaddling them in disclaimers. The lexical trigger is a trained reflex, and an explicit risk-reading instruction is the cheapest counterweight.
+  - icon: 🎯
+    heading: Calibration tuning
+    body: Add benign requests carrying trigger features to tuning data as positive examples answered well — the XSTest pattern. Refusal generalizes as a template precisely because legitimate sensitive-domain requests are underrepresented as things to answer; the fix is representation, paired with harmful twins so the threshold moves in shape rather than just downward.
+  - icon: 🪜
+    heading: Guardrail consolidation
+    body: Audit the stack as a whole — conservative system prompt, input classifier, output filter — and measure each layer's false positives separately, since a benign request need only trip one to be blocked. Route borderline cases to a clarifying question or a scoped answer rather than a refusal, which converts the false positive into a recoverable turn.
+
+related:
+  - id: refusal-underreach
+  - id: clarification-overuse

@@ -1,0 +1,65 @@
+id: midsequence-neglect-lost-in-the-middle
+categoryId: context
+name: Midsequence Neglect/Lost in the Middle
+def: |-
+  Overlooks or underuses information located in the middle of a long prompt, document set, or conversation context.
+
+  Unlike Recency Bias, the neglected information is not necessarily earlier than the competing context; its position in the middle is the salient factor. Unlike Context Dilution, the problem is positional neglect rather than broad signal weakening.
+searchPhrases:
+  - ignored the middle of the document
+  - lost in the middle
+  - missed info in the middle
+  - skipped the middle of a long prompt
+examples:
+  - kind: fail
+    label: Middle document missed
+    text: The answer sits in the middle document of three, and the model reports it doesn't exist while handling the first and last documents fine.
+    quote: |-
+      User: Here are our three vendor contracts. Which one lets us terminate without penalty?
+      [… contract A, then contract B (whose §9.2 allows no-penalty termination), then contract C …]
+      Assistant: None of the three contracts include a no-penalty termination clause. Contract A requires 90 days' notice and contract C imposes an early-exit fee.
+  - kind: warn
+    label: Edges summarized, middle thinned
+    text: No outright error, but a summary of a long report covers the opening and closing sections in detail while the middle chapters get one vague sentence.
+    quote: |-
+      User: Summarize this 60-page audit report for the leadership meeting.
+      [… report pasted; chapters 4–6 in the middle contain the main findings …]
+      Assistant: The report opens with scope and methodology, and closes with a strong set of recommendations. The intervening chapters cover various operational details.
+  - kind: ok
+    label: Middle content retrieved
+    text: Given the same contracts, the model finds and cites the clause buried in the middle document.
+    quote: |-
+      User: Here are our three vendor contracts. Which one lets us terminate without penalty?
+      [… contract A, then contract B (whose §9.2 allows no-penalty termination), then contract C …]
+      Assistant: Contract B — §9.2 allows either party to terminate with 30 days' notice and no penalty. Contracts A and C both impose early-exit costs.
+why:
+  - >-
+    Accuracy on long-context retrieval follows a U-shaped curve over position. Models use information at the beginning and end of the input far better than information in the middle, even when the task is otherwise identical (Liu et al., 2023, "Lost in the Middle: How Language Models Use Long Contexts").
+  - Models develop strong attention toward the earliest tokens in the sequence, sometimes called attention sinks, which concentrates capacity at the start of the input at the expense of the interior (Xiao et al., 2023, "Efficient Streaming Language Models with Attention Sinks").
+  - Common positional encoding schemes weight nearby tokens more heavily than distant ones. Tokens in the middle of a long input are far from the generation point, so they lose the recency advantage while lacking the primacy advantage of the opening tokens.
+  - Training data itself favors the edges. Natural documents front-load important content in leads, abstracts, and conclusions, and instruction tuning puts system prompts at the start and user questions at the end — so the middle of the context is rarely where the supervised signal points.
+detection:
+  - icon: 🔀
+    heading: Position permutation testing
+    body: Hold the documents and question fixed, vary only where the answer-bearing passage sits, and compare accuracy across positions. The U-shaped curve — strong at the edges, weak in the middle — is the fingerprint of this mode.
+  - icon: ⚖️
+    heading: LLM-as-judge evaluation
+    body: For summaries and analyses of long inputs, run a judge that scores coverage per source section rather than overall quality. Detailed treatment of the opening and closing with one vague sentence for the interior is the soft form of the failure.
+  - icon: 🧪
+    heading: Golden-set evals
+    body: Maintain retrieval and summarization tasks whose key content sits deliberately mid-context — the middle contract of three, the central chapters of a long report — and rerun them on every model or context-assembly change, since edge-position tests will not catch regressions here.
+
+mitigation:
+  - icon: 📐
+    heading: Position-aware ordering
+    body: Assemble context so the most important material sits at the edges the model actually uses — most relevant documents first or last, key instructions at the start and restated at the end — exploiting the U-shaped curve instead of being ambushed by it (Peysakhovich & Lerer, 2023, "Attention Sorting Combats Recency Bias in Long Context Language Models").
+  - icon: 🧭
+    heading: Query decomposition
+    body: Process long document sets piecewise instead of in one stuffed prompt — examine each contract in its own call, or each chapter in its own pass, then combine verdicts — so no document is ever "the middle one" when the model reads it.
+  - icon: 📝
+    heading: Instruction constraints
+    body: Require explicit per-document or per-section output — a verdict on each contract, coverage of every chapter in a summary — so the middle can't be skipped silently; "the intervening chapters cover various operational details" stops being an acceptable sentence.
+
+related:
+  - id: recency-bias
+  - id: context-dilution

@@ -1,0 +1,185 @@
+# Each category lists its failure mode ids in display order, most common or
+# most recognizable first. Every mode file's categoryId must match the list
+# that contains it; the validator enforces an exact one-to-one match.
+
+- id: fabrication
+  name: Fabrication
+  blurb: Invented facts and citations
+  desc: The model invents facts, citations, or details that have no support in its sources or available evidence.
+  modes:
+    - citation-hallucination
+    - unknown-answer-fabrication
+    - entity-hallucination
+    - quote-hallucination
+    - code-api-hallucination
+    - numerical-hallucination
+    - authority-hallucination
+    - specificity-hallucination
+
+- id: faithfulness
+  name: Faithfulness
+  blurb: Distorting sources or self
+  desc: The response misrepresents the input, source material, or the model's own earlier statements in ways that distort their meaning.
+  modes:
+    - source-misrepresentation
+    - summarization-distortion
+    - self-contradiction
+    - extrinsic-hallucination
+    - context-conflicting-hallucination
+    - citation-span-mismatch
+
+- id: freshness
+  name: Freshness
+  blurb: Stale or outdated information
+  desc: The model presents outdated, time-sensitive, or version-specific information as if it were current.
+  modes:
+    - outdated-source-reliance
+    - temporal-hallucination
+    - version-hallucination
+    - date-deadline-confusion
+
+- id: retrieval
+  name: Retrieval
+  blurb: Fetching the wrong evidence
+  desc: The system fails to fetch, rank, filter, or apply the right external evidence.
+  modes:
+    - retrieval-miss
+    - retrieval-distractor
+    - partial-retrieval
+    - chunk-boundary-failure
+    - query-rewrite-failure
+    - conflicting-source-failure
+    - metadata-filter-failure
+    - index-drift
+    - rag-poisoning
+
+- id: context
+  name: Context
+  blurb: Long-context breakdowns
+  desc: The model loses track of information in long inputs, missing, diluting, or overwriting details that matter.
+  modes:
+    - midsequence-neglect-lost-in-the-middle
+    - context-rot
+    - context-dilution
+    - recency-bias
+    - summarization-loss
+    - state-inconsistency
+
+- id: memory
+  name: Memory
+  blurb: Bad or stale stored state
+  desc: State carried across turns or sessions is missing, corrupted, out of date, or applied where it doesn't belong.
+  modes:
+    - memory-omission
+    - memory-staleness
+    - memory-hallucination
+    - memory-contamination
+    - memory-overreach
+    - memory-conflict
+    - memory-scope-leakage
+
+- id: control
+  name: Control
+  blurb: Ignoring instructions or formats
+  desc: The system fails to follow instructions, respect constraints, stay in role, produce the required output format, or behave consistently across phrasings, runs, and model versions.
+  modes:
+    - instruction-noncompliance
+    - constraint-violation
+    - format-failure
+    - json-schema-failure
+    - refusal-overreach
+    - refusal-underreach
+    - role-confusion
+    - priority-confusion
+    - clarification-underuse
+    - clarification-overuse
+    - prompt-brittleness
+    - model-update-regression
+
+- id: reasoning
+  name: Reasoning
+  blurb: Flawed logic and planning
+  desc: The model errs while interpreting goals, weighing constraints, planning steps, or checking its own work.
+  modes:
+    - reasoning-error
+    - arithmetic-error
+    - goal-misinterpretation
+    - planning-failure
+    - step-omission
+    - compositional-failure
+    - error-accumulation
+    - verification-failure
+    - overthinking
+
+- id: tools
+  name: Tools
+  blurb: Misused or mishandled tools
+  desc: The system skips a needed tool, misuses one, invokes it unsafely, or mishandles its results.
+  modes:
+    - wrong-tool-selection
+    - tool-argument-error
+    - missing-tool-invocation
+    - tool-result-misread
+    - tool-loop
+    - tool-recovery-failure
+    - unsafe-tool-call
+    - idempotency-failure
+    - tool-context-overload
+
+- id: agency
+  name: Agency
+  blurb: Too much or too little initiative
+  desc: The agent miscalibrates initiative, stopping short of completing the task or acting well beyond its scope.
+  modes:
+    - excessive-agency
+    - insufficient-agency
+    - premature-termination
+    - runaway-agent-loop
+    - objective-gaming
+    - escalation-failure
+    - workflow-misalignment
+    - multi-agent-coordination-failure
+
+- id: security
+  name: Security
+  blurb: Manipulation, leaks, unsafe behavior
+  desc: Adversarial inputs manipulate the system into leaking protected information or behaving unsafely.
+  modes:
+    - prompt-injection
+    - jailbreak
+    - indirect-prompt-injection
+    - system-prompt-leakage
+    - sensitive-information-disclosure
+    - data-exfiltration
+    - insecure-output-handling
+    - unbounded-consumption
+    - supply-chain-vulnerability
+
+- id: alignment
+  name: Alignment
+  blurb: Pleasing or steering over truth
+  desc: The model prioritizes pleasing, persuading, or mirroring the user over truthfulness and safety.
+  modes:
+    - sycophancy
+    - social-sycophancy
+    - user-conformity
+    - unsafe-reassurance
+    - bias-stereotyping
+    - manipulative-behavior
+    - dependency-encouragement
+
+- id: response-integrity
+  name: Response Integrity
+  blurb: Wrong tone, depth, or fit
+  desc: The final answer misses the mark on task fit, audience, locale, or actionability, even when the underlying content is sound.
+  modes:
+    - verbosity-failure
+    - incompleteness
+    - irrelevance
+    - genericism
+    - audience-mismatch
+    - concision-failure
+    - poor-structure
+    - calibration-failure
+    - localization-failure
+    - output-truncation

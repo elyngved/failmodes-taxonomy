@@ -1,0 +1,76 @@
+id: version-hallucination
+categoryId: freshness
+name: Version Hallucination
+def: |-
+  Confuses, invents, or misapplies product, model, package, API, policy, dataset, or document versions.
+
+  Unlike Temporal Hallucination, the error is specifically about version identity or version-specific behavior. Unlike Code/API Hallucination, the interface may exist in another version rather than being entirely invented.
+searchPhrases:
+  - wrong version
+  - mixed up versions
+  - used the wrong API version
+  - version doesn't exist
+
+why:
+  - Training corpora flatten a product's whole history into one undifferentiated pile. Documentation, tutorials, and Q&A for every release coexist without version labels, so the model learns a blended interface that matches no single release.
+  - Sheer volume favors older versions. A long-lived release accumulates years of blog posts and Stack Overflow answers while the current one has months, so likelihood-weighted generation pulls toward superseded APIs and defaults.
+  - Models extrapolate version numbering patterns. Having seen v1 through v4, the model will fluently discuss a plausible v5 — features, dates, and migration notes included — because plausible continuation is exactly what it is optimized for (Kalai et al., 2025, "Why Language Models Hallucinate").
+  - Systems rarely pin context to the user's actual version. Without a lockfile, a docs lookup, or an explicit version in the prompt, the model has no signal to disambiguate, and nothing downstream verifies that a cited API exists in the version in use.
+
+examples:
+  - kind: fail
+    label: Superseded API recommended as current
+    text: Years of older-version content outweigh the current docs, so the model confidently recommends an API that was removed two major versions ago.
+    quote: |-
+      User: How do I define URL routes in Django 5?
+      Assistant: Use the url() function from django.conf.urls with a regex pattern for each route.
+      [… url() was deprecated in Django 2 and removed in Django 4; Django 5 uses path() and re_path() …]
+  - kind: fail
+    label: Extrapolated version
+    text: Having seen the version sequence, the model fluently describes the next release — features and migration notes included — for a version that does not exist.
+    quote: |-
+      User: Should we wait for React 20 before migrating?
+      Assistant: React 20 mainly stabilizes the concurrent compiler and removes the legacy context API, so the migration from 19 is small. Waiting for it is reasonable.
+      [… no React 20 has been announced; every detail is extrapolated …]
+  - kind: warn
+    label: Version-sensitive answer, version never pinned
+    text: The answer happens to describe one major version's behavior, but the model never asks which version the user runs or says which one it is describing.
+    quote: |-
+      User: Why is my pydantic model ignoring the config options?
+      Assistant: You need to set the options in the model_config dict on your class.
+      [… correct for pydantic v2 only; the user's traceback later shows they are on v1 …]
+  - kind: ok
+    label: Version pinned before answering
+    text: Treats the version as load-bearing — pins it from the user's environment, then scopes the answer to that release.
+    quote: |-
+      User: Why is my pydantic model ignoring the config options?
+      Assistant: This depends on your major version — config moved in v2. What does pip show pydantic say?
+      User: 1.10.13
+      Assistant: On v1, config goes in a nested class Config on the model, not model_config — that dict is v2-only and v1 silently ignores it.
+
+detection:
+  - icon: 🔎
+    heading: Version existence lookup
+    body: Resolve every named version against the registry or release history, and every recommended API against the changelog of the version actually in use. This catches both directions — a fluently described React 20 that was never announced, and a url() recommendation that exists only in releases the user left behind.
+  - icon: ⚙️
+    heading: Sandboxed execution
+    body: Run generated code against the user's pinned version — from their lockfile or environment, not the latest release. Version-blended advice that imports removed functions or sets options another major version ignores fails immediately, where running against latest would mask the mismatch.
+  - icon: 🧪
+    heading: Golden-set evals
+    body: Maintain version-sensitive prompts with the target version pinned — questions where v1 and v2 answers diverge, removed-API traps, and probes about plausible future versions — and regression-test that answers match the pinned release and decline to describe versions that do not exist.
+
+mitigation:
+  - icon: 📌
+    heading: Context pinning
+    body: Put the user's actual version in context — from the lockfile, pip show, or an explicit question — before answering anything version-sensitive. Without that signal the model has nothing to disambiguate with, and likelihood pulls toward whichever release dominates its training data.
+  - icon: 📚
+    heading: Retrieval grounding
+    body: Ground answers in documentation retrieved for the pinned version specifically, not the blended interface in the weights. Docs scoped to the release in use are what separate path() from the url() that years of older tutorials make statistically dominant.
+  - icon: 📝
+    heading: Instruction constraints
+    body: Instruct the model to ask which version the user runs when the answer diverges across releases, to name the version its answer targets, and to decline to describe unreleased versions — a fluent React 20 migration guide is extrapolation, not recall, and should be refused as such.
+
+related:
+  - id: temporal-hallucination
+  - id: code-api-hallucination
+  - id: outdated-source-reliance

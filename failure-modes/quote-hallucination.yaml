@@ -1,0 +1,73 @@
+id: quote-hallucination
+categoryId: fabrication
+name: Quote Hallucination
+def: |-
+  Presents fabricated, paraphrased, or materially altered wording as an exact quote from a person, document, source, tool result, or prior conversation.
+
+  Unlike Citation Hallucination, the reference may be real while the quoted span is not. Unlike Citation Span Mismatch, the failure is the quoted text itself, not only whether a citation supports the surrounding claim.
+searchPhrases:
+  - made up a quote
+  - fabricated a quote
+  - misquoted the source
+  - altered the quote
+why:
+  - Reproducing text word-for-word requires memorization, and models only memorize passages that appear many times in training data. For everything else, the model retains the gist, not the wording (Carlini et al., 2023, "Quantifying Memorization Across Neural Language Models").
+  - When asked for a quote, the model reconstructs what the source probably said from that gist, then wraps the reconstruction in quotation marks. The marks are just tokens — a stylistic pattern, not a promise that the enclosed words are verbatim.
+  - The training data itself is full of misquotes, paraphrases presented as quotes, and famous sayings attributed to the wrong person, and the model absorbs these errors directly (Lin et al., 2022, TruthfulQA).
+  - Even with the source in context, the model generates from an internal representation of the passage rather than copying spans mechanically, so small word swaps and smoothed phrasing creep in.
+
+examples:
+  - kind: fail
+    label: Fabricated famous quote
+    text: Reproduces a well-known misattribution from training data, presented in quotation marks as Darwin's exact words.
+    quote: |-
+      User: What did Darwin actually say about adaptability?
+      Assistant: In On the Origin of Species he wrote: "It is not the strongest of the species that survives, but the one most adaptable to change."
+      [… this sentence appears nowhere in Darwin's writing; it is a widely circulated misattribution …]
+  - kind: fail
+    label: Altered quote from in-context source
+    text: Has the exact wording available in context, but regenerates it from an internal gist — silently changing "may request" to "can," which changes the policy's meaning.
+    quote: |-
+      [… retrieved policy document reads: "Employees may request remote work for up to three days per week, subject to manager approval." …]
+      User: What does the policy say about remote work? Quote it exactly.
+      Assistant: The policy states: "Employees can work remotely up to three days per week."
+  - kind: warn
+    label: Reconstructed quote with soft hedge
+    text: Flags the quote as approximate but still wraps it in quotation marks, so the hedge is easy to lose when the line is copied forward.
+    quote: |-
+      User: What did Darwin actually say about adaptability?
+      Assistant: He said something like: "It is not the strongest that survives, but the most adaptable."
+  - kind: ok
+    label: Paraphrase labeled as paraphrase
+    text: Conveys the substance without claiming verbatim wording, and corrects the misattribution the question invites.
+    quote: |-
+      User: What did Darwin actually say about adaptability?
+      Assistant: The famous "most adaptable to change" line is misattributed — Darwin never wrote it. His actual argument, paraphrasing Origin of Species, is that species survive by varying and being selected for fit to their conditions. I'd need the text in front of me to quote exact wording.
+
+detection:
+  - icon: 📏
+    heading: Verbatim span matching
+    body: When the source is available — a retrieved document, tool result, or prior conversation — check every quoted span with exact string matching against it. Any mismatch is a failure by definition; even one swapped word like "may request" becoming "can" changes meaning while passing a casual read.
+  - icon: 🔎
+    heading: Claim-to-source verification
+    body: For quotes attributed to people or published works, search the attributed source for the quoted wording. Famous misattributions are well documented, so a fabricated Darwin line fails the lookup even though training data repeats it constantly.
+  - icon: 🧪
+    heading: Golden-set evals
+    body: Maintain a test set of known misattributions and quote-it-exactly tasks over supplied documents, and regression-test both whether the model reproduces circulating fake quotes and whether its "exact" quotes from context survive string comparison.
+
+mitigation:
+  - icon: 📚
+    heading: Retrieval grounding
+    body: Only allow quotation marks around text whose source is in context — a retrieved document, tool result, or prior turn. Quotes reconstructed from parametric gist are paraphrases by construction and should never get the verbatim format.
+  - icon: 📝
+    heading: Instruction constraints
+    body: Instruct the model to label paraphrase as paraphrase and reserve quotation marks for wording it can copy directly — "paraphrasing Origin of Species" instead of an invented exact line. Soft hedges like "something like" do not survive being copied forward; the format itself must change.
+  - icon: ✅
+    heading: Self-check pass
+    body: Before answering, have the model string-compare every quoted span in its draft against the in-context source and fix or unquote any mismatch — catching the silent word swaps, like "may request" becoming "can," that creep in when it regenerates from an internal gist instead of copying.
+
+related:
+  - id: citation-hallucination
+  - id: citation-span-mismatch
+  - id: source-misrepresentation
+  - id: summarization-distortion

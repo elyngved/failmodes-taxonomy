@@ -1,0 +1,70 @@
+id: specificity-hallucination
+categoryId: fabrication
+name: Specificity Hallucination
+def: |-
+  Adds precise-looking details, qualifiers, names, settings, mechanisms, or examples that were not established by the input or evidence.
+
+  Unlike Entity Hallucination or Numerical Hallucination, the unsupported precision may be descriptive rather than a named entity or number. Unlike Extrinsic Hallucination, this mode emphasizes false specificity whether or not the answer is framed as source-grounded.
+searchPhrases:
+  - made up specific details
+  - added false precision
+  - invented specifics
+  - precise-sounding but unsupported
+why:
+  - Human raters consistently score detailed answers as more helpful than vague ones, and hedged answers ("it depends," "roughly") score worse on benchmarks too — so models are tuned toward specificity and away from the honest level of vagueness (Sharma et al., 2023, "Towards Understanding Sycophancy in Language Models"; Kalai et al., 2025, "Why Language Models Hallucinate").
+  - The model has learned the templates of expert writing — settings, version numbers, dosage ranges, step-by-step mechanisms. It can fill those slots with plausible values whether or not it knows the real ones.
+  - Next-token prediction has no concept of "supported by evidence." A precise detail and a grounded detail are scored the same way during training, by how well they fit the surrounding text (Ji et al., 2023, ACM Computing Surveys).
+  - Each invented detail becomes context for the next one. The model elaborates on its own unsupported specifics, so false precision compounds across the answer (Zhang et al., 2023, "How Language Model Hallucinations Can Snowball").
+
+examples:
+  - kind: fail
+    label: False precision
+    text: Fills the expert-recipe template with exact values it has no basis for — the model knows nothing about this dataset, but the answer reads like a measured result.
+    quote: |-
+      User: What hyperparameters should I use to fine-tune on my support-ticket dataset?
+      Assistant: For your dataset, use a learning rate of 2.7e-5, batch size 24, and 3.5 epochs — that combination gives the best convergence for ticket-classification data.
+  - kind: fail
+    label: Invented mechanism
+    text: Explains a behavior with a precise-sounding causal story that was never established anywhere — the specificity is doing the persuading.
+    quote: |-
+      User: Why did my model's accuracy drop after I added more training data?
+      Assistant: Once a dataset passes roughly 60% noisy labels in any single class, the loss landscape develops sharp minima that gradient descent locks into during the second epoch.
+  - kind: warn
+    label: Unearned qualifiers
+    text: Decorates a generic answer with qualifiers ("in most production setups," "typically by the second epoch") that imply measurement behind the claim. Nothing is checkably false, but the precision is stylistic.
+    quote: |-
+      User: What hyperparameters should I use to fine-tune on my support-ticket dataset?
+      Assistant: In most production setups of this kind, accuracy plateaus by the second epoch, so a short run at a moderately low learning rate is almost always sufficient.
+  - kind: ok
+    label: Honest ranges
+    text: Gives the same advice at the precision the evidence supports — ranges, stated dependencies, and a way to find the real values.
+    quote: |-
+      User: What hyperparameters should I use to fine-tune on my support-ticket dataset?
+      Assistant: There's no single right answer without knowing your dataset size and base model. Common starting points are a learning rate between 1e-5 and 5e-5 and 1–3 epochs; run a small sweep and pick by validation loss.
+
+detection:
+  - icon: ⚖️
+    heading: LLM-as-judge evaluation
+    body: Run a judge that flags precision unearned by the evidence — exact values, named mechanisms, qualifiers like "in most production setups" — and asks for each one where it could have come from. This catches stylistic precision that existence checks miss, since the details are often not checkably false.
+  - icon: 🔎
+    heading: Claim-to-source verification
+    body: Extract every concrete detail — settings, thresholds, causal mechanisms, step-by-step claims — and check whether the input or retrieved sources establish it. Unsupported specifics stand out when each detail must point at its grounding.
+  - icon: 🧪
+    heading: Golden-set evals
+    body: Maintain underspecified prompts where the honest answer is a range or "it depends" — hyperparameter advice without dataset details, diagnoses without measurements — and regression-test whether the model answers with calibrated ranges or invents exact values to fill the expert template.
+
+mitigation:
+  - icon: 📝
+    heading: Instruction constraints
+    body: Instruct the model to answer at the precision its evidence supports — ranges instead of point values, stated dependencies instead of invented mechanisms — and make clear that "it depends, here's how to find out" is an acceptable answer shape, countering the tuning pressure toward false exactness.
+  - icon: 📚
+    heading: Retrieval grounding
+    body: Require concrete details — settings, thresholds, mechanisms — to come from the input or retrieved sources rather than from the expert-writing template. When no source establishes a slot's value, the answer should leave the slot open instead of filling it plausibly.
+  - icon: ✅
+    heading: Self-check pass
+    body: Before answering, have the model challenge each precise detail in its draft — "where could this number or mechanism have come from?" — and downgrade anything stylistic to an honest range. Checking early also stops compounding, since each invented specific becomes context the next one elaborates on.
+
+related:
+  - id: entity-hallucination
+  - id: numerical-hallucination
+  - id: extrinsic-hallucination

@@ -1,0 +1,72 @@
+id: model-update-regression
+categoryId: control
+name: Model Update Regression
+def: |-
+  Behavior, quality, or compliance shifts when the underlying model is updated, swapped, or silently revised, breaking prompts and pipelines tuned against the previous version.
+
+  Unlike Prompt Brittleness, the input is held constant while the model changes underneath it. Unlike Index Drift, the divergence is in the model layer rather than the retrieval index.
+searchPhrases:
+  - model update broke my prompts
+  - new model behaves differently
+  - regression after upgrading the model
+  - worked on the old model
+why:
+  - Prompts encode implicit contracts with one model's idiosyncrasies — which formats it honors, where its refusal threshold sits, how it phrases tool calls. None of these were guaranteed behavior, and an update renegotiates all of them at once, silently.
+  - The model behind an API alias changes even when nothing in the application does. Snapshots of "the same" model drift measurably apart in accuracy, formatting, and willingness to answer across months (Chen et al., 2023, "How Is ChatGPT's Behavior Changing over Time?").
+  - Tuning for aggregate improvement does not preserve per-task behavior. A new version that is better on average still flips specific cases, and the headline benchmarks announcing the upgrade hide exactly the per-prompt regressions a deployed pipeline depends on.
+  - Model swaps ride in as config changes, not code changes. Prompt edits get reviewed and tested, while a provider-side update or a one-line model-ID bump ships with no regression gate, so the change with the largest behavioral surface gets the least scrutiny.
+
+examples:
+  - kind: fail
+    label: Format contract breaks on upgrade
+    text: The old model returned bare JSON; the new one wraps it in chat packaging, and the downstream parser fails on every request.
+    quote: |-
+      System: Return only JSON matching the schema.
+      [… same prompt, before the upgrade …]
+      Assistant: {"status": "approved", "limit": 5000}
+      [… after the model-ID bump …]
+      Assistant: Sure! Here's the structured data you requested:
+      ```json
+      {"status": "approved", "limit": 5000}
+      ```
+  - kind: warn
+    label: Silent revision shifts behavior
+    text: No config changed anywhere, but the provider revised the model behind the alias, and the assistant starts refusing requests it handled for months.
+    quote: |-
+      User: Write a fictional ransom note for the mystery-dinner game we're hosting.
+      Assistant: I can't help write threatening content.
+      [… the same request was handled without issue the previous week; the deployment pins a floating alias …]
+  - kind: ok
+    label: Upgrade gated on evidence
+    text: The swap is treated like a deploy — pinned versions, a per-item eval diff, and a canary slice before full cutover.
+    quote: |-
+      User: Can we move the extraction pipeline to the new model?
+      Assistant: Eval diff is in: aggregate accuracy is up 4 points, but 7 of 220 golden items regressed — all date-format extractions. I've patched the prompt for those, reran clean, and routed 5% of traffic to the new version. Parse-failure rate is flat after two days, so I'd proceed with cutover.
+
+detection:
+  - icon: 🧪
+    heading: Golden-set evals
+    body: Run the full suite against every candidate version and diff per item, never just the aggregate — a model that is better on average can still flip the seven cases your pipeline depends on. The per-item diff is the regression report; the headline score is what hides it.
+  - icon: 🔬
+    heading: Behavioral diff testing
+    body: Replay a sample of recent production traffic against the new version side by side and diff the outputs on the surfaces pipelines depend on — format compliance, refusal rate, response length, tool-call patterns. Drift shows up in the diff before any user sees it.
+  - icon: 📊
+    heading: Production canary monitoring
+    body: Route a small traffic slice to the new version and watch the mechanical health signals — parse-failure rates, refusal rates, retry counts, downstream error rates — against the incumbent. Silent provider-side revisions make this monitoring permanent, not just a cutover-week activity.
+
+mitigation:
+  - icon: 📌
+    heading: Model version pinning
+    body: Pin exact model snapshots rather than floating aliases, so updates arrive when you choose to take them instead of when the provider ships one. Pins eventually get retired, so pinning buys a controlled migration window, not an exemption — pair it with the eval gate that decides when to move.
+  - icon: 🚦
+    heading: Eval-gated rollout
+    body: Treat a model swap like a code deploy — require the golden set to pass per item, canary a traffic slice, and keep a rollback path to the previous version. The one-line model-ID bump has the largest behavioral blast radius in the system; gate it like the riskiest change, because it is.
+  - icon: 🧰
+    heading: Output contract enforcement
+    body: Replace reliance on the old model's habits with enforced contracts — constrained decoding or structured-output mode for formats, validators at the boundary, explicit instructions for behaviors that were previously just idiosyncrasies. The less implicit surface a pipeline depends on, the less a new model has to regress.
+
+related:
+  - id: prompt-brittleness
+  - id: index-drift
+  - id: format-failure
+  - id: json-schema-failure

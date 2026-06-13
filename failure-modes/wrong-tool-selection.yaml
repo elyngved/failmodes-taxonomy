@@ -1,0 +1,67 @@
+id: wrong-tool-selection
+categoryId: tools
+name: Wrong Tool Selection
+def: |-
+  Chooses a tool that is inappropriate for the user's goal, data type, risk level, environment, or required operation.
+
+  Unlike Missing Tool Invocation, the system does use a tool but selects the wrong one. Unlike Unsafe Tool Call, the tool may be merely ineffective rather than risky.
+searchPhrases:
+  - called the wrong tool
+  - picked the wrong tool
+  - used the wrong tool for the job
+  - chose an inappropriate tool
+examples:
+  - kind: fail
+    label: Name echo beats semantics
+    text: The question is about an internal policy, but "search" in the request pattern-matches to web search, which can't possibly contain the answer.
+    quote: |-
+      System: Tools available: search_web (public internet), search_docs (company knowledge base).
+      User: Can you search for our parental leave policy?
+      Tool: search_web("parental leave policy") → generic articles about statutory leave law
+      Assistant: Based on what I found, parental leave is typically 12 weeks unpaid under FMLA…
+  - kind: warn
+    label: Works, but the wrong instrument
+    text: The task completes, but through a heavyweight tool whose scope and side effects don't fit a single-record question.
+    quote: |-
+      User: What's the status of order #88213?
+      Tool: export_all_orders(format=csv) → 1.2 GB export job queued, ETA 25 minutes
+      Assistant: I've started a full export of all orders — once it finishes in about 25 minutes, I'll find #88213 for you.
+  - kind: ok
+    label: Selection reasoned from the goal
+    text: The model matches the request to the tool whose scope actually fits — internal question, internal source.
+    quote: |-
+      System: Tools available: search_web (public internet), search_docs (company knowledge base).
+      User: Can you search for our parental leave policy?
+      Tool: search_docs("parental leave policy") → HR-policies/leave.md
+      Assistant: From the company handbook: 16 weeks paid leave for all new parents, available after 6 months of employment.
+why:
+  - >-
+    Tool selection rests entirely on natural-language names and descriptions in the prompt. When descriptions are vague, overlapping, or inconsistent across tools, the model has little signal to separate near-duplicates (Qin et al., 2023, "ToolLLM: Facilitating Large Language Models to Master 16000+ Real-world APIs").
+  - The model pattern-matches surface features of the request to tool names rather than reasoning about preconditions, data types, or risk level. A tool whose name echoes the user's wording wins even when its semantics do not fit.
+  - Selection accuracy degrades as the tool catalog grows. Each added tool dilutes attention over the candidate set and increases the chance of confusable pairs, a pattern visible in function-calling benchmarks (Yan et al., 2024, Berkeley Function Calling Leaderboard).
+  - Function-calling fine-tuning data is largely synthetic, with one clean, obviously correct tool per request. Real deployments offer overlapping tools with subtle tradeoffs that the training distribution never taught the model to weigh.
+detection:
+  - icon: ⚖️
+    heading: LLM-as-judge evaluation
+    body: Give the judge the full tool catalog with descriptions and ask whether the chosen tool's scope fits the request — an internal question routed to web search, or a bulk export answering a single-record lookup. Fit has to be judged against the alternatives available, because the wrong tool can still produce a fluent, confident answer.
+  - icon: 🎲
+    heading: Self-consistency sampling
+    body: Sample the tool choice several times at nonzero temperature. Requests that split across tools — sometimes search_web, sometimes search_docs — mark confusable pairs in the catalog and ambiguous request phrasings, before any single wrong selection ships.
+  - icon: 🧪
+    heading: Golden-set evals
+    body: Build requests with a known correct tool among plausible distractors, weighting cases where the surface wording echoes the wrong tool's name, and score the selection itself. Scoring only task completion lets pattern-matched selections pass whenever the wrong tool muddles through.
+mitigation:
+  - icon: 🗂️
+    heading: Tool catalog curation
+    body: Make the catalog do the disambiguation — distinct names that don't echo each other, descriptions that state scope and the cases the tool is wrong for ("public internet only; never contains company policy"), and near-duplicate tools merged or removed. Selection rests entirely on these descriptions, and accuracy degrades with every confusable pair the catalog carries.
+  - icon: 📝
+    heading: Instruction constraints
+    body: Require a one-line selection rationale before the call — what the request needs, which tool's scope provides it — rather than letting a name echo decide. "Search" pattern-matching to search_web is exactly the reflex a stated reason interrupts, because the rationale has to mention that the parental leave policy is internal.
+  - icon: ✅
+    heading: Self-check pass
+    body: Add a reconsideration step before the call executes, weighted toward heavyweight and side-effecting tools — is there a narrower instrument for this, and does the cost fit the question. Decoding commits to a tool in the first tokens of the call; the 1.2 GB export answering a single-record lookup survives only because nothing asked that question before dispatch.
+
+related:
+  - id: missing-tool-invocation
+  - id: tool-argument-error
+  - id: unsafe-tool-call

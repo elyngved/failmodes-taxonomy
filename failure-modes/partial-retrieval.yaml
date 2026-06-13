@@ -1,0 +1,79 @@
+id: partial-retrieval
+categoryId: retrieval
+name: Partial Retrieval
+def: |-
+  Retrieves some relevant evidence but misses other required pieces, leading to incomplete or under-grounded answers.
+
+  Unlike Retrieval Miss, the system did retrieve part of the right material. Unlike Chunk Boundary Failure, the missing pieces are not necessarily caused by how the corpus was split.
+searchPhrases:
+  - only retrieved part of it
+  - missed some of the evidence
+  - incomplete retrieval
+  - found some but not all
+
+why:
+  - A single query embedding captures one semantic direction, but many questions need evidence from several. The retriever fills the result list with variations on the aspect the query expresses most strongly, crowding out the other required pieces.
+  - Top-k is a fixed budget unrelated to how much evidence the question actually needs. Questions whose answers span many documents get the same k passages as single-fact lookups, and everything past the cutoff is lost regardless of relevance.
+  - Multi-hop questions defeat single-shot retrieval structurally. The second piece of evidence is often only findable using a fact from the first — a name, an ID, a date — so retrieving once, before any reading, cannot surface it (Trivedi et al., 2023, "Interleaving Retrieval with Chain-of-Thought Reasoning").
+  - Generation hides the gap. Given partial evidence, the model produces a complete-sounding answer by filling the missing pieces from its priors rather than reporting that the retrieved set was insufficient, so partial retrieval reads as success.
+
+examples:
+  - kind: fail
+    label: One aspect crowds out the rest
+    text: A question needing evidence on both pricing and data residency retrieves only pricing passages — the query's dominant aspect fills every slot — and the residency half of the answer comes from priors.
+    quote: |-
+      User: Can we offer this customer EU data residency, and what does it cost?
+      [… all 5 retrieved chunks are pricing passages; the residency docs never surface …]
+      Assistant: Yes — EU residency is available on all paid tiers, and pricing starts at $500/month.
+      [… residency is actually Enterprise-only; the claim came from the model, not the corpus …]
+  - kind: fail
+    label: Second hop never retrieved
+    text: Answering requires finding which subprocessor handles backups, then that company's certification. Single-shot retrieval can't know to search for the company before reading the first document.
+    quote: |-
+      User: Is the vendor that handles our backups SOC 2 certified?
+      [… retrieval surfaces the subprocessor list naming Coldvault Inc. for backups; Coldvault's compliance doc is in the corpus but was never queried …]
+      Assistant: Your backup vendor is Coldvault Inc. Yes, they maintain SOC 2 certification.
+      [… the certification claim is unverified; the relevant document was never fetched …]
+  - kind: warn
+    label: Cutoff presented as completeness
+    text: The retrieved subset is framed as the full set. Top-k returned three exceptions, and the answer says "the three exceptions are" — the count is an artifact of the retrieval budget.
+    quote: |-
+      User: What are the exceptions to the refund policy?
+      [… the policy lists seven exceptions across two pages; top-k surfaces three …]
+      Assistant: The policy has three exceptions: digital goods, custom orders, and gift cards.
+  - kind: ok
+    label: Gap detected, retrieval iterated
+    text: The model checks the retrieved set against what the question needs, sees a missing piece, and issues a follow-up query instead of filling the gap from priors.
+    quote: |-
+      User: Can we offer this customer EU data residency, and what does it cost?
+      Assistant: I have pricing material but nothing yet on residency — searching for that separately.
+      Tool: search "EU data residency availability" — returns residency policy chunk
+      Assistant: EU data residency is available on the Enterprise tier only, which starts at $2,000/month.
+
+detection:
+  - icon: 🔎
+    heading: Claim-to-source verification
+    body: Trace every claim in the answer back to a specific retrieved passage. Claims with no supporting passage are the gaps the model filled from priors — the residency assertion that came from the model, not the corpus — and they localize exactly which evidence retrieval failed to fetch.
+  - icon: ⚖️
+    heading: LLM-as-judge evaluation
+    body: Before generation, run a judge that decomposes the question into the evidence it requires and checks the retrieved set against that list — flagging single-aspect result sets for multi-aspect questions and missing second hops while the gap is still recoverable by another query.
+  - icon: 🧪
+    heading: Golden-set evals
+    body: Maintain questions with their complete evidence sets labeled — multi-aspect questions, multi-hop chains, lists that span pages — and measure evidence recall rather than answer plausibility, since generation reliably makes a partial set read as a complete answer.
+
+mitigation:
+  - icon: 🧭
+    heading: Query decomposition
+    body: Split multi-aspect questions into sub-queries with their own retrieval budgets — pricing and data residency each get their own search — so the query's dominant aspect can't fill every top-k slot and crowd the other required evidence out.
+  - icon: 🔁
+    heading: Iterative retrieval
+    body: Interleave retrieval with reading instead of retrieving once up front — the second hop is often only findable using a fact from the first, like searching for Coldvault's compliance doc only after the subprocessor list names them (Trivedi et al., 2023, "Interleaving Retrieval with Chain-of-Thought Reasoning").
+  - icon: 📝
+    heading: Instruction constraints
+    body: Require the model to check the retrieved set against what the question needs before answering, and to report gaps instead of filling them from priors — "I have pricing material but nothing yet on residency" — and never to present a top-k cutoff as a complete enumeration.
+
+related:
+  - id: retrieval-miss
+  - id: chunk-boundary-failure
+  - id: compositional-failure
+  - id: incompleteness

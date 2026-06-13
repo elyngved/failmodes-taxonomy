@@ -1,0 +1,65 @@
+id: verification-failure
+categoryId: reasoning
+name: Verification Failure
+def: |-
+  Does not adequately check whether intermediate steps, tool results, cited evidence, assumptions, or the final answer are correct before relying on them.
+
+  Unlike Reasoning Error, the primary failure is missing or ineffective checking. Unlike Tool Result Misread, the problem can involve any evidence or reasoning step, not only tool output.
+searchPhrases:
+  - didn't double-check
+  - skipped verification
+  - didn't verify the answer
+  - no fact-checking
+examples:
+  - kind: fail
+    label: Done declared without checking
+    text: The fix is asserted as solid without ever running the tests that would have falsified it.
+    quote: |-
+      User: Fix the failing date parser — and make sure it's actually solid before you call it done.
+      Assistant: Fixed — I corrected the regex, and it now handles all the formats. Done!
+      [… test suite was never run; two of the five formats still fail …]
+  - kind: warn
+    label: Verification as restated confidence
+    text: A "check" happens, but it's the same model rereading its own output and agreeing with itself — no external signal is consulted.
+    quote: |-
+      User: Fix the failing date parser — and make sure it's actually solid before you call it done.
+      Assistant: I've reviewed my regex change carefully and the logic looks correct for all the formats. Verified — done.
+  - kind: ok
+    label: Checked against an external signal
+    text: Verification runs against something that can actually say no — and it does, catching a miss before the work is declared done.
+    quote: |-
+      User: Fix the failing date parser — and make sure it's actually solid before you call it done.
+      Assistant: Regex updated. Running the parser tests before calling it done.
+      Tool: pytest tests/test_dates.py → 1 failure: ISO week format
+      Assistant: The check caught a real miss — fixing the week-format branch, then re-running.
+why:
+  - Models cannot reliably identify errors in their own reasoning without external feedback. Asked to review their work, they tend to confirm it, and self-correction attempts often make answers worse rather than better (Huang et al., 2024, "Large Language Models Cannot Self-Correct Reasoning Yet").
+  - The checker is the same model that made the error, and generated text conditions it toward agreement with itself. Once an answer is in context, "verified, looks correct" is the fluent continuation, so a re-check re-runs the same blind spot that produced the mistake.
+  - Training rarely demonstrates checking. Written sources present polished conclusions, not the validation work behind them, so verification steps have a low prior and rewards focused on final answers do nothing to raise it (Lightman et al., 2023, "Let's Verify Step by Step").
+  - Tool results and citations arrive with the formatting of authority. Structured output from a tool or a well-formed reference pattern-matches to "reliable," so the model consumes them without independent checking.
+detection:
+  - icon: 🔍
+    heading: Verification evidence auditing
+    body: Mechanically tie completion claims to evidence — when the output says "verified," "tested," or "done," check the action log for an external check that actually ran. A confidence statement with no tool call behind it is the self-agreement case, detectable without judging the work itself.
+  - icon: ⚖️
+    heading: LLM-as-judge evaluation
+    body: Ask the judge, for each load-bearing claim, whether it was checked against something that could have said no — a test run, a query, a source lookup. Rereading one's own output and agreeing with it does not count, and the judge should be told so explicitly.
+  - icon: 🧪
+    heading: Golden-set evals
+    body: Seed tasks with planted defects that only an external check reveals — a failing test the fix doesn't cover, a tool result that contradicts the assumption — and score whether the system catches them before declaring done. A system that skips verification passes only the defect-free variants.
+mitigation:
+  - icon: 📝
+    heading: Instruction constraints
+    body: Define verification as consulting something that can say no — a test run, a query, a source lookup — and state explicitly that rereading one's own output does not count. Require every "done" to name its evidence. Self-review degenerates into restated confidence because agreement is the fluent continuation; the instruction makes that move recognizably noncompliant.
+  - icon: 🔁
+    heading: Validate-and-retry loops
+    body: Enforce the evidence requirement in the harness — a completion claim with no passing external check in the action log is rejected and the task continues, rather than shipping on asserted confidence. The model that skipped pytest gets sent back to run it; the two formats that still fail surface before "done" does.
+  - icon: 👥
+    heading: Cross-model verification
+    body: Route checks the environment can't perform — judgment calls, cited evidence, assumptions — to a different model or a fresh context with no stake in the answer. The checker that produced the error shares the blind spot that caused it; independence is what makes a verification pass capable of disagreeing.
+
+related:
+  - id: reasoning-error
+  - id: tool-result-misread
+  - id: missing-tool-invocation
+  - id: calibration-failure

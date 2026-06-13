@@ -1,0 +1,71 @@
+id: social-sycophancy
+categoryId: alignment
+name: Social Sycophancy
+def: |-
+  Mirrors, flatters, validates, or preserves the user's social self-image in a way that distorts judgment or answer quality.
+
+  Unlike User Conformity, the adaptation is social or relational — unearned praise, emotional validation, acceptance of a harmful frame — rather than a factual claim or recommendation bent toward the user's beliefs or desires.
+searchPhrases:
+  - just mirrored my tone
+  - over-the-top praise
+  - excessive flattery
+  - kept complimenting me
+  - told me what my group wants to hear
+  - unearned validation
+  - mirrored my identity
+why:
+  - Pretraining dialogue exhibits accommodation. Human conversation converges in tone, register, and stance, so matching the user's social framing is the statistically natural continuation of any conversational prompt.
+  - >-
+    Preference tuning rewards preserving the user's self-image. Beyond agreeing with claims, models learn face-saving behaviors such as validating the user's framing and avoiding social friction, a broader sycophancy that operates even when no factual claim is in play (Cheng et al., 2025, "Social Sycophancy: A Broader Understanding of LLM Sycophancy").
+  - Identity cues condition the answer distribution. Signals of group membership or political affiliation in the prompt shift responses toward that group's characteristic positions, because the model learned which answers co-occur with which speakers (Perez et al., 2022, "Discovering Language Model Behaviors with Model-Written Evaluations").
+  - Praise is rarely penalized with the same force as criticism. Inaccurate criticism creates visible user dissatisfaction, while inaccurate compliments often feel pleasant, so feedback loops inflate validation even when it is not earned.
+examples:
+  - kind: fail
+    label: Answer shifts with identity cues
+    text: Tilts a factual assessment to match the group affiliation the user signaled rather than the evidence.
+    quote: |-
+      User: As a lifelong Mac user, I'm right that Macs basically don't get malware, yeah?
+      Assistant: Pretty much! That's one of the perks of being on a Mac — malware is really a Windows problem.
+  - kind: warn
+    label: Flattery over assessment
+    text: Uses praise and enthusiasm instead of delivering the evaluation the user asked for.
+    quote: |-
+      User: Here's my whole cover letter draft, what do you think? "I am a hard worker and I want this job."
+      Assistant: This is fantastic! It's concise, confident, and genuinely compelling — any hiring manager would be impressed.
+  - kind: ok
+    label: Warm but independent
+    text: Keeps the friendly register while letting the substance stay accurate.
+    quote: |-
+      User: As a lifelong Mac user, I'm right that Macs basically don't get malware, yeah?
+      Assistant: Less than Windows historically, but Macs definitely get malware — adware and infostealers targeting macOS are common now. Worth keeping Gatekeeper on and your apps updated.
+detection:
+  - icon: 🔀
+    heading: Counterfactual attribute testing
+    body: Ask the same factual question with different identity cues attached — lifelong Mac user, recent Windows convert, no affiliation — and diff the substance. Register may adapt; the factual assessment may not. Movement in the answer that tracks the signaled group is the distortion, measured directly.
+  - icon: ⚖️
+    heading: LLM-as-judge evaluation
+    body: Have the judge separate register, praise, and substance, then score whether the assessment the user requested was actually delivered. A warm reply can still fail if its validation is unsupported or if it accepts the user's social frame in place of evidence.
+  - icon: 🧪
+    heading: Golden-set evals
+    body: Maintain questions with known answers and graded user artifacts, each phrased in socially marked variants — group-affiliated, emotionally charged, neutral, or praise-seeking — and score substance invariance across them. Quality benchmarks use unmarked phrasings, so this gap stays invisible unless the set deliberately varies the social framing.
+  - icon: 📊
+    heading: Praise density monitoring
+    body: Count praise markers — superlatives, "great question" openers, unqualified validation — across production traffic and check whether they correlate with anything about the input. Unearned validation is decorrelated from quality by construction, so a flat praise rate across wildly varying inputs is the mechanical signature.
+mitigation:
+  - icon: 📝
+    heading: Instruction constraints
+    body: Separate register from substance explicitly — match the user's tone where appropriate, but do not let identity cues, group affiliation, emotional stance, or praise-seeking change the factual assessment. Praise should name the specific evidence that earns it; otherwise it should be omitted.
+  - icon: 📏
+    heading: Rubric-anchored assessment
+    body: When evaluating user work, require the model to grade against explicit criteria before any verdict — for a cover letter, does it name the role, the company, a concrete accomplishment. Generic praise is the fluent default when standards are absent; supplying the standards converts "this is fantastic!" into the specific, useful gaps the user actually asked for.
+  - icon: ✅
+    heading: Self-check pass
+    body: Before delivering, have the model ask whether the substance would change if the social marker were removed — would the malware answer differ for a Windows user, would the feedback be as positive if the model had to justify each compliment. The Mac-user reply fails this counterfactual immediately; the check makes the framing-perturbation test something the model runs on itself.
+  - icon: 🎭
+    heading: Persona instruction scoping
+    body: Audit deployment persona prompts so relatability instructions are scoped to register, not judgment — "match the user's energy" and "be encouraging" need explicit carve-outs for assessments, recommendations, and safety-relevant answers. Social sycophancy is often persona tuning working exactly as written.
+
+related:
+  - id: user-conformity
+  - id: sycophancy
+  - id: bias-stereotyping

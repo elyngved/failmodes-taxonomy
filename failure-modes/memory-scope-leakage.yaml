@@ -1,0 +1,65 @@
+id: memory-scope-leakage
+categoryId: memory
+name: Memory Scope Leakage
+def: |-
+  Carries memory across users, tenants, sessions, roles, projects, or tasks that should remain isolated.
+
+  Unlike Memory Overreach, this involves a scope or isolation boundary, often with privacy or authorization implications. Unlike Data Exfiltration, the failure is improper memory use even if no external extraction occurs.
+searchPhrases:
+  - leaked memory across users
+  - remembered another tenant's data
+  - memory crossed projects
+  - cross-session leak
+examples:
+  - kind: fail
+    label: Cross-tenant memory surfaced
+    text: A misconfigured shared index returns another tenant's data, and the model presents it to the current user as their own.
+    quote: |-
+      User: What discounts do we currently offer enterprise customers?
+      [… shared embedding index missing a tenant filter; retrieval returns pricing notes saved by a different company's account …]
+      Assistant: Per your saved notes, you offer 30% off list for enterprise deals over $100k, with an extra 5% for multi-year commitments.
+  - kind: fail
+    label: Scratchpad carries across users
+    text: An agent's working state persists between sessions belonging to different users, so one user's draft content appears in another's task.
+    quote: |-
+      User: Summarize my open support tickets.
+      [… agent scratchpad still holds notes from the previous user's session …]
+      Assistant: Before that — should I finish drafting the severance letter for the employee we discussed? Then I'll get to your tickets.
+  - kind: ok
+    label: Isolation enforced at retrieval
+    text: The retrieval layer filters by tenant, so out-of-scope entries never reach the model and the answer draws only on the user's own data.
+    quote: |-
+      User: What discounts do we currently offer enterprise customers?
+      [… retrieval filtered to the current tenant; returns only this account's saved pricing notes …]
+      Assistant: Your saved pricing notes show a standard 15% enterprise discount, negotiable to 20% with an annual commitment.
+why:
+  - Isolation is an infrastructure property, not a model capability. If the storage and retrieval layer does not filter by user, tenant, or session, the model has no independent way to recognize that a surfaced memory is out of scope.
+  - Models treat anything in context as usable. There is no trained concept of an authorization boundary between two pieces of in-context text, so a leaked memory is consumed exactly like a legitimate one.
+  - Shared embedding indexes, caches, and misconfigured namespaces are common cost-saving designs. A missing or buggy filter predicate on a shared store fails open, surfacing entries across tenants silently.
+  - Agent frameworks pass long-lived state such as scratchpads, caches, and accumulated context between tasks for efficiency, creating implicit channels that cross boundaries no one explicitly designed.
+detection:
+  - icon: 🐤
+    heading: Canary documents
+    body: Plant distinctive canary entries in each tenant's or user's memory store and continuously scan other scopes' outputs for them. Any canary crossing a boundary proves a leak and identifies the channel, without waiting for real customer data to make the crossing.
+  - icon: 📋
+    heading: Filter execution auditing
+    body: Log every memory retrieval with the tenant, user, and session predicates it actually executed. A query that ran against a shared index with no scope filter is the leak's mechanical precondition, and a filter clause dropped at execution time should alert rather than silently fail open.
+  - icon: 🧪
+    heading: Golden-set evals
+    body: Maintain a multi-tenant test harness with distinguishable data seeded in each scope and run cross-scope probes — fresh sessions asking "what do you remember about me," queries from adjacent tenants — expecting nothing to cross. Rerun on every change to retrieval, caching, or agent state handling.
+mitigation:
+  - icon: 🗂️
+    heading: Scope-partitioned storage
+    body: Give each tenant or user a physically separate index or namespace rather than a shared store with a filter predicate. A missing WHERE clause fails open; a query that can only reach one tenant's partition has no cross-scope path to fail through. Isolation is an infrastructure property, so build it where infrastructure can enforce it.
+  - icon: 🔒
+    heading: Fail-closed enforcement
+    body: Where stores must be shared, make scope filters mandatory at the retrieval API boundary — a memory query without a tenant and user predicate is rejected, not executed unscoped. Prompt-level scoping is probabilistic and degrades with context length; the filter has to bind before the model ever sees a candidate entry.
+  - icon: 🧹
+    heading: Session state reset
+    body: Clear or re-key agent scratchpads, caches, and accumulated working state at every user and session boundary, and treat any long-lived state that survives a handoff as scoped data requiring the same isolation as the memory store. The severance-letter scratchpad crossed users through a channel no one designed as memory.
+
+related:
+  - id: memory-overreach
+  - id: data-exfiltration
+  - id: sensitive-information-disclosure
+  - id: memory-contamination

@@ -1,0 +1,70 @@
+id: idempotency-failure
+categoryId: tools
+name: Idempotency Failure
+def: |-
+  Repeats, retries, or replays a side-effecting tool action without deduplication or idempotency safeguards, causing duplicate or inconsistent effects.
+
+  Unlike Tool Loop, the problem is unsafe repeated side effects, not just wasted calls. Unlike Unsafe Tool Call, the first call may be safe while repetition makes it unsafe.
+searchPhrases:
+  - ran the action twice
+  - duplicate side effects
+  - repeated the operation
+  - charged me twice
+examples:
+  - kind: fail
+    label: Retry after ambiguous outcome
+    text: The timeout left the first call's fate unknown, but the model retries as if it definitely failed — and the customer is charged twice.
+    quote: |-
+      User: Send the $1,200 refund-replacement charge to the customer's card.
+      Tool: charge_card(amount=1200) → ERROR: gateway timeout
+      Assistant: The charge timed out — retrying.
+      Tool: charge_card(amount=1200) → success
+      [… the first charge had also committed; the customer is charged $2,400 …]
+  - kind: fail
+    label: Replay after context compaction
+    text: The record that the email already went out was summarized away, so the agent re-executes a completed side effect.
+    quote: |-
+      [… session compacted; the summary notes "working on launch announcement" but not that it was already sent …]
+      Assistant: Next step is to send the launch announcement to the customer list.
+      Tool: send_bulk_email(list=customers) → sent to 18,400 recipients
+      [… every customer receives the announcement a second time …]
+  - kind: ok
+    label: Verify before retry
+    text: After the ambiguous outcome, the model checks whether the action committed before doing anything that could duplicate it.
+    quote: |-
+      User: Send the $1,200 refund-replacement charge to the customer's card.
+      Tool: charge_card(amount=1200) → ERROR: gateway timeout
+      Assistant: The outcome is ambiguous, so I'm checking the transaction log before any retry.
+      Tool: list_recent_charges() → shows the $1,200 charge committed 20s ago
+      Assistant: The charge went through despite the timeout — no retry needed.
+why:
+  - The model has no reliable representation of which tools are side-effecting and which are read-only. Tool descriptions rarely encode this distinction, so retrying a payment call looks the same to the model as retrying a search.
+  - Ambiguous outcomes default to retrying. After a timeout or unclear response, the model cannot tell whether the action committed, and retry is the dominant pattern for transient errors in training data, applied without deduplication keys or a success check first.
+  - >-
+    Knowing an action already ran depends on reading it from the transcript. In long sessions that evidence sits mid-context where retrieval is weakest, or is dropped entirely by truncation and summarization, so the model re-executes work it has already done (Liu et al., 2023, "Lost in the Middle: How Language Models Use Long Contexts").
+  - Agent frameworks replay trajectories after crashes, restarts, or context compaction without a durable record of which side effects already committed, re-issuing completed actions mechanically.
+detection:
+  - icon: 🔁
+    heading: Duplicate call detection
+    body: Normalize side-effecting calls by tool and arguments and scan the action log for repeats. A second charge_card with the same amount minutes after a gateway timeout is the signature of this mode, detectable mechanically before the customer notices the double charge.
+  - icon: 🔄
+    heading: State reconciliation audits
+    body: Diff the effects recorded in the external system — charges, sent emails, created tickets — against the task's intended once-only actions. Duplicates that left no trace in the transcript, such as a replay after context compaction, surface as two committed effects for one instruction.
+  - icon: 🧪
+    heading: Golden-set evals
+    body: Script ambiguous-outcome scenarios where a side-effecting call times out but actually committed, then score whether the system checks the transaction state before retrying. A system that retries blind fails every variant where the first call went through.
+mitigation:
+  - icon: 🔑
+    heading: Idempotency key enforcement
+    body: Have the scaffold attach a deduplication key to every side-effecting call — derived from the task and intent, not generated fresh per attempt — so a retry after a timeout lands on the same key and the API suppresses the duplicate. This moves exactly-once semantics out of the model, which cannot tell a committed timeout from a failed one, into the boundary that can.
+  - icon: 🗃️
+    heading: Explicit state tracking
+    body: Record committed side effects in a durable ledger outside the transcript, and have the agent consult it before executing — a record that survives truncation, summarization, and restarts. The re-sent launch announcement happened because "already sent" lived only in tokens that compaction discarded; a ledger entry doesn't compact away.
+  - icon: 📝
+    heading: Instruction constraints
+    body: Mark which tools are side-effecting in their descriptions, and instruct that an ambiguous outcome on one — a timeout, an unclear response — means verify commit status first, never retry blind. Retry-on-error is the trained default for transient failures; the instruction carves out the cases where that default double-charges a customer.
+
+related:
+  - id: tool-loop
+  - id: unsafe-tool-call
+  - id: state-inconsistency

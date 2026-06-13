@@ -1,0 +1,75 @@
+id: date-deadline-confusion
+categoryId: freshness
+name: Date/Deadline Confusion
+def: |-
+  Misreads or mixes up dates, deadlines, time zones, relative dates, durations, recency windows, or scheduling boundaries in a task.
+
+  Unlike Temporal Hallucination, the failure is tied to interpreting or applying temporal constraints for the task. Unlike Numerical Hallucination, the date or duration may be present but used incorrectly.
+searchPhrases:
+  - mixed up the dates
+  - got the deadline wrong
+  - confused the time zone
+  - miscalculated the duration
+
+why:
+  - Date arithmetic is symbolic computation performed in a text-prediction system. Benchmarks of temporal reasoning show models doing markedly worse on duration, ordering, and calendar arithmetic than on retrieving temporal facts, because nothing in next-token prediction enforces calendar rules (Fatemi et al., 2024, "Test of Time").
+  - Relative expressions like "next Friday" or "by end of quarter" only resolve against an anchor date. Models often have no reliable anchor — the system clock may be absent from the prompt, or the model defaults to dates frequent in its training data rather than today.
+  - Time zones, daylight saving transitions, leap years, and business-day rules are sparse, inconsistently stated, and frequently wrong in web text, so the learned prior for these edge cases is weak exactly where precision matters most.
+  - Long tasks scatter temporal constraints across the context — a deadline in one message, a time zone in another, a duration in a tool result. Uneven attention over long contexts means one constraint silently drops out when they must be combined.
+
+examples:
+  - kind: fail
+    label: Time zone applied backward
+    text: Subtracts the offset instead of adding it, landing the Sydney team a full day away from the actual call.
+    quote: |-
+      User: The launch call is Tuesday 9am Eastern. What time should the Sydney team join?
+      Assistant: Sydney is ahead of Eastern, so the team should join at 6pm on Monday.
+      [… 9am Tuesday ET is around 12–1am Wednesday in Sydney, depending on daylight saving …]
+  - kind: fail
+    label: Constraint dropped across turns
+    text: The deadline's time zone was set early in the session, but when asked to compute against it later, the model silently reverts to a different zone.
+    quote: |-
+      User: Note that our submission deadline is end of day Friday, Berlin time.
+      [… 25 turns later …]
+      User: How many hours do we have left?
+      Assistant: It's Thursday 4pm now, so you have 32 hours until end of day Friday Pacific time.
+  - kind: warn
+    label: Unanchored relative date
+    text: Resolves "next Friday" to a concrete date without knowing what today is — the answer may be right, but the anchor is a guess.
+    quote: |-
+      User: Set the reminder for next Friday.
+      Assistant: Done — I've set the reminder for Friday, June 12.
+      [… no current date is available in the context; the model assumed one …]
+  - kind: ok
+    label: Anchored, zoned, and computed
+    text: Pins the anchor date and both time zones explicitly before doing the arithmetic, so every assumption is visible and checkable.
+    quote: |-
+      User: The launch call is Tuesday 9am Eastern. What time should the Sydney team join?
+      Assistant: Anchoring on Tuesday June 9, 9am ET: Sydney is currently 14 hours ahead (AEST, no daylight saving this time of year), so the call lands at 11pm Tuesday for the Sydney team.
+
+detection:
+  - icon: 🧮
+    heading: Deterministic recomputation
+    body: Recompute every date conversion, duration, and deadline in the output with a real datetime library, using the anchor date and time zones the response claims. A backward time-zone offset or miscounted hours-remaining fails the recomputation even when the prose reads confidently.
+  - icon: ⚖️
+    heading: LLM-as-judge evaluation
+    body: Run a judge that checks the temporal bookkeeping rather than the arithmetic — was a current-date anchor actually available when a relative date was resolved, and does the time zone used in the answer match the one established earlier in the conversation? Unanchored "next Friday" resolutions and silently swapped zones are its targets.
+  - icon: 🧪
+    heading: Golden-set evals
+    body: Maintain a test set concentrated on the boundary cases web text gets wrong — daylight saving transitions, day-month ambiguous formats, leap years, business-day rules, constraints split across distant turns — and regression-test against library-computed ground truth.
+
+mitigation:
+  - icon: 🧮
+    heading: Tool-backed math
+    body: Route date conversions, durations, and deadline arithmetic to a datetime library instead of computing inline. Time zones, daylight saving transitions, and business-day rules are exactly the cases where the learned prior is weakest and a library is exact.
+  - icon: 📌
+    heading: Context pinning
+    body: Keep the temporal anchors — today's date, the deadline's time zone, stated durations — pinned in the system prompt or restated near the active end of context, so a constraint set 25 turns ago isn't silently swapped for a default when the arithmetic finally happens.
+  - icon: 📝
+    heading: Instruction constraints
+    body: Require the model to state its anchor date and time zones before computing — "anchoring on Tuesday June 9, 9am ET" — and to ask rather than assume when no current date is available, so every resolution of "next Friday" is checkable instead of a guess.
+
+related:
+  - id: temporal-hallucination
+  - id: numerical-hallucination
+  - id: localization-failure

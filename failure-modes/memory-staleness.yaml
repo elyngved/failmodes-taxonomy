@@ -1,0 +1,65 @@
+id: memory-staleness
+categoryId: memory
+name: Memory Staleness
+def: |-
+  Uses remembered information that was once valid but has been superseded by newer state, preferences, facts, or instructions.
+
+  Unlike Temporal Hallucination, this specifically involves persisted memory rather than a temporally wrong claim from any source. Unlike Memory Conflict, the old memory may not visibly conflict with another stored memory; it is just outdated relative to reality.
+searchPhrases:
+  - used an outdated preference
+  - old saved info
+  - stale memory
+  - used info that changed
+examples:
+  - kind: fail
+    label: Superseded fact applied
+    text: The user mentioned changing jobs weeks ago, but the old employer memory still wins and the output is built on it.
+    quote: |-
+      User: Draft my conference speaker bio.
+      [… memory retrieval returns "user is a data engineer at Acme" (saved last year); the user mentioned joining Brightline in a session three weeks ago …]
+      Assistant: "Jordan Lee is a data engineer at Acme, where they build the company's streaming pipeline…"
+  - kind: warn
+    label: Stale memory used unverified
+    text: The model leans on an old stored fact without flagging its age, in a context where the fact plausibly changed.
+    quote: |-
+      User: Draft my conference speaker bio.
+      [… memory retrieval returns "user is a data engineer at Acme" (saved last year) …]
+      Assistant: Here's a draft based on your role at Acme — let me know if anything needs updating.
+  - kind: ok
+    label: Freshness checked before use
+    text: The model notices the memory is old enough to doubt and confirms before building on it.
+    quote: |-
+      User: Draft my conference speaker bio.
+      [… memory retrieval returns "user is a data engineer at Acme" (saved last year) …]
+      Assistant: My note about you being at Acme is over a year old — still current, or has your role changed since then?
+why:
+  - Memory writes are snapshots with no expiry model. Most systems attach no time-to-live or decay to stored facts, so a preference captured once is treated as permanently valid by default.
+  - Updates usually arrive implicitly. A user mentions a new job or workflow in passing rather than issuing a correction, so the system appends new entries instead of superseding old ones, and the outdated entry survives as a valid-looking match.
+  - Retrieval ranks semantic similarity, not freshness. An older memory that closely matches the query wording can outrank the newer information that replaced it.
+  - Models have a weak sense of elapsed time, and persisted memory reads as authoritative. A three-year-old entry and a yesterday entry carry the same force in context, and nothing in training pushes the model to ask whether reality moved since the fact was written.
+detection:
+  - icon: 📅
+    heading: Source age auditing
+    body: Log a timestamp on every memory entry and alert when an entry older than the freshness budget for its fact type shapes an answer — employers and roles change on the scale of a year, tool versions faster. Undated memories are their own alert, since their age cannot be assessed at all.
+  - icon: ⚖️
+    heading: LLM-as-judge evaluation
+    body: Run a judge with the memory entries and their ages in view, flagging answers built on old entries without verification where the fact plausibly changed — a bio drafted from a year-old employer note is the pattern to prompt it with.
+  - icon: 🧪
+    heading: Golden-set evals
+    body: Simulate facts changing between sessions — a new job mentioned in passing, a renamed project, a switched framework — then probe whether the old or new fact wins. Recall-at-a-point benchmarks miss this mode; the eval must include supersession events.
+mitigation:
+  - icon: ⏳
+    heading: Memory expiry policies
+    body: Give every entry a freshness budget keyed to its fact type — roles and employers decay on the scale of a year, tool versions faster, allergies barely at all — and demote or retire entries past budget. Expiry makes "old enough to doubt" a property the system computes rather than one the model must intuit.
+  - icon: 🗃️
+    heading: Supersession-aware writes
+    body: When new information arrives — even mentioned in passing, like the move to Brightline — search the store for entries it updates and mark them superseded rather than appending beside them, so the outdated entry stops being a valid-looking retrieval match.
+  - icon: 📝
+    heading: Instruction constraints
+    body: Inject each memory with its timestamp visible and instruct the model to verify before building on entries that are old relative to how fast their fact type changes. Without the timestamp in context, a year-old note and yesterday's carry the same force.
+
+related:
+  - id: memory-conflict
+  - id: temporal-hallucination
+  - id: outdated-source-reliance
+  - id: context-rot

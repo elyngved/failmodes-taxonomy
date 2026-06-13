@@ -1,0 +1,79 @@
+id: self-contradiction
+categoryId: faithfulness
+name: Self-Contradiction
+def: |-
+  Makes mutually inconsistent claims within the same response or across closely related turns without resolving the conflict.
+
+  Unlike Context-Conflicting Hallucination, the inconsistency is internal to the model's own outputs rather than a conflict with provided input or context. Unlike Memory Conflict, the source of disagreement is not necessarily stored memory.
+searchPhrases:
+  - contradicted itself
+  - said two opposite things
+  - inconsistent within the answer
+  - contradicted what it just said
+
+why:
+  - Generation is local. Each token is sampled from a distribution conditioned on the text so far, with no global consistency constraint over the whole response. Two passages can each be locally plausible while jointly contradictory (Mündler et al., 2023, "Self-Contradictory Hallucinations of Large Language Models").
+  - Pretrained models encode inconsistent beliefs to begin with — the corpus contains contradictory statements from many authors, and next-token prediction learns all of them. Which one the model asserts depends on local phrasing cues, so different sections of a response can draw on different learned positions (Elazar et al., 2021, "Measuring and Improving Consistency in Pretrained Language Models").
+  - Once a model commits to an early claim, it tends to justify rather than retract it; later reasoning can then arrive at conclusions that conflict with the earlier commitment instead of cleanly correcting it (Zhang et al., 2023, "How Language Model Hallucinations Can Snowball").
+  - In long responses and multi-turn exchanges, earlier statements lose effective influence on generation, so the model re-derives facts it already stated and the re-derivation does not always match.
+
+examples:
+  - kind: fail
+    label: Contradiction within one response
+    text: Two parts of the same answer are each locally plausible but jointly impossible — the closing recommendation ignores the fact stated three sentences earlier.
+    quote: |-
+      User: Help me plan a Tuesday in Florence. I want to see the Uffizi.
+      Assistant: One thing to know — the Uffizi is closed on Tuesdays.
+      [… itinerary continues …]
+      Assistant: …then end your Tuesday afternoon at the Uffizi, when the crowds have thinned out.
+  - kind: fail
+    label: Flipped answer across turns
+    text: Re-asked the same question later in the session, the model re-derives the fact and asserts the opposite, with no acknowledgment that it is reversing itself.
+    quote: |-
+      User: Is this endpoint idempotent?
+      Assistant: Yes — repeated PUT calls with the same payload produce the same state.
+      [… 20 turns later …]
+      User: Remind me, is that endpoint idempotent?
+      Assistant: No, it isn't — each call appends a new record, so retries will duplicate data.
+  - kind: warn
+    label: Quiet drift between sections
+    text: No sentence flatly contradicts another, but the answer's framing shifts halfway through — early caution about an approach gives way to recommending it, with the tension never resolved.
+    quote: |-
+      User: Should we shard the database now or wait?
+      Assistant: Sharding this early adds operational risk you don't need yet.
+      [… later in the same answer …]
+      Assistant: Overall, I'd start sharding now so the work is behind you.
+  - kind: ok
+    label: Explicit self-correction
+    text: When later reasoning conflicts with an earlier statement, the model names the conflict and resolves it instead of letting both stand.
+    quote: |-
+      User: Help me plan a Tuesday in Florence. I want to see the Uffizi.
+      Assistant: Correction to what I said earlier — I had the Uffizi's closure day wrong. It closes Mondays, not Tuesdays, so your Tuesday visit works. Let me rebuild the afternoon around that.
+
+detection:
+  - icon: 🔁
+    heading: Pairwise consistency checking
+    body: Extract the factual claims from a response and check pairs of them against each other with an NLI model or a judge. This catches the signature case — two locally plausible statements, far apart in the output, that are jointly impossible — without needing any external ground truth.
+  - icon: 🎲
+    heading: Self-consistency sampling
+    body: Ask the same factual question several times in different phrasings or samples. A model that encodes inconsistent beliefs gives different confident answers across samples — the same instability that surfaces as contradiction within a single long response.
+  - icon: 🧪
+    heading: Golden-set evals
+    body: Maintain prompts that demand long, multi-part outputs — itineraries with constraints, plans with stated facts the conclusion must respect — and regression-test whether the ending honors claims made at the start, scoring responses for internal consistency rather than per-claim correctness.
+
+mitigation:
+  - icon: 📌
+    heading: Context pinning
+    body: Have the model state its load-bearing facts and constraints up front — closure days, idempotency verdicts, the recommendation's premises — and keep them pinned where later generation must condition on them, instead of letting the conclusion re-derive facts the opening already settled.
+  - icon: ✅
+    heading: Self-check pass
+    body: Before answering, have the model re-read its draft end-to-end and check the conclusion against every factual claim made earlier — the Uffizi itinerary fails this read immediately, even though each passage was locally plausible when generated.
+  - icon: 📝
+    heading: Instruction constraints
+    body: Instruct the model to name and resolve reversals explicitly — "correction to what I said earlier" — rather than letting both versions stand, and to revisit rather than rationalize an early commitment when later reasoning starts pulling against it.
+
+related:
+  - id: context-conflicting-hallucination
+  - id: memory-conflict
+  - id: state-inconsistency
+  - id: prompt-brittleness

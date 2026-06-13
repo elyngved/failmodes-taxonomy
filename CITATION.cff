@@ -1,0 +1,17 @@
+cff-version: 1.2.0
+message: "If you use Fail Modes Taxonomy, please cite it using this metadata."
+title: "Fail Modes Taxonomy"
+type: dataset
+abstract: "A structured taxonomy and knowledge base of AI system failure modes."
+authors:
+  - family-names: "Lyngved"
+    given-names: "Erik"
+repository-code: "https://github.com/elyngved/failmodes-taxonomy"
+url: "https://www.failmodes.com"
+license: "CC-BY-4.0"
+keywords:
+  - "AI reliability"
+  - "failure modes"
+  - "taxonomy"
+  - "evaluation"
+  - "AI safety"

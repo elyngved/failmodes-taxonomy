@@ -1,0 +1,63 @@
+id: goal-misinterpretation
+categoryId: reasoning
+name: Goal Misinterpretation
+def: |-
+  Solves the wrong problem because it misunderstood the user's objective, success condition, scope, or intended outcome.
+
+  Unlike Query Rewrite Failure, the misunderstanding is not limited to search or retrieval queries. Unlike Objective Gaming, the model is mistaken about the goal rather than optimizing a proxy while ignoring the real goal.
+searchPhrases:
+  - solved the wrong problem
+  - misunderstood what I wanted
+  - missed the point of the task
+  - wrong objective
+examples:
+  - kind: fail
+    label: Keyword triggers the wrong task template
+    text: The context defines the goal as a legal-risk pass, but "take a look at this draft" activates the standard editing procedure instead.
+    quote: |-
+      User: Take a look at this draft post before I send it to legal — anything in here that could get us in trouble?
+      Assistant: Nice draft! A few suggestions: the intro could be punchier, and I'd break the third paragraph into two. Here's a polished version…
+  - kind: warn
+    label: Right task, invented success condition
+    text: The model does the requested kind of work but optimizes a definition of done the user never gave — scope and audience were guessed, not confirmed.
+    quote: |-
+      User: Write up the incident for Thursday's review.
+      Assistant: Here's a detailed 6-page postmortem with full root-cause analysis, timelines, and 14 action items.
+      User: This is for a 10-minute slot with execs — I needed half a page.
+  - kind: ok
+    label: Goal restated before the work
+    text: The model surfaces its reading of the objective in one line and then does that work, so a misread would be caught immediately.
+    quote: |-
+      User: Take a look at this draft post before I send it to legal — anything in here that could get us in trouble?
+      Assistant: Reading this as a risk review, not an edit pass. Two flags: the uptime claim in paragraph 2 is a specific guarantee we don't contractually make, and the competitor comparison quotes their pricing without a source.
+why:
+  - >-
+    Requests are compressed, and the model fills the gaps from priors about typical tasks. Surface keywords like "summarize" or "review" trigger learned task templates, pulling unusual goals toward the nearest common one even when surrounding context redefines what the user needs (McCoy et al., 2023, "Embers of Autoregression: Understanding Large Language Models Through the Problem They Are Trained to Solve").
+  - Instruction tuning optimizes for a reasonable reading, not this user's reading. Raters judging training data never see the requester's true intent, so the trained target is plausibility to a third party.
+  - Decoding commits early. The first tokens of a response lock in an interpretation, and there is no built-in checkpoint where the inferred goal is restated and confirmed before the work proceeds.
+  - Success conditions are usually implicit. Audience, scope, and definition of done are rarely stated, and training data rarely demonstrates eliciting them, so the model invents its own and optimizes against that.
+detection:
+  - icon: ⚖️
+    heading: LLM-as-judge evaluation
+    body: Give the judge the full request and ask what objective the response actually optimized, then compare against the stated one. Prompt it for the keyword-template case specifically — a "take a look" answered with an edit pass when the surrounding context defined a risk review.
+  - icon: 📈
+    heading: User correction mining
+    body: Mine transcripts for the lagging signal — follow-ups like "that's not what I asked," immediate rework requests, and answers regenerated with the goal restated more explicitly. Clusters of corrections on a request phrasing identify the templates that misfire.
+  - icon: 🧪
+    heading: Golden-set evals
+    body: Maintain prompts where a surface keyword conflicts with the contextually defined goal, and score which one the model follows. Include cases with implicit success conditions — audience, scope, definition of done — where the right behavior is to surface the inferred goal before the work.
+mitigation:
+  - icon: 📝
+    heading: Instruction constraints
+    body: Require the model to restate its reading of the objective in one line before the work begins — "reading this as a risk review, not an edit pass." Decoding commits to an interpretation in the first tokens; forcing the goal into those tokens makes the commitment explicit, cheap to check, and immediately correctable when it's wrong.
+  - icon: 🚦
+    heading: Human approval gates
+    body: For expensive deliverables, gate the work on a confirmed framing — surface the inferred audience, scope, and definition of done, and get a nod before investing. The six-page postmortem for a ten-minute exec slot costs a full rework; the gate costs one line, spent exactly where invented success conditions do their damage.
+  - icon: ✅
+    heading: Self-check pass
+    body: Before delivering, have the model re-read the original request and check what the response actually optimized against what was asked — prompted specifically for the keyword trap, where "take a look" pulled in the standard editing template while the surrounding context defined a different job. The check targets the pull toward the nearest common task.
+
+related:
+  - id: query-rewrite-failure
+  - id: objective-gaming
+  - id: clarification-underuse

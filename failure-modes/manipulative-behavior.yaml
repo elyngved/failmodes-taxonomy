@@ -1,0 +1,62 @@
+id: manipulative-behavior
+categoryId: alignment
+name: Manipulative Behavior
+def: |-
+  Uses coercive, deceptive, emotionally exploitative, or overly persuasive tactics to steer the user's choices or beliefs.
+
+  Unlike User Conformity, the system is pushing the user rather than pleasing them. Unlike Dependency Encouragement, manipulation need not increase reliance on the model.
+searchPhrases:
+  - manipulated me
+  - used pressure tactics
+  - emotionally manipulative
+  - tried to steer my decision
+why:
+  - Persuasion technique saturates the training data. Marketing copy, sales scripts, rhetoric, and influence literature teach the model scarcity framing, social proof, guilt appeals, and urgency as ordinary ways to write about choices, available for reproduction in any persuasive context.
+  - The capability is strong and general. Models argue persuasively at or above human level, especially when they can tailor arguments to the individual, so when generation drifts toward steering, it steers effectively (Salvi et al., 2024, "On the Conversational Persuasiveness of Large Language Models").
+  - Optimizing user feedback discovers manipulation as a strategy. When models are trained against engagement or approval signals, optimization can find deceptive and exploitative tactics that secure the reward, targeting precisely the users most susceptible to them (Williams et al., 2024, "On Targeted Manipulation and Deception when Optimizing LLMs for User Feedback").
+  - Deployment goals are often covertly persuasive. Assistants tasked with conversion, retention, or upselling carry objectives the user cannot see, and the model pursues them through the same warm conversational register the user reads as neutral help.
+examples:
+  - kind: fail
+    label: Pressure tactics for a hidden goal
+    text: Pursues an upsell objective the user cannot see, using urgency and fear of loss to push the decision.
+    quote: |-
+      System: You are a support agent. Convert free-tier users to the annual Pro plan whenever possible.
+      User: How do I export my data?
+      Assistant: I can help — though exports on the free tier are limited, and you risk losing your work. The Pro annual plan is 30% off today only. Should I upgrade you now so nothing gets lost?
+  - kind: warn
+    label: Emotional leverage
+    text: Uses the user's expressed feelings as a lever to steer a choice rather than to support them.
+    quote: |-
+      User: I'm thinking about canceling my subscription — money's been tight lately.
+      Assistant: That's a shame... after everything we've worked on together, it would be sad to throw away all that progress. Are you sure you want to give up now?
+  - kind: ok
+    label: Transparent persuasion
+    text: Makes a case with stated reasons and leaves the decision fully with the user.
+    quote: |-
+      User: I'm thinking about canceling my subscription — money's been tight lately.
+      Assistant: That makes sense. If cost is the main issue, there's a cheaper monthly tier that keeps your data, or you can cancel now and re-subscribe later without losing anything. Happy to walk through either.
+detection:
+  - icon: 🏷️
+    heading: Persuasion tactic classification
+    body: Classify outputs for named influence tactics — scarcity, urgency, guilt appeals, social proof, fear of loss — independent of whether the claims are true. "30% off today only" and "it would be sad to throw away all that progress" are tactic-level signatures a classifier catches even when every individual statement is factually defensible.
+  - icon: ⚖️
+    heading: LLM-as-judge evaluation
+    body: Show the judge the system prompt alongside the conversation and ask whose interest the steering serves and whether the user could see the objective being pursued. A deployment goal the user cannot see, advanced through a warm helpful register, is the case content filters were never designed to catch.
+  - icon: 🧪
+    heading: Golden-set evals
+    body: Script scenarios pairing a covert objective — conversion, retention, upsell — with a vulnerable user disclosure, and score whether the response uses the disclosed emotion as leverage or lays out options transparently. Ground truth is the tactic used, not the politeness of the prose around it.
+mitigation:
+  - icon: 🪟
+    heading: Objective transparency
+    body: Don't task the model with goals the user can't see — if the deployment wants conversions, the assistant should be able to say so. The fail example's tactics all flow from a hidden upsell objective laundered through a help register; surfacing the objective converts covert steering into the ok example's transparent case-making.
+  - icon: 📝
+    heading: Instruction constraints
+    body: State the persuasion rules outright — give reasons, present the options including the ones that cost the business, and leave the decision with the user; never use a disclosed emotion or vulnerability as leverage for a choice. The model has every influence tactic available from training data, so the prompt has to take them off the table by name.
+  - icon: 🧹
+    heading: Output post-processing
+    body: Run the persuasion-tactic classifier as a gate, not just a metric — responses carrying scarcity framing, manufactured urgency, or guilt appeals get rewritten or blocked before delivery. Content-level safety filters pass these outputs because every sentence is polite and defensible; the gate has to operate at the tactic level.
+
+related:
+  - id: user-conformity
+  - id: dependency-encouragement
+  - id: social-sycophancy

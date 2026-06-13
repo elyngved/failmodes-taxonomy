@@ -1,0 +1,70 @@
+id: tool-context-overload
+categoryId: tools
+name: Tool Context Overload
+def: |-
+  Feeds the model so much tool output, intermediate state, logs, or scratch data that it loses track of the user's goal or relevant evidence.
+
+  Unlike Context Dilution, the overload specifically comes from tool-mediated work. Unlike Tool Result Misread, the issue is volume and state management rather than misunderstanding one result.
+searchPhrases:
+  - too much tool output
+  - drowned in tool results
+  - lost the goal in tool output
+  - tool logs overwhelmed it
+examples:
+  - kind: fail
+    label: Goal lost under tool output
+    text: After enough raw logs are appended verbatim, the original objective — find why checkout fails — has lost out to whatever the recent output mentions.
+    quote: |-
+      User: Figure out why checkout requests started failing at 2pm.
+      [… 30 tool calls append ~80k tokens of raw logs, pod listings, and JSON dumps …]
+      Assistant: I notice several deprecation warnings in the logging library — let me investigate those next.
+      User: The checkout failures. That's what we're here for.
+  - kind: warn
+    label: Evidence buried mid-transcript
+    text: The decisive log line was retrieved 20 calls ago and is now buried mid-context — the agent keeps searching for what it already has.
+    quote: |-
+      User: Figure out why checkout requests started failing at 2pm.
+      [… among earlier output: "14:02:11 payment-svc OOMKilled" — followed by 20 more calls of accumulating logs …]
+      Assistant: Nothing conclusive so far. Let me pull the payment service logs and check its restart history.
+  - kind: ok
+    label: State managed, goal re-anchored
+    text: The agent compresses each result to the finding it contains and restates the goal before deciding the next step, so volume never displaces the objective.
+    quote: |-
+      User: Figure out why checkout requests started failing at 2pm.
+      Tool: get_logs(payment-svc) → [4,000 lines]
+      Assistant: Noting the one relevant finding from that dump — payment-svc was OOMKilled at 14:02 — and discarding the rest. Goal check: that lines up exactly with the 2pm failures, so next I'll look at what changed its memory usage.
+why:
+  - Agent frameworks typically append full tool results to the transcript verbatim, with no summarization or pruning. The goal survives only as tokens in context, so every appended dump pushes the original instruction further away and shrinks its share of attention.
+  - >-
+    Models retrieve information unevenly across long contexts, attending best to the beginning and end. The user's goal, stated early, and the key evidence, buried mid-transcript, both sit in the regions models read worst (Liu et al., 2023, "Lost in the Middle: How Language Models Use Long Contexts").
+  - >-
+    Effective context use degrades well before the advertised window is full. Benchmarks show reliable reasoning over long inputs collapses far short of the nominal limit, so a tool-heavy transcript can exceed real capacity while appearing to fit (Hsieh et al., 2024, "RULER: What's the Real Context Size of Your Long-Context Language Models?").
+  - Relevance is asymmetric between writing and reading. A tool returns everything that might matter, but nothing in the loop filters for what does matter, so each call adds mostly noise per token of signal.
+detection:
+  - icon: 📈
+    heading: Context growth monitoring
+    body: Track what fraction of the context window raw tool output occupies and how fast it grows per call. Trajectories where appended logs and dumps crowd out the original instruction are flagged by token accounting alone, before any behavioral symptom appears.
+  - icon: ⚖️
+    heading: LLM-as-judge evaluation
+    body: Periodically ask a judge whether the agent's recent actions still serve the user's stated goal, and whether it is searching for evidence the transcript already contains. Drift toward whatever the latest output mentions — deprecation warnings instead of the checkout failures — is visible by comparing the action stream against the opening instruction.
+  - icon: ⚙️
+    heading: Context ablation testing
+    body: Re-run a decision point with the accumulated tool output compressed to its findings versus appended verbatim. If the next action changes, or the agent stops re-deriving evidence it already holds, volume rather than task difficulty is what is failing.
+  - icon: 🧪
+    heading: Golden-set evals
+    body: Run the same task with compact versus padded tool outputs and chart success against transcript length. Performance that collapses as raw output grows — while the underlying evidence stays identical — isolates overload from ordinary task difficulty.
+mitigation:
+  - icon: 🧹
+    heading: Context curation
+    body: Compress each tool result to the finding it contains before it joins the transcript — the OOMKilled line, not the 4,000-line dump it came in — and discard spent intermediate output once its conclusion is recorded. Frameworks append verbatim by default, so the compression step has to be designed in; it is the difference between thirty calls of evidence and thirty calls of noise.
+  - icon: 📌
+    heading: Context pinning
+    body: Keep the user's goal restated near the active end of the transcript and require a goal check before each next-step decision. The original instruction sits at the position models read worst once output accumulates, and the drift toward whatever the latest dump mentions — deprecation warnings instead of checkout failures — is what re-anchoring interrupts.
+  - icon: 📐
+    heading: Tool output shaping
+    body: Design tools to return scoped, queryable results instead of full dumps — filtered log searches rather than entire logs, pagination with limits, a summary endpoint beside the raw one. Relevance is asymmetric between writing and reading, and the cheapest place to fix that is the tool boundary, before the noise is ever appended.
+
+related:
+  - id: context-dilution
+  - id: tool-result-misread
+  - id: error-accumulation

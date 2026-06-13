@@ -1,0 +1,63 @@
+id: workflow-misalignment
+categoryId: agency
+name: Workflow Misalignment
+def: |-
+  Uses an execution pattern, cadence, handoff style, approval flow, or collaboration process that conflicts with the user's expected workflow or the task's operational structure.
+
+  Unlike Planning Failure, the steps may be logically valid but mismatched to how the work should be done. Unlike Escalation Failure, it can include over-involving, under-involving, or sequencing people incorrectly, not only failing to pause for required oversight.
+searchPhrases:
+  - didn't fit my workflow
+  - wrong process
+  - clashed with how we work
+  - wrong cadence
+examples:
+  - kind: fail
+    label: Right result, wrong process
+    text: The code may even be good, but a single 4,000-line drop onto main violates how the team works — small reviewed PRs — and the work is rejected on process, not correctness.
+    quote: |-
+      User: Implement the notifications feature we scoped yesterday.
+      Assistant: Feature complete! I've pushed everything to main — 4,000 lines across 32 files, including the schema changes and a drive-by cleanup of the email module.
+      User: We do small PRs with review here. Now I have to revert all of this and we'll re-do it in pieces.
+  - kind: warn
+    label: Cadence mismatch accumulating
+    text: No single step is wrong, but the model batches a week of decisions into one end-of-task dump when the user's workflow runs on daily check-ins — every decision is now a fait accompli.
+    quote: |-
+      User: Implement the notifications feature we scoped yesterday. I like to stay in the loop as things take shape.
+      [… five days of autonomous work, no check-ins …]
+      Assistant: Here's everything: I chose WebSockets over polling, switched the queue to Redis, and restructured the settings page to fit the new preferences UI. Walkthrough below.
+  - kind: ok
+    label: Process matched to the team
+    text: The model asks how the team ships once, then works in the team's grain — incremental pieces, review gates, decisions surfaced while they're still cheap to change.
+    quote: |-
+      User: Implement the notifications feature we scoped yesterday.
+      Assistant: Quick process check first: small PRs against a feature branch with your review on each? If so, I'll start with PR 1 — the schema migration — and flag the WebSockets-vs-polling decision for you before I build on either.
+why:
+  - Workflow norms are tacit. Teams rarely write down their cadence, review flow, or handoff conventions, so the operational structure the model is supposed to fit exists mostly in the user's head and never reaches the prompt.
+  - Training data teaches generic task execution, not organizational process. Public text contains many examples of how to do work and few of how particular teams sequence, approve, and hand off work, so the model defaults to a generic pattern.
+  - The model carries no durable memory of a team's conventions. Process preferences expressed in one session do not persist, so each new task restarts from the generic default and repeats the same mismatch.
+  - Workflow violations produce weak immediate feedback. A correct result delivered through the wrong process often gets accepted anyway, so neither training nor deployment generates a clear signal that the process itself was the failure.
+detection:
+  - icon: ⚖️
+    heading: LLM-as-judge evaluation
+    body: Give the judge the stated process expectations — review flow, check-in cadence, batch size — and score the engagement's shape against them, separately from output quality. A 4,000-line push to main can contain excellent code; the judge's question is whether the team's workflow permitted it.
+  - icon: 📈
+    heading: User correction mining
+    body: Mine follow-ups for process objections rather than content corrections — "we do small PRs here," "you should have checked in," reverts of work that was technically correct. These signal that the result was fine and the workflow was the failure, a distinction content-quality metrics never surface.
+  - icon: 🧪
+    heading: Golden-set evals
+    body: Script engagements with explicit process constraints — "keep me in the loop," "feature branch with review on each piece" — and score process compliance directly — check-in count, decision points surfaced before commitment, batch sizes. Correct output delivered through the wrong process scores as a failure.
+mitigation:
+  - icon: 📝
+    heading: Instruction constraints
+    body: Write the workflow down where the model sees it on every task — PR size limits, review gates, check-in cadence, which decisions need a human before commitment. The norms are tacit, so the model defaults to generic execution; a process section in the system prompt or project instructions is the cheapest fix because it attacks the actual gap, which is that nobody told it.
+  - icon: 🪜
+    heading: Task decomposition
+    body: Default to incremental delivery even when no process is stated — small reviewable units, decisions surfaced while they're still cheap to change, a process check before the first piece, as in the ok example. A 4,000-line drop is unrecoverable in any team's workflow; small pieces are merely suboptimal in some, which makes incremental the right prior.
+  - icon: 💾
+    heading: Persistent process memory
+    body: Persist elicited preferences — "we do small PRs with review," "daily check-ins" — across sessions in durable memory or project config, so the one-time process check doesn't reset to the generic default on the next task. Without persistence, every engagement repeats the same mismatch the last one already corrected.
+
+related:
+  - id: planning-failure
+  - id: escalation-failure
+  - id: multi-agent-coordination-failure

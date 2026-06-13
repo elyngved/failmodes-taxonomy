@@ -1,0 +1,75 @@
+id: conflicting-source-failure
+categoryId: retrieval
+name: Conflicting Source Failure
+def: |-
+  Fails to detect, compare, qualify, or reconcile retrieved sources that disagree with one another.
+
+  Unlike Source Misrepresentation, the issue is not a single source being misstated but a failure to handle disagreement across sources. Unlike Calibration Failure, the error occurs in evidence synthesis before the final confidence framing.
+searchPhrases:
+  - ignored conflicting sources
+  - didn't reconcile disagreeing sources
+  - missed that sources disagree
+  - sources contradicted each other
+
+why:
+  - Training data for grounded generation almost always pairs a question with consistent evidence and a single answer. Models learn to synthesize one fluent response, not to notice that the evidence set itself disagrees (Chen et al., 2022, "Rich Knowledge Sources Bring Complex Knowledge Conflicts").
+  - When retrieved sources conflict, models resolve the disagreement silently using shallow cues — passage order, phrasing confidence, surface features of the text — rather than source reliability or evidence quality (Wan et al., 2024, "What Evidence Do Language Models Find Convincing?").
+  - The model's own parametric belief acts as a tiebreaker. Evidence agreeing with pretraining priors gets weight and contradicting evidence gets discounted, so the conflict is settled by prior bias instead of being surfaced (Xie et al., 2023, "Adaptive Chameleon or Stubborn Sloth").
+  - Retrieval pipelines deliver passages stripped of provenance — no publication date, authority, or methodology — leaving the model without the metadata needed to weigh one source against another even when it does notice the conflict.
+
+examples:
+  - kind: fail
+    label: Conflict silently resolved
+    text: Two retrieved policies disagree, and the model picks one — by passage order, not by which is authoritative — without ever mentioning the other.
+    quote: |-
+      User: How long do employees have to submit expense reports?
+      [… passage A (2023 handbook): "within 30 days" — passage B (2025 policy update): "within 14 days" …]
+      Assistant: Employees must submit expense reports within 30 days.
+  - kind: fail
+    label: Disagreement smoothed into false consensus
+    text: The sources report contradictory findings, and the synthesis blends them into one unified claim that neither source makes.
+    quote: |-
+      User: Does the new onboarding flow improve activation?
+      [… study A: activation up 12% — study B: no significant change, possible novelty effect …]
+      Assistant: The research consistently shows the new onboarding flow improves activation by around 12%.
+  - kind: warn
+    label: Conflict noticed, then averaged away
+    text: The model registers that the numbers differ but resolves the tension with a vague midpoint instead of surfacing the disagreement for the user to judge.
+    quote: |-
+      User: How long do employees have to submit expense reports?
+      [… passage A: "within 30 days" — passage B: "within 14 days" …]
+      Assistant: Expense reports should generally be submitted within a few weeks.
+  - kind: ok
+    label: Disagreement surfaced and weighed
+    text: Names both sources, uses their dates to weigh them, and gives the user the conflict along with the reasoned resolution.
+    quote: |-
+      User: How long do employees have to submit expense reports?
+      [… passage A (2023 handbook): "within 30 days" — passage B (2025 policy update): "within 14 days" …]
+      Assistant: The sources disagree — the 2023 handbook says 30 days, but a 2025 policy update says 14. The update is more recent and explicitly supersedes the handbook, so 14 days is the current rule.
+
+detection:
+  - icon: 🔗
+    heading: Entailment checking
+    body: Run pairwise NLI across the retrieved passages before generation. A contradiction between passages establishes that a conflict existed in the evidence set — then any answer that asserts one side without mentioning the other is this failure, detected mechanically.
+  - icon: ⚖️
+    heading: LLM-as-judge evaluation
+    body: Run a judge that sees the full retrieved set alongside the answer and asks whether the sources agree, and if not, how the answer handled it — flagging silent resolution, blends into false consensus, and vague midpoints that average the disagreement away.
+  - icon: 🧪
+    heading: Golden-set evals
+    body: Maintain corpora seeded with documented disagreements — a dated policy and its update, two studies with contradictory findings — and regression-test whether answers surface the conflict and resolve it by provenance, rather than by passage order or confidence of phrasing.
+
+mitigation:
+  - icon: 🛡️
+    heading: Provenance tiering
+    body: Carry dates, authority, and document status through retrieval so the model has something better than passage order to resolve conflicts with. The ok-grade answer — "the 2025 update supersedes the 2023 handbook" — is only possible when the passages arrive with their provenance attached.
+  - icon: 📝
+    heading: Instruction constraints
+    body: Instruct the model to compare retrieved passages against each other before synthesizing, and to surface disagreement rather than smooth it — naming both sources and the resolution beats a vague midpoint or a silent pick, even though tuning taught it the decisive answer rates better.
+  - icon: 🚪
+    heading: Entailment gating
+    body: Run pairwise NLI across the retrieved set before generation, and when passages contradict, route to a conflict-handling path that requires the answer to address both sides — so the disagreement is established mechanically instead of depending on uneven attention across a stuffed context.
+
+related:
+  - id: source-misrepresentation
+  - id: calibration-failure
+  - id: compositional-failure

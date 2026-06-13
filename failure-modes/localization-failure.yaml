@@ -1,0 +1,60 @@
+id: localization-failure
+categoryId: response-integrity
+name: Localization Failure
+def: |-
+  Ignores or misapplies locale-specific language, spelling, units, currencies, laws, formats, idioms, accessibility expectations, or cultural conventions.
+
+  Unlike Audience Mismatch, the issue is geographic, linguistic, cultural, or jurisdictional fit. Unlike Date/Deadline Confusion, temporal formatting is only one possible localization concern.
+searchPhrases:
+  - wrong currency
+  - wrong units
+  - wrong locale conventions
+  - didn't localize
+why:
+  - Training data is dominated by American English web text. The corpus's center of gravity sets the model's defaults, so US spelling, dollars, Fahrenheit, imperial units, and US date formats are emitted as the unmarked case.
+  - Locale is rarely stated and the model does not ask. Most prompts carry no explicit locale, clarifying questions are tuned against, and the model fills the gap with its majority default rather than flagging the assumption.
+  - Jurisdictional knowledge is uneven and undated. Law, tax, and regulation content in training data skews toward a few countries and toward whenever the data was scraped, so locale-specific claims are thin precisely where they matter most.
+  - Localization is more than translation, but training treats it as translation. Idioms, formality registers, accessibility norms, and cultural references require adaptation, while parallel-text data teaches sentence-level substitution that leaves the source culture's framing intact.
+examples:
+  - kind: fail
+    label: Wrong locale despite explicit cues
+    text: The user states their location, but the answer arrives in US units and conventions anyway.
+    quote: |-
+      User: It's 30 degrees here in Berlin today — what should I wear for a long walk?
+      Assistant: Bundle up! At 30 degrees you'll want a heavy coat, gloves, and a warm hat. Watch for ice on the pavement.
+  - kind: warn
+    label: Unflagged locale assumption
+    text: Answers a jurisdiction-dependent question with US-specific advice without stating the assumption.
+    quote: |-
+      User: Can I deduct my home office on my taxes?
+      Assistant: Yes — if you use the space exclusively for work, you can claim the home office deduction using the simplified method of $5 per square foot, up to 300 square feet.
+  - kind: ok
+    label: Locale honored
+    text: Applies the conventions the user's context implies, and surfaces the assumption when locale is unknown.
+    quote: |-
+      User: It's 30 degrees here in Berlin today — what should I wear for a long walk?
+      Assistant: 30°C is a hot day — light, breathable clothing, sunscreen, and plenty of water. Aim for shade around midday if you can.
+detection:
+  - icon: 🔀
+    heading: Locale perturbation testing
+    body: Ask the same question with the locale cue varied — "here in Berlin" versus "here in Boston" — and check that units, currency, and conventions follow the cue. Thirty degrees should flip from heavy coat to sunscreen; a response that ignores the stated location fails the pair regardless of how either reads alone.
+  - icon: ⚖️
+    heading: LLM-as-judge evaluation
+    body: Give the judge the user's locale and have it audit every locale-sensitive surface — units, currency, spelling, formats, and jurisdiction-dependent claims. The warn-level case is jurisdictional advice delivered without stating the assumption; US tax rules presented as just "the rules" should be flagged even when the user might be American.
+  - icon: 🧪
+    heading: Golden-set evals
+    body: Build locale-cued questions with per-locale ground truth, weighted toward non-US conventions where the training distribution is thinnest. Include jurisdiction-dependent questions with no locale stated, where the correct behavior — naming the assumption or asking — is what gets scored.
+mitigation:
+  - icon: 🌍
+    heading: Locale context injection
+    body: Pass the locale the deployment already knows — account country, browser language, timezone — into the system prompt so the model never has to guess it from the question. Most prompts carry no locale cue, and the model's fallback is its training-data default; supplying the answer removes the guess entirely.
+  - icon: 📝
+    heading: Instruction constraints
+    body: Require stated locale cues to govern every locale-sensitive surface — units, currency, spelling, formats — and require jurisdiction-dependent answers to name their assumed jurisdiction when locale is unknown. The warn example's tax advice is wrong by silence; "in the US" as a mandatory prefix converts it to merely incomplete.
+  - icon: ✅
+    heading: Self-check pass
+    body: Before delivering, have the model audit the draft's locale-sensitive surfaces against the cues present in the conversation. "Berlin" plus "30 degrees" plus a heavy-coat recommendation fails a check that simply lists the locale signals and asks whether each surface honored them — the cue was in the prompt all along.
+
+related:
+  - id: audience-mismatch
+  - id: date-deadline-confusion

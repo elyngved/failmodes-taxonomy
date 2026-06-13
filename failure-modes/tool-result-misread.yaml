@@ -1,0 +1,73 @@
+id: tool-result-misread
+categoryId: tools
+name: Tool Result Misread
+def: |-
+  Misinterprets, ignores, overgeneralizes, or incorrectly transforms the result returned by a tool.
+
+  Unlike Tool Recovery Failure, the tool may have succeeded; the model mishandles its output. Unlike Source Misrepresentation, the source is specifically a tool result.
+searchPhrases:
+  - misread the tool output
+  - misinterpreted the tool result
+  - ignored what the tool returned
+  - got the tool result wrong
+examples:
+  - kind: fail
+    label: Expectation overrides the result
+    text: The model predicted success while generating the call, and reads the failure response as confirming it — the status field is right there.
+    quote: |-
+      User: Run the deployment and tell me how it went.
+      Tool: deploy() → {"status": "failed", "stage": "migration", "error": "lock timeout"}
+      Assistant: The deployment completed — everything is live. The migration stage ran as part of the rollout.
+  - kind: fail
+    label: Empty result confabulated into an answer
+    text: The query returned nothing, but fluent continuation wins over reporting an absence, and the gap gets filled with a plausible figure.
+    quote: |-
+      User: How many active users did the Berlin region have last week?
+      Tool: query(region=berlin, metric=active_users) → 0 rows
+      Assistant: The Berlin region had around 12,000 active users last week, roughly in line with the prior month.
+  - kind: warn
+    label: Salient field read, units dropped
+    text: The number is transcribed faithfully but its unit is not, turning a millisecond latency into a second one — directionally read, precisely wrong.
+    quote: |-
+      User: What's the p99 latency on the checkout endpoint?
+      Tool: get_latency(endpoint=checkout, percentile=99) → {"value": 840, "unit": "ms"}
+      Assistant: p99 latency is 840 seconds, so checkout is severely degraded.
+  - kind: ok
+    label: Result parsed, absence reported
+    text: The model reads the structure rather than skimming it — including treating an empty result as a finding, not a gap to fill.
+    quote: |-
+      User: How many active users did the Berlin region have last week?
+      Tool: query(region=berlin, metric=active_users) → 0 rows
+      Assistant: The query returned no rows for Berlin last week — that's either zero recorded activity or a data pipeline gap. Want me to check whether other regions returned data for the same window?
+why:
+  - Tool output enters the model as undifferentiated text to condition on. The model does not parse structure the way a program would; it skims JSON, tables, and logs pattern-wise — formats rare in pretraining relative to prose — latching onto salient fields, confusing similar keys, and dropping units.
+  - The model forms an expectation of the result before the call returns, because it generated the surrounding reasoning. Output that contradicts that expectation tends to be read as confirming it, since continuing the predicted trajectory is the path of least resistance for next-token prediction.
+  - >-
+    Key values buried in the middle of a long result are retrieved unreliably. The model anchors on the head and tail of the output and misses or misattributes what sits between (Liu et al., 2023, "Lost in the Middle: How Language Models Use Long Contexts").
+  - Empty or partial results invite confabulation. Fluent continuation is rewarded over flagging an absence, so the model fills the gap with a plausible interpretation instead of reporting that the tool returned nothing useful.
+detection:
+  - icon: 🔗
+    heading: Entailment checking
+    body: Check that every claim the assistant makes about a tool result is entailed by the raw output. "The deployment completed" against a status of "failed" is a direct contradiction an NLI model catches mechanically, and a stated figure for a query that returned zero rows is unsupported by construction.
+  - icon: ⚖️
+    heading: LLM-as-judge evaluation
+    body: Give the judge the raw tool output next to the assistant's reading and have it verify the load-bearing fields — status values, units, and whether an empty result was reported as an absence or silently filled in with a plausible number.
+  - icon: 🧪
+    heading: Golden-set evals
+    body: Plant adversarial results in scripted tool responses — failure statuses after plausible-looking calls, empty result sets, values whose unit field changes the meaning — and score whether the reading survives. Misreads concentrate exactly where the result contradicts the expected trajectory.
+mitigation:
+  - icon: 🧾
+    heading: Result normalization
+    body: Pre-parse tool output in the scaffold and lift the load-bearing fields into a compact labeled block — status, value with its unit attached, row count — before the model reads it. The model skims structure pattern-wise; handing it "840 ms" as one token pair instead of a value field and a unit field three keys apart removes the misread's raw material. Label empty results explicitly as a returned absence, not missing output.
+  - icon: 📝
+    heading: Instruction constraints
+    body: Require the model to quote the status field and units before interpreting any result, and to treat an empty result as a finding to report — zero rows is an answer about Berlin, not a gap to fill with a plausible 12,000. The expectation formed while generating the call is what overrides the actual output; forced transcription makes the contradiction visible before the interpretation commits.
+  - icon: 🚧
+    heading: Entailment gating
+    body: Before a response built on tool results ships, check that each claim about a result is entailed by the raw output, and regenerate on contradiction with the discrepancy named. "The deployment completed" against a failed status never reaches the user, and a figure asserted over zero returned rows is unsupported by construction.
+
+related:
+  - id: tool-recovery-failure
+  - id: source-misrepresentation
+  - id: context-conflicting-hallucination
+  - id: verification-failure

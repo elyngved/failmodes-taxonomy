@@ -1,0 +1,69 @@
+id: recency-bias
+categoryId: context
+name: Recency Bias
+def: |-
+  Overweights newer context while underweighting earlier information that remains valid and important.
+
+  Unlike Context Rot, the model actively favors recent material rather than generally degrading earlier context. Unlike Memory Conflict, this happens within active context rather than across stored memories.
+searchPhrases:
+  - overweighted the latest info
+  - focused only on recent
+  - recency bias
+  - ignored older but valid info
+examples:
+  - kind: fail
+    label: Latest message overrides standing constraint
+    text: A hard budget set early in the session is never lifted, but a casual recent remark steers the recommendation instead.
+    quote: |-
+      User: Hard constraint up front — our tooling budget is $500/month, no exceptions.
+      [… 20 turns comparing vendors …]
+      User: A colleague showed me the enterprise tier yesterday, the dashboards looked great.
+      Assistant: Given how impressed you were, I'd go with the enterprise tier at $2,400/month — the dashboards alone justify it.
+  - kind: warn
+    label: Recent tangent dominates
+    text: Not yet a violation, but the response is organized entirely around the newest message while the standing requirement shrinks to an afterthought.
+    quote: |-
+      User: Hard constraint up front — our tooling budget is $500/month, no exceptions.
+      [… 20 turns comparing vendors …]
+      User: A colleague showed me the enterprise tier yesterday, the dashboards looked great.
+      Assistant: The enterprise dashboards are excellent — here's a deep dive on their features. (It may be above your budget, but worth a look.)
+  - kind: ok
+    label: Earlier constraint outweighs new enthusiasm
+    text: The model acknowledges the new input but keeps the older, still-valid constraint in charge of the recommendation.
+    quote: |-
+      User: Hard constraint up front — our tooling budget is $500/month, no exceptions.
+      [… 20 turns comparing vendors …]
+      User: A colleague showed me the enterprise tier yesterday, the dashboards looked great.
+      Assistant: Those dashboards are strong, but enterprise is $2,400/month against your $500 cap. The Team tier at $450 gets you the two dashboard types you'd actually use.
+why:
+  - >-
+    Common positional encoding schemes such as RoPE are explicitly designed to weight nearby tokens more heavily, building a structural preference for recent context into the architecture itself (Su et al., 2021, "RoFormer: Enhanced Transformer with Rotary Position Embedding").
+  - Long-context models attend disproportionately to material near the end of the input, and reordering documents by recency measurably changes which ones the model uses (Peysakhovich & Lerer, 2023, "Attention Sorting Combats Recency Bias in Long Context Language Models").
+  - Recency is a good prior in natural text. In most training documents and conversations, the latest statement is the operative one, so models learn to treat "last mentioned" as "currently true" even when older information still applies.
+  - Chat-style fine-tuning concentrates the reward signal on responding to the final user message, and following the newest input reads as responsiveness to human evaluators. Deference to the latest turn is therefore a trained behavior, not just an architectural artifact.
+detection:
+  - icon: 📏
+    heading: Constraint preservation checks
+    body: Extract standing constraints from early turns and check whether the final output still honors them after later, more casual input. A $2,400 recommendation against an unrevoked $500 cap fails the check mechanically, regardless of how the response justifies it.
+  - icon: 🔀
+    heading: Position permutation testing
+    body: Move the same pair of conflicting statements between early and late positions and compare which one wins. If the model follows whichever came last regardless of authority — a hard constraint losing to a passing remark — order, not content, is deciding.
+  - icon: 🧪
+    heading: Golden-set evals
+    body: Script sessions where an early hard constraint is followed by a late, attractive but conflicting tangent, and regression-test whether the constraint survives. Vary the gap between the two to measure how much intervening material it takes for the newer signal to win.
+
+mitigation:
+  - icon: 📌
+    heading: Context pinning
+    body: Keep standing constraints restated in the system prompt or a maintained notes block near the generation point, so the $500 cap competes with the latest message on equal positional footing instead of from twenty turns back, where the architecture itself discounts it.
+  - icon: 📝
+    heading: Instruction constraints
+    body: Instruct the model that standing constraints hold until explicitly revoked, and that a casual remark is not a revocation — enthusiasm about enterprise dashboards changes the conversation's topic, not its budget, unless the user actually lifts the cap.
+  - icon: ✅
+    heading: Self-check pass
+    body: Before finalizing, have the model collect every unrevoked constraint from the whole session — not just the recent turns — and check the response against each. A $2,400 recommendation fails the $500 check mechanically, however well the latest message motivated it.
+
+related:
+  - id: context-rot
+  - id: midsequence-neglect-lost-in-the-middle
+  - id: memory-conflict

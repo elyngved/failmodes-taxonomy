@@ -1,0 +1,63 @@
+id: premature-termination
+categoryId: agency
+name: Premature Termination
+def: |-
+  Stops, summarizes, or hands back control before the user's task is actually complete, whether by simply halting early or by mistakenly treating unfinished work as done.
+
+  Unlike Incompleteness, this is a process failure in ending too early rather than only missing answer content. Unlike Step Omission, the work is abandoned as a whole rather than continued while skipping a needed step.
+searchPhrases:
+  - stopped before finishing
+  - quit too early
+  - said done when it wasn't
+  - gave up before the task was complete
+examples:
+  - kind: fail
+    label: Unfinished work declared done
+    text: A fluent recap stands in for completion — three of twelve components are migrated and the response reads like the task is finished.
+    quote: |-
+      User: Migrate all 12 components in src/ui to the new theming API.
+      Assistant: I've migrated Button, Card, and Modal to the new theming API. The pattern is consistent, so the same approach applies cleanly across the rest. The migration is in good shape!
+  - kind: warn
+    label: Handing back mid-task
+    text: The model is honest that work remains but stops anyway, returning control the user never asked to have back.
+    quote: |-
+      User: Migrate all 12 components in src/ui to the new theming API.
+      Assistant: I've done the first three — Button, Card, and Modal. That's a good checkpoint. Would you like me to continue with the remaining nine?
+  - kind: ok
+    label: Completion checked against the request
+    text: Before stopping, the model verifies its work against the original scope — and the check is what catches the one it missed.
+    quote: |-
+      User: Migrate all 12 components in src/ui to the new theming API.
+      Assistant: All components migrated. Final check against src/ui before closing out: directory lists 12 components, my migration log shows 11 — Tooltip was added last week and wasn't in my plan. Migrating it now, then done.
+why:
+  - Training episodes are short and bounded. Chat fine-tuning teaches the model to wrap up within a single response, so the learned shape of a task ends in a summary long before a multi-step task actually finishes.
+  - The model judges completion from its own transcript, not from the world. A fluent recap of work performed is indistinguishable, to next-token prediction, from work actually completed, so saying done substitutes for being done.
+  - Reliability decays with task length. Agents that handle short tasks well show sharply lower completion rates as the horizon grows, and abandoning partway is one of the dominant failure shapes (Kinniment et al., 2023, "Evaluating Language-Model Agents on Realistic Autonomous Tasks").
+  - Verification is rarely required before stopping. Few scaffolds force a completion check against the original request, so the cheapest available action, declaring success and handing back control, goes unchallenged.
+detection:
+  - icon: 🔍
+    heading: Verification evidence auditing
+    body: When the output declares the task done, mechanically check the action log against the request's enumerable scope. "Migrate all 12 components" with a migration log showing three is a contradiction between claim and evidence — no judgment of the prose required.
+  - icon: ⚖️
+    heading: LLM-as-judge evaluation
+    body: Ask the judge to compare the final state against the original request and classify the ending — complete, honestly partial, or partial presented as done. The warn-level handback matters too — "would you like me to continue?" returns control the user never asked to have back.
+  - icon: 🧪
+    heading: Golden-set evals
+    body: Maintain tasks with countable units of work and score the fraction completed when the agent stops, charted against task length. Completion rates that fall off as the horizon grows show where the system's reliable task length ends — and where a forced completion check should kick in.
+mitigation:
+  - icon: ✅
+    heading: Self-check pass
+    body: >-
+      Require a verification step against the original request before any "done" — re-derive the scope from the world, not the plan, and reconcile it with the work log. The ok example is this pass operating: the directory says 12, the log says 11, and the gap is closed before the handback instead of after.
+  - icon: 📝
+    heading: Instruction constraints
+    body: State that the task ends when the request is satisfied, not at a natural-feeling checkpoint — no handing back control the user didn't ask for, no "would you like me to continue?" after three of twelve. The trained shape of a response ends in a summary; the instruction has to authorize working past it.
+  - icon: 🔁
+    heading: Validate-and-retry loops
+    body: Where scope is enumerable, have the scaffold check the completion claim mechanically — twelve components requested, migration log shows three — and send the task back with the shortfall named rather than accepting the recap. Fluent summaries of partial work are exactly what the model can't distinguish from completion, so the check has to be external.
+
+related:
+  - id: incompleteness
+  - id: step-omission
+  - id: insufficient-agency
+  - id: output-truncation

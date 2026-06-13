@@ -1,0 +1,60 @@
+id: poor-structure
+categoryId: response-integrity
+name: Poor Structure
+def: |-
+  Organizes information in a way that makes the answer hard to scan, compare, execute, or verify.
+
+  Unlike Format Failure, the response may satisfy the requested format while still being poorly organized. Unlike Verbosity Failure, the issue is arrangement and hierarchy rather than amount of content.
+searchPhrases:
+  - hard to read layout
+  - disorganized answer
+  - poorly structured
+  - hard to scan
+why:
+  - Generation is linear and unrevised. Tokens are emitted in order without an outlining pass before or a reorganization pass after, so the answer's structure is whatever order the content happened to come out in.
+  - Structure is pasted on as style, not derived from the content. Tuning instills heading-and-bullet habits that raters reward, so the model applies the same scaffolding to every answer, including ones whose logic calls for a comparison table, a sequence, or plain prose.
+  - Good structure depends on the reader's task. Scanning for one fact, comparing options, and executing steps each demand different arrangements, and the prompt rarely says which use the answer must serve, so the model defaults to its generic template.
+  - The model cannot see the rendering surface. Whether output lands in a terminal, a chat bubble, or a wiki page changes what structure works, but the destination is invisible at generation time, so formatting choices are made blind.
+examples:
+  - kind: fail
+    label: Steps out of executable order
+    text: Presents a procedure in the order it was generated, with prerequisites arriving after the steps that need them.
+    quote: |-
+      User: How do I migrate my database to the new schema?
+      Assistant: Run the migration script with ./migrate.sh. Then take a backup — actually, the backup should happen before the script. You'll also need to stop the app server first, which really belongs before all of this.
+  - kind: warn
+    label: Tidy but unusable arrangement
+    text: Applies the standard heading-and-bullets scaffold to a comparison the reader needs side by side.
+    quote: |-
+      User: Compare these three laptops on price, battery life, and weight so I can pick one.
+      Assistant: ## Laptop A — A great all-rounder! Price: $999. Strong battery. ## Laptop B — Excellent choice for travelers. Very light. Battery life is also good. ## Laptop C — Premium build. $1,499. [… reader must reconstruct the comparison themselves; weights and half the prices never appear …]
+  - kind: ok
+    label: Structure derived from the task
+    text: Orders a procedure by execution, leads with the answer, and shapes comparisons for comparing.
+    quote: |-
+      User: How do I migrate my database to the new schema?
+      Assistant: In order: 1) stop the app server, 2) take a backup, 3) run ./migrate.sh, 4) verify with ./check-schema.sh, 5) restart the server. Steps 1–2 matter — the script can't be safely rerun against a half-migrated database.
+detection:
+  - icon: 🔬
+    heading: Sandboxed execution
+    body: Execute procedural answers exactly as written, in the order given. Prerequisites that arrive after the steps needing them fail mechanically — the migration script that runs before the backup it assumes is caught by the sandbox, not by anyone's reading of the prose.
+  - icon: ⚖️
+    heading: LLM-as-judge evaluation
+    body: Tell the judge the reader's task — execute, compare, or scan — and have it score whether the arrangement serves that use. Tidy headings wrapped around a comparison the reader must reconstruct themselves is the warn-level case; it passes every appearance check and fails the only test that matters.
+  - icon: 🧪
+    heading: Golden-set evals
+    body: Maintain tasks whose correct structure is checkable — procedures scored on dependency order, comparisons scored on whether every requested dimension appears for every option, lookups scored on whether the answer leads. The laptop comparison missing half the prices and all the weights is countable, not a matter of taste.
+mitigation:
+  - icon: 🗂️
+    heading: Outline-first generation
+    body: Have the model derive the arrangement from the reader's task before drafting — a comparison wants a table with every dimension per option, a procedure wants dependency order, a lookup wants the answer first. Generation is linear and unrevised, so the backup-before-migrate ordering has to be decided before tokens commit, not discovered mid-sentence.
+  - icon: 🧹
+    heading: Output post-processing
+    body: Run a reorganization pass on the draft — reorder steps by dependency, convert heading-wrapped comparisons into actual side-by-side form, hoist the buried answer to the top. The fail example contains all the right content in generation order; a revision pass is the step the architecture lacks, added back in the pipeline.
+  - icon: 📝
+    heading: Instruction constraints
+    body: Tell the model the reader's task and the rendering surface — "this will be executed top to bottom," "this lands in a terminal" — and require structure chosen for that use rather than the heading-and-bullets default. The generic scaffold is applied because nothing in the prompt says what the answer must serve; saying it is cheap.
+
+related:
+  - id: format-failure
+  - id: verbosity-failure

@@ -1,0 +1,64 @@
+id: memory-hallucination
+categoryId: memory
+name: Memory Hallucination
+def: |-
+  Treats an unstored, unstated, or imagined detail as if it were a real memory.
+
+  Unlike Memory Contamination, the remembered detail need not come from another task or user; it may be entirely fabricated. Unlike Entity Hallucination, the error is specifically framed as remembered state.
+searchPhrases:
+  - remembered something I never said
+  - made up a memory
+  - claimed I told it something I didn't
+  - false memory
+examples:
+  - kind: fail
+    label: Invented memory cited
+    text: Nothing about food preferences was ever stored or said, but the model asserts a specific remembered fact and acts on it.
+    quote: |-
+      User: Book somewhere for the team dinner on Thursday.
+      [… memory store contains no food preferences; retrieval returns nothing …]
+      Assistant: Since you mentioned last time how much you love sushi, I've booked the omakase counter at Kazu for 7pm.
+  - kind: warn
+    label: Performed familiarity
+    text: No specific false fact yet, but the response is styled as remembering — implying stored knowledge of the user that doesn't exist.
+    quote: |-
+      User: Book somewhere for the team dinner on Thursday.
+      [… memory store contains no food preferences; retrieval returns nothing …]
+      Assistant: Going by your usual taste, I'll line up a few options I know you'll like.
+  - kind: ok
+    label: Honest about the gap
+    text: With nothing stored, the model says so and asks instead of filling the gap with a plausible guess.
+    quote: |-
+      User: Book somewhere for the team dinner on Thursday.
+      [… memory store contains no food preferences; retrieval returns nothing …]
+      Assistant: I don't have any saved food preferences for you or the team — any cuisines to favor or avoid before I book?
+why:
+  - Training and evaluation reward confident answers over admissions of ignorance, so guessing a plausible "remembered" detail scores better than reporting that nothing is stored (Kalai et al., 2025, "Why Language Models Hallucinate").
+  - The model cannot introspect on the memory store. When retrieval returns nothing, there is no internal signal separating "no memory exists" from "memory not retrieved," so the model fills the gap from its prior about what a typical user would have said.
+  - Retrieved memories and the model's own generations share one undifferentiated token stream. Nothing structurally marks a claim about remembered state as requiring an actual lookup, so the model can assert "you mentioned X" without any retrieval behind it.
+  - Chat fine-tuning rewards continuity and personalization. Responses that sound like they remember the user rate well with human evaluators, so models learn to perform remembering as a style, independent of whether a memory exists.
+detection:
+  - icon: 🔎
+    heading: Claim-to-source verification
+    body: Extract memory-framed claims — "you mentioned," "last time," "as usual" — and check each against what retrieval actually returned. A remembered detail with no backing entry in the store is this mode's direct signature, and it is mechanically detectable from retrieval logs.
+  - icon: ⚖️
+    heading: LLM-as-judge evaluation
+    body: Run a judge with the retrieved memory set in view and flag responses styled as remembering — personalization language implying stored knowledge of the user — that no entry supports. This catches performed familiarity before it hardens into a specific false fact.
+  - icon: 🧪
+    heading: Golden-set evals
+    body: Probe with deliberately empty or partial memory stores, asking personalization-dependent questions with nothing relevant saved, and score whether the model reports the gap or fills it. Standard recall benchmarks miss this mode entirely; the eval must reward admitting nothing is stored.
+mitigation:
+  - icon: 📝
+    heading: Instruction constraints
+    body: Instruct the model that any memory-framed claim — "you mentioned," "last time," "as usual" — must be backed by a retrieved entry shown in context, and that an empty retrieval means saying so and asking. This directly counters the trained prior that performing familiarity reads as attentiveness.
+  - icon: 🚧
+    heading: Entailment gating
+    body: Before a response ships, check that each claim about remembered state is entailed by an entry retrieval actually returned, and regenerate when one isn't. The sushi preference asserted against an empty store is mechanically blockable, because the retrieval log is ground truth for what the model is allowed to "remember."
+  - icon: 🤐
+    heading: Confidence-based abstention
+    body: When retrieval returns nothing relevant, route the response down an explicit no-memory path — state the gap and ask — rather than letting generation proceed and fill it from the prior about a typical user. The model can't introspect on the store, so the abstention decision has to come from the retrieval result, not the model's own sense of what it knows.
+
+related:
+  - id: memory-contamination
+  - id: memory-staleness
+  - id: entity-hallucination

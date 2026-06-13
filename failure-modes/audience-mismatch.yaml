@@ -1,0 +1,61 @@
+id: audience-mismatch
+categoryId: response-integrity
+name: Audience Mismatch
+def: |-
+  Uses terminology, assumptions, depth, examples, tone, or framing that does not fit the intended reader's expertise, role, goals, or context.
+
+  Unlike Verbosity Failure or Concision Failure, the issue is reader fit rather than simply too much or too little detail. Unlike Localization Failure, the mismatch is audience expertise and situation rather than locale conventions.
+searchPhrases:
+  - too technical for the reader
+  - wrong reading level
+  - talked over my head
+  - not written for my audience
+why:
+  - The model cannot observe its reader. Expertise, role, and stakes must be inferred from the prompt's wording alone, and a short question carries almost no signal about who is asking or why.
+  - Defaults are set by the training distribution, not the actual audience. Each topic arrives with the register of the text that taught it, so medical answers sound like clinical literature and programming answers assume a developer, whoever actually asked.
+  - One persona is tuned for everyone. Preference data aggregates raters into a single imagined reader, so fine-tuning converges on a middle register that overexplains to experts and overwhelms novices rather than adapting to either.
+  - Audience cues in the prompt are weakly honored. Stated framing such as writing for executives or for a child shifts surface style, tone and vocabulary, more reliably than substance, assumed background, chosen examples, and what needs explaining.
+examples:
+  - kind: fail
+    label: Jargon at a stated novice
+    text: Ignores the explicitly described reader and answers in the register of the topic's training data.
+    quote: |-
+      User: Help me explain to my 78-year-old mother, who barely uses her phone, why she should install updates.
+      Assistant: Tell her that OS updates patch known CVEs and mitigate zero-day exploits before threat actors can leverage them against unpatched attack surfaces.
+  - kind: warn
+    label: Surface-level adaptation
+    text: Adjusts tone for the audience but keeps assumptions and steps the reader cannot follow.
+    quote: |-
+      User: Help me explain to my 78-year-old mother, who barely uses her phone, why she should install updates.
+      Assistant: Keep it friendly! Just tell her updates keep her safe, and have her check Settings > General > Software Update, toggle on automatic updates, and verify her iCloud backup completed first.
+  - kind: ok
+    label: Fit to the reader
+    text: Adapts substance — the analogy, the assumed background, and what needs explaining — not just tone.
+    quote: |-
+      User: Help me explain to my 78-year-old mother, who barely uses her phone, why she should install updates.
+      Assistant: Try this: "Updates are like the bank replacing a lock that burglars have figured out how to pick. The phone does the work — you just tap yes when it asks, ideally before bed so it finishes overnight."
+detection:
+  - icon: 📏
+    heading: Readability metrics
+    body: Score reading level, jargon density, and assumed-knowledge terms mechanically against the stated audience. "CVEs" and "attack surfaces" in an answer for a 78-year-old phone novice is a vocabulary mismatch a term list catches without any judgment call.
+  - icon: ⚖️
+    heading: LLM-as-judge evaluation
+    body: Give the judge the stated reader and have it score substance fit, not tone — the assumed background, the chosen examples, what gets explained versus presumed. The warn-level case is exactly the one tone checks miss, since friendly phrasing wrapped around steps the reader cannot follow passes every surface measure.
+  - icon: 🧪
+    heading: Golden-set evals
+    body: Ask the same questions with different stated readers — a child, a domain expert, an executive — and verify the answers actually diverge in substance, not just register. A system that returns near-identical content with swapped vocabulary is adapting the surface and failing the reader.
+mitigation:
+  - icon: 📝
+    heading: Instruction constraints
+    body: Put an explicit reader profile in the prompt — expertise, role, what they'll do with the answer — and require the model to state its assumed reader when none is given. The model cannot observe its audience, so every deployment that knows who its users are should say so rather than leave the register to the topic's training data.
+  - icon: ✅
+    heading: Self-check pass
+    body: Before delivering, have the model reread the draft as the stated reader and list every term, step, and assumption that requires background they lack. The warn example survives a tone check; "Settings > General > Software Update" aimed at someone who barely uses her phone only fails when the check walks the substance, not the phrasing.
+  - icon: 🧹
+    heading: Output post-processing
+    body: Run a rewrite pass conditioned on the reader profile that re-targets vocabulary, examples, and assumed background — not just tone. Audience cues shift surface style more reliably than substance, so the rewrite has to be scored on what gets explained versus presumed, which is where the first draft fails.
+
+related:
+  - id: verbosity-failure
+  - id: concision-failure
+  - id: localization-failure

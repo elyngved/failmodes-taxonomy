@@ -1,0 +1,69 @@
+id: context-dilution
+categoryId: context
+name: Context Dilution
+def: |-
+  Lets excess surrounding material weaken the influence of the most relevant context, causing important signals to be underweighted.
+
+  Unlike Midsequence Neglect, the issue is crowding and low signal-to-noise rather than position alone. Unlike Tool Context Overload, the excessive material need not come from tools.
+searchPhrases:
+  - lost the point in too much text
+  - important info got buried
+  - drowned out the key context
+  - too much noise in context
+examples:
+  - kind: fail
+    label: Buried constraint ignored
+    text: A critical one-line constraint is present in context but swamped by thousands of words of pasted material, and the plan violates it.
+    quote: |-
+      User: Here's our full infra runbook and the team wiki export for reference. One thing to flag — the staging database is read-only. Can you draft the deploy plan?
+      [… 9,000 words of runbook and wiki pages …]
+      Assistant: Step 3: run the schema migration directly against staging to verify the new columns before promoting to production.
+  - kind: warn
+    label: Generic answer despite specifics
+    text: Nothing is wrong yet, but the answer is generic boilerplate — the specific details supplied in the dump are no longer shaping the output.
+    quote: |-
+      User: Here's our full infra runbook and the team wiki export for reference. One thing to flag — the staging database is read-only. Can you draft the deploy plan?
+      [… 9,000 words of runbook and wiki pages …]
+      Assistant: A typical deploy plan has four phases: build, test, stage, and release. First, set up a CI pipeline…
+  - kind: ok
+    label: Signal survives the noise
+    text: Given the same dump, the model surfaces the buried constraint and builds the plan around it.
+    quote: |-
+      User: Here's our full infra runbook and the team wiki export for reference. One thing to flag — the staging database is read-only. Can you draft the deploy plan?
+      [… 9,000 words of runbook and wiki pages …]
+      Assistant: Since staging is read-only, the plan dry-runs the migration against a local copy and only applies writes in production during the release window.
+why:
+  - Attention is a normalized distribution over all tokens in context. As more material is added, the share of attention available to any one passage shrinks, so relevant signals are mechanically diluted by everything around them.
+  - Models are demonstrably distracted by irrelevant content. Inserting unrelated material into a problem measurably degrades performance even when the needed information is still present and unambiguous (Shi et al., 2023, "Large Language Models Can Be Easily Distracted by Irrelevant Context").
+  - >-
+    Reported context window sizes describe what a model can ingest, not what it uses reliably. Performance degrades as input length grows even when the task is held constant, well before the nominal limit (Levy et al., 2024, "Same Task, More Tokens"; Hsieh et al., 2024, "RULER: What's the Real Context Size of Your Long-Context Language Models?").
+  - Common system designs stuff context defensively. RAG pipelines over-retrieve, agent frameworks append every tool result, and prompt templates accumulate boilerplate, so the relevant material arrives pre-buried in low-value text.
+detection:
+  - icon: 📏
+    heading: Constraint preservation checks
+    body: Extract the explicit constraints supplied in context — read-only systems, hard caps, stated requirements — and mechanically check each one against the response. A violated constraint that is verifiably present in the input is the direct symptom of dilution.
+  - icon: 🔬
+    heading: Context ablation testing
+    body: Rerun the same query with the surrounding bulk stripped down to the relevant passages and compare outputs. If the lean prompt honors a constraint the full dump misses, the information was usable all along and volume is what broke it.
+  - icon: ⚖️
+    heading: LLM-as-judge evaluation
+    body: Run a judge asking whether the response actually depends on the specifics supplied in context or could have been written without them. Generic boilerplate in the face of a detailed dump is the early-warning form of this mode, before any constraint is outright violated.
+  - icon: 🧪
+    heading: Golden-set evals
+    body: Maintain tasks where one load-bearing fact is embedded in growing volumes of realistic filler — runbooks, wiki exports, transcript padding — and chart accuracy against padding size. Performance that degrades with volume while the task stays constant is dilution by definition.
+
+mitigation:
+  - icon: 🧹
+    heading: Context curation
+    body: Stop stuffing defensively — trim over-retrieved RAG results, accumulated tool output, and boilerplate down to what the task needs. Ablation shows the lean prompt honors constraints the full dump misses, so volume is a cost to budget, not a free safety margin.
+  - icon: 📌
+    heading: Context pinning
+    body: Pull load-bearing facts out of the dump and restate them where they can't be buried — a short constraints block in the system prompt or beside the question — so a one-line "staging is read-only" isn't competing for attention with 9,000 words of wiki export.
+  - icon: 🚪
+    heading: Relevance gating
+    body: Gate material before it enters the prompt — judge each retrieved passage, tool result, and pasted document for whether it bears on the task, and exclude what doesn't. Irrelevant content measurably degrades answers even when the model is told it may ignore it.
+
+related:
+  - id: midsequence-neglect-lost-in-the-middle
+  - id: tool-context-overload
+  - id: context-rot

@@ -1,0 +1,77 @@
+id: source-misrepresentation
+categoryId: faithfulness
+name: Source Misrepresentation
+def: |-
+  Misstates, exaggerates, reverses, or selectively distorts what a cited, retrieved, uploaded, or tool-returned source actually says.
+
+  Unlike Citation Span Mismatch, the problem is the model's interpretation of the source, not merely an unsupported citation attachment. Unlike Quote Hallucination, the failure can occur without fabricating exact quoted wording.
+searchPhrases:
+  - misrepresented the source
+  - twisted what the source said
+  - exaggerated the source
+  - reversed the source's meaning
+
+why:
+  - Models paraphrase by regenerating meaning through their own learned distributions rather than copying. Hedges, scope limits, and negations are low-salience tokens that paraphrasing easily drops or flips, which reverses or strengthens the original claim (Kryscinski et al., 2020, "Evaluating the Factual Consistency of Abstractive Text Summarization").
+  - Pretraining priors pull interpretation toward the typical version of a claim. When a source says something surprising or carefully qualified, the model drifts toward the more common framing it saw during training (Longpre et al., 2021, "Entity-Based Knowledge Conflicts in Question Answering").
+  - Preference tuning rewards clear, decisive prose, and sycophancy pressures bend interpretation toward the user's apparent position. Faithfully preserving a source's uncertainty reads as wishy-washy to raters, so tuning pushes toward stronger restatements that agree with what the user wants to hear (Sharma et al., 2023, "Towards Understanding Sycophancy in Language Models").
+  - Retrieval hands the model fragments stripped of surrounding argument. A passage that was a counterexample, a quotation of an opposing view, or a conditional claim gets read as the document's own assertion.
+
+examples:
+  - kind: fail
+    label: Dropped hedge strengthens the claim
+    text: Paraphrasing discards "may" and "in some patients," turning a cautious finding into a flat assertion the source never made.
+    quote: |-
+      [… uploaded study reads: "The supplement may modestly reduce fatigue in some patients with mild deficiency." …]
+      User: What does this study say about the supplement?
+      Assistant: The study shows that the supplement reduces fatigue.
+  - kind: fail
+    label: Opposing view read as the document's claim
+    text: The source quotes a critic in order to rebut them, but retrieval strips the surrounding argument and the model attributes the criticism to the document itself.
+    quote: |-
+      [… retrieved passage: "Critics argue the policy raised rents; the report's data show rents were flat." …]
+      User: What does the report conclude about the policy's effect on rents?
+      Assistant: The report concludes that the policy raised rents.
+  - kind: warn
+    label: Faithful facts, shifted emphasis
+    text: Every individual statement matches the source, but a minor caveat is promoted to the headline finding, leaving the reader with a conclusion the source did not draw.
+    quote: |-
+      [… study's main result is a treatment benefit; a limitations note mentions two cases of mild nausea …]
+      User: What does this study say about the supplement?
+      Assistant: The key takeaway is the study's safety concerns — it documents adverse reactions, alongside some reported benefits.
+  - kind: ok
+    label: Qualifiers preserved
+    text: Restates the finding at exactly the strength the source gives it, keeping scope limits and uncertainty intact.
+    quote: |-
+      [… uploaded study reads: "The supplement may modestly reduce fatigue in some patients with mild deficiency." …]
+      User: What does this study say about the supplement?
+      Assistant: It reports a possible modest reduction in fatigue, and only for some patients with mild deficiency — the authors stop well short of a general claim that it works.
+
+detection:
+  - icon: 🔗
+    heading: Entailment checking
+    body: Run an NLI model between each restated claim and the source passage it paraphrases. Dropped hedges and flipped negations surface as non-entailment — "the supplement reduces fatigue" is not entailed by "may modestly reduce fatigue in some patients," even though every entity matches.
+  - icon: ⚖️
+    heading: LLM-as-judge evaluation
+    body: Run a judge that compares the restatement against the source on the axes paraphrasing distorts — claim strength, scope qualifiers, causal direction, and whether a quoted opposing view got read as the document's own position. Entity-level checks miss these relation errors entirely.
+  - icon: 🧪
+    heading: Golden-set evals
+    body: Maintain sources that are heavily hedged, carefully scoped, or surprising relative to common framings, and regression-test whether restatements preserve the qualifiers and direction — measuring drift toward the stronger, more typical version of each claim.
+
+mitigation:
+  - icon: 📝
+    heading: Instruction constraints
+    body: Instruct the model to restate claims at exactly the strength the source gives them — keeping "may," "in some patients," and scope limits intact — and to quote the operative sentence when the finding is hedged, since paraphrase is where qualifiers get dropped.
+  - icon: ✅
+    heading: Self-check pass
+    body: Before answering, have the model compare its restatement against the source on the axes paraphrasing distorts — claim strength, scope, causal direction, attribution — and restore any hedge or qualifier the draft strengthened away.
+  - icon: 🧩
+    heading: Retrieval tuning
+    body: Retrieve passages with enough surrounding context to preserve their argumentative role — expanding chunks or including neighboring sentences — so a quoted critic or a conditional claim arrives marked as such instead of reading as the document's own assertion.
+
+related:
+  - id: citation-span-mismatch
+  - id: quote-hallucination
+  - id: summarization-distortion
+  - id: authority-hallucination
+  - id: tool-result-misread

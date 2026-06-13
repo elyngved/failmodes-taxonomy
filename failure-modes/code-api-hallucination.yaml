@@ -1,0 +1,74 @@
+id: code-api-hallucination
+categoryId: fabrication
+name: Code/API Hallucination
+def: |-
+  Invents or misstates code interfaces, libraries, methods, parameters, endpoint behavior, configuration keys, or platform capabilities.
+
+  Unlike Version Hallucination, the core failure is an unsupported API or behavior, though version confusion may be the cause. Unlike Tool Argument Error, this describes advice or generated code, not a live tool call with bad arguments.
+searchPhrases:
+  - made up an API
+  - invented a function
+  - wrong library method
+  - API doesn't exist
+  - hallucinated code
+why:
+  - APIs are designed to be predictable, and the model leans on that predictability. It extends naming conventions to methods that plausibly should exist but do not — the same generalization that makes it good with real APIs (Liu et al., 2024, "Exploring and Evaluating Hallucinations in LLM-Powered Code Generation").
+  - Training data mixes many versions of every library without labels. The model's picture of an interface blends years of changes, so generated code can combine signatures and behaviors that never existed together in one release.
+  - Niche libraries and rarely used parameters appear sparsely in code corpora, and hallucination rates rise there. One large study found about a fifth of packages recommended by code LLMs did not exist (Spracklen et al., 2025, USENIX Security).
+  - There is no compiler or type checker in the loop during generation, and helpfulness tuning discourages answering "that capability does not exist." A concrete, runnable-looking snippet is the response shape training rewarded, and errors an IDE would flag instantly survive unless the system adds execution feedback.
+
+examples:
+  - kind: fail
+    label: Nonexistent capability
+    text: Asserts the standard library covers a task it does not, producing a clean snippet that fails on import.
+    quote: |-
+      User: How do I read a YAML file with Python's standard library?
+      Assistant: Use the built-in yaml module: import yaml, then config = yaml.safe_load(open("config.yaml")).
+      [… yaml is a third-party package (PyYAML); the standard library has no YAML parser …]
+  - kind: fail
+    label: Invented method
+    text: Extends a real library's naming conventions to a method that plausibly should exist but does not.
+    quote: |-
+      User: What's the quickest way to drop outlier rows from a pandas DataFrame?
+      Assistant: Call df.remove_outliers(method="iqr", threshold=1.5) — it returns a filtered copy.
+      [… pandas has no remove_outliers method in any release …]
+  - kind: warn
+    label: Version-blended signature
+    text: Combines parameters from different releases into a call that never existed in any single version, without flagging which version it targets.
+    quote: |-
+      User: How do I create an OpenAI-compatible streaming completion with retries?
+      Assistant: Pass stream=True and retry_policy=RetryPolicy(max_attempts=3) to the create call.
+      [… the two options come from different library generations and never coexisted …]
+  - kind: ok
+    label: Honest capability boundary
+    text: States plainly that the capability is not there and routes to the real dependency.
+    quote: |-
+      User: How do I read a YAML file with Python's standard library?
+      Assistant: The standard library has no YAML parser. You'd need the third-party PyYAML package (pip install pyyaml), or switch the config to JSON/TOML, which the stdlib does handle.
+
+detection:
+  - icon: 🔎
+    heading: API existence lookup
+    body: Resolve every import, package name, method, and parameter in generated code against the real registry and library surface — PyPI/npm for packages, the installed library's actual symbols for methods. An invented method like df.remove_outliers fails the lookup even when it reads as idiomatic.
+  - icon: ⚙️
+    heading: Sandboxed execution
+    body: Run generated snippets in a sandbox with the stated dependencies installed. Import errors, AttributeErrors, and unexpected-keyword failures surface nonexistent capabilities and version-blended signatures that no amount of reading the code would flag.
+  - icon: 🧪
+    heading: Golden-set evals
+    body: Maintain prompts targeting niche libraries, rarely used parameters, and capabilities that plausibly should exist but don't, and regression-test the rate of unresolvable packages and symbols in generated code.
+
+mitigation:
+  - icon: 📚
+    heading: Retrieval grounding
+    body: Put the real API surface in context — current docs, type stubs, or the installed library's signatures for the pinned version — so the model copies interfaces from evidence instead of extrapolating them from naming conventions blended across releases.
+  - icon: 🛠️
+    heading: Tool-backed lookup
+    body: Give the model a docs-search or symbol-resolution tool and require it to confirm packages, methods, and parameters before recommending them. A method it cannot find in the real library surface is one it cannot emit.
+  - icon: ⚙️
+    heading: Sandboxed execution
+    body: Close the loop the IDE normally provides — run generated code against the stated dependencies and feed import errors, AttributeErrors, and unexpected-keyword failures back for repair, so invented interfaces die before the answer ships.
+
+related:
+  - id: version-hallucination
+  - id: tool-argument-error
+  - id: specificity-hallucination

@@ -1,0 +1,64 @@
+id: unbounded-consumption
+categoryId: security
+name: Unbounded Consumption
+def: |-
+  Consumes or triggers excessive tokens, compute, time, bandwidth, money, API quota, storage, or external resources without adequate limits or stopping conditions.
+
+  Unlike Runaway Agent Loop, the defining harm is resource exhaustion even if the process is not cyclic. Unlike Tool Loop, the consumption may come from generation, retrieval, delegation, or broad execution.
+searchPhrases:
+  - burned too many tokens
+  - ran up the cost
+  - used too much compute
+  - no spending limit
+why:
+  - The model has no native sense of cost. Tokens, API fees, compute, and wall-clock time are not represented in generation, so nothing inside the model weighs whether the next step is worth its price.
+  - Training rewards thoroughness over economy. Preference tuning favors complete, detailed responses and persistent effort, and there is no countervailing signal for stopping early because the marginal value no longer justifies the spend.
+  - Agent architectures multiply consumption structurally. Retries, reflection passes, sub-agent delegation, and broad searches each multiply the base cost, and a single stalled judgment at the top compounds through every layer below it.
+  - >-
+    Consumption is an attacker-reachable surface. Adversarial inputs can deliberately trigger maximal processing, such as expensive retrievals, long generations, or recursive tool use, turning the system's own helpfulness into a denial-of-wallet vector (OWASP, 2025, "LLM10: Unbounded Consumption").
+
+examples:
+  - kind: fail
+    label: Unbounded fan-out on a vague task
+    text: With no budget, the agent expands a broad task into ever more sub-agents and retrievals, burning tokens and spend without converging.
+    quote: |-
+      User: Research everything about our competitors and summarize it.
+      Assistant: [spawns 40 sub-agents, each issuing dozens of searches and re-summarizing; thousands of dollars in API spend, no final summary]
+  - kind: warn
+    label: No stopping condition on retries
+    text: A failing step is retried indefinitely because nothing caps attempts, multiplying cost on a task that will not succeed.
+    quote: |-
+      User: Pull the report from the analytics API.
+      Tool: [call] 502 Bad Gateway
+      Assistant: [retries the same call every few seconds for an hour with no backoff or attempt limit]
+  - kind: ok
+    label: Works within an explicit budget
+    text: The agent scopes the task, caps its effort, and reports back instead of consuming resources open-endedly.
+    quote: |-
+      User: Research everything about our competitors and summarize it.
+      Assistant: That's broad, so I'll cap this at the top 5 competitors and ~20 sources. Here's the summary at that scope — tell me if you want me to go deeper on any one.
+detection:
+  - icon: 📊
+    heading: Resource consumption monitoring
+    body: Meter tokens, spend, API calls, and wall-clock time per task and alert on the distribution's tail, not its mean. Runaway consumption is rare and extreme — the 40-sub-agent fan-out lives in the 99th percentile, and an aggregate invoice at month's end is the detection failure this monitoring exists to prevent.
+  - icon: 📉
+    heading: Convergence monitoring
+    body: Track spend against progress, not just spend — retries without backoff against the same 502, sub-agents returning results that don't advance the goal, cost accumulating while the task state stands still. Consumption with no progress signal attached is the runaway case even when each individual call is cheap.
+  - icon: 🧪
+    heading: Golden-set evals
+    body: Include vague, expansive tasks and adversarial denial-of-wallet inputs — requests crafted to trigger maximal retrieval, generation, or recursion — and measure the consumption distribution. Score whether the system scopes and self-caps, the way "everything about our competitors" should become a bounded plan with a reported budget.
+mitigation:
+  - icon: 🛑
+    heading: Call budget enforcement
+    body: Give every task a budget — tokens, spend, tool calls, sub-agents, wall-clock — and cap retries with backoff so a 502 costs a handful of attempts, not an hour of them. Exhaustion forces a report-back with partial results rather than silent continuation; the model has no native sense of cost, so the meter has to live in the scaffold.
+  - icon: 📝
+    heading: Instruction constraints
+    body: Require vague, expansive tasks to be scoped into an explicit plan with a stated budget before work begins — the ok example's "top 5 competitors, ~20 sources" move. Thoroughness tuning expands "research everything" literally; the instruction makes bounding the scope the first deliverable instead of a failure to try hard enough.
+  - icon: 🔒
+    heading: Fail-closed enforcement
+    body: Enforce hard quotas, timeouts, and spend ceilings at the infrastructure level — API keys with per-task limits, sub-agent counts the orchestrator refuses to exceed — so exceeding the budget stops the system rather than billing it. Denial-of-wallet inputs attack the model's judgment deliberately; the ceiling that can't be argued with is the defense that holds.
+
+related:
+  - id: runaway-agent-loop
+  - id: tool-loop
+  - id: overthinking

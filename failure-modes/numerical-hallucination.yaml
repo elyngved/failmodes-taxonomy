@@ -1,0 +1,75 @@
+id: numerical-hallucination
+categoryId: fabrication
+name: Numerical Hallucination
+def: |-
+  Produces a number, metric, count, date, measurement, or quantitative claim that is not grounded in the input, sources, or a valid computation.
+
+  Unlike Arithmetic Error, the problem is that the number lacks support, not that a supplied numeric operation was computed incorrectly. Unlike Date/Deadline Confusion, it is about unsupported quantitative content rather than misreading a temporal boundary in the task.
+searchPhrases:
+  - made up a number
+  - invented a statistic
+  - unsupported number
+  - fabricated a metric
+why:
+  - Numbers are stored poorly in model weights. Tokenizers split numbers into arbitrary fragments, and nearby values look almost identical to the model, so precise figures are remembered fuzzily at best (Nogueira et al., 2021, "Investigating the Limitations of Transformers with Simple Arithmetic Tasks").
+  - Statistics in training data are contradictory by nature — populations, prices, and benchmarks change over time and differ between sources. The model averages over all of it, so the number it produces may match no real source.
+  - Quantitative writing has a strong style, and the model learned it. Sentences like "grew 23% year over year" are common patterns, so a precise-sounding figure can be a fluency move rather than a retrieved fact — and human raters reward the specific "41,200" over the honest "about 40,000" (Sharma et al., 2023, "Towards Understanding Sycophancy in Language Models").
+  - The model generates numbers the same way it generates words — by sampling likely tokens — with no calculator or lookup step involved unless the system adds one.
+
+examples:
+  - kind: fail
+    label: Invented statistic
+    text: Produces a precise figure with a confident frame. The number matches no real source — it is quantitative style, not retrieval.
+    quote: |-
+      User: What percentage of customer-support tickets get fully resolved by chatbots?
+      Assistant: Industry-wide, chatbots fully resolve 67% of support tickets without human escalation.
+  - kind: fail
+    label: Ungrounded number from context
+    text: Asked about a document it was given, the model emits a figure that appears nowhere in it — averaging its training-data priors instead of reading the source.
+    quote: |-
+      [… uploaded report states headcount grew "from 240 to 310" …]
+      User: How much did headcount grow according to this report?
+      Assistant: The report shows headcount grew 23% year over year, from 240 to 295.
+  - kind: warn
+    label: Hedged but still fabricated
+    text: Softens the figure with "around," but the underlying number is still ungrounded — the hedge changes the tone, not the support.
+    quote: |-
+      User: What percentage of customer-support tickets get fully resolved by chatbots?
+      Assistant: Studies generally put it at around 65–70% of tickets.
+  - kind: ok
+    label: Declines the fake number
+    text: Says the honest thing — the figure varies too much for a single number — and points at where a grounded one would come from.
+    quote: |-
+      User: What percentage of customer-support tickets get fully resolved by chatbots?
+      Assistant: There's no reliable single figure — published numbers vary widely by industry and by how "resolved" is defined. Your own deflection rate from your helpdesk analytics is the number worth using.
+
+detection:
+  - icon: 🔎
+    heading: Claim-to-source verification
+    body: Extract every number, percentage, date, and metric from the output and trace each one to the input, a retrieved source, or a valid computation. A figure that traces to nothing — like a growth rate that appears nowhere in the report it summarizes — is fabricated regardless of how plausible it looks.
+  - icon: ⚖️
+    heading: LLM-as-judge evaluation
+    body: Run a judge prompted to flag quantitative claims stated with more precision than the evidence supports, including hedged forms like "around 65–70%" where the range itself is ungrounded — softened tone is not support.
+  - icon: 🧪
+    heading: Golden-set evals
+    body: Maintain questions where no reliable single figure exists — contested statistics, source-dependent metrics, values that change over time — and regression-test whether the model declines or gives ranges instead of emitting a confident invented number.
+
+mitigation:
+  - icon: 📚
+    heading: Retrieval grounding
+    body: Require every number to come from the input, a retrieved source, or an explicit computation — never from parametric memory, where precise figures are stored fuzzily and the model averages over contradictory training data.
+  - icon: 🛠️
+    heading: Tool-backed lookup
+    body: Route quantitative questions to a search, database, or analytics tool so figures are copied from a live source rather than sampled. A statistic the system cannot retrieve is one it should not state.
+  - icon: 📝
+    heading: Instruction constraints
+    body: Instruct the model to match its precision to its support — ranges or "no reliable single figure" when the evidence is weak — so preference-tuned pressure toward "67%" stops beating the honest "it varies by industry."
+  - icon: ✅
+    heading: Self-check pass
+    body: Before answering, have the model trace each number, percentage, and date in its draft back to a source or computation, and downgrade any it cannot trace — including hedged forms like "around 65–70%", where the range itself is ungrounded.
+
+related:
+  - id: arithmetic-error
+  - id: specificity-hallucination
+  - id: date-deadline-confusion
+  - id: unknown-answer-fabrication

@@ -1,0 +1,63 @@
+id: concision-failure
+categoryId: response-integrity
+name: Concision Failure
+def: |-
+  Compresses the answer so aggressively that necessary context, reasoning, caveats, instructions, or operational detail is lost.
+
+  Unlike Incompleteness, the omission is caused by over-compression or an inappropriate brevity target. Unlike Summarization Loss, this concerns the final response style, not necessarily compression of prior context.
+searchPhrases:
+  - too short to be useful
+  - cut out important details
+  - oversimplified the answer
+  - left out key context being brief
+why:
+  - Brevity instructions are followed as length targets, not information targets. Told to be concise, the model optimizes the visible metric, fewer tokens, and the invisible one, which details were load-bearing, is what gets sacrificed.
+  - The model cannot reliably rank details by consequence. Cutting requires knowing which caveat prevents a failure and which is decoration, and that judgment depends on the user's situation, which the prompt rarely reveals.
+  - Summarization training teaches lossy habits. Compression data rewards preserving the gist, and caveats, edge cases, and operational steps are statistically peripheral to gist, so they are the first content the learned compression discards.
+  - The cost of over-compression is invisible at rating time. A missing prerequisite or dropped warning fails later, when the user acts on the answer, so feedback loops register the pleasing brevity and never the omission it caused.
+examples:
+  - kind: fail
+    label: Caveat cut for brevity
+    text: Honors the brevity request by dropping the one warning that prevents data loss.
+    quote: |-
+      User: Quick answer, no explanation — how do I delete my local branch "feature-x"?
+      Assistant: git branch -D feature-x
+  - kind: warn
+    label: Steps without the prerequisite
+    text: Compresses a procedure to its happy path, omitting the setup step the instructions assume.
+    quote: |-
+      User: Give me the short version of deploying this to production.
+      Assistant: Push to main, run ./deploy.sh, done.
+      [… deploy.sh fails for the user because it requires production credentials to be configured first …]
+  - kind: ok
+    label: Brief but load-bearing
+    text: Stays short while keeping the one detail whose omission would cause harm.
+    quote: |-
+      User: Quick answer, no explanation — how do I delete my local branch "feature-x"?
+      Assistant: git branch -d feature-x — use -D instead only if you're sure, since it deletes even unmerged work.
+detection:
+  - icon: ⚖️
+    heading: LLM-as-judge evaluation
+    body: Give the judge a full-detail reference answer and ask which omissions from the compressed version are load-bearing — the warning that prevents data loss, the prerequisite the script assumes. The brevity instruction is context, not excuse — the judge's question is whether the user can act on what survived.
+  - icon: 📈
+    heading: User correction mining
+    body: Mine follow-ups for downstream failure reports — "that didn't work," "you didn't mention I needed credentials," the user returning after acting on the answer. Over-compression fails after the conversation ends, so the signal lives in the next session, not in the rating of the short answer itself.
+  - icon: 🧪
+    heading: Golden-set evals
+    body: Maintain tasks with known load-bearing caveats, asked with explicit brevity instructions, and score caveat survival under compression. The -D flag warning either made the cut or it didn't — measuring which details get sacrificed to a length target is mechanical once the load-bearing set is defined.
+mitigation:
+  - icon: 📝
+    heading: Instruction constraints
+    body: Define concise as the shortest answer the user can act on safely, and state that brevity requests never license dropping warnings, prerequisites, or conditions — "quick answer" governs the explanation, not the -D caveat. Length instructions are otherwise optimized as token targets, with load-bearing detail treated as just more tokens.
+  - icon: ✅
+    heading: Self-check pass
+    body: After compressing, have the model ask what goes wrong if the user executes exactly what survived — run the deploy steps mentally as someone without production credentials configured. The check ranks details by consequence, which is the judgment pure compression skips, and reinstates only what failure analysis earns back.
+  - icon: 🔁
+    heading: Validate-and-retry loops
+    body: Where a full-detail reference answer exists, have the scaffold diff the compressed response against it and bounce back any version missing a load-bearing item, named — "the unmerged-work warning was cut." The brevity instruction stays satisfied; the loop only restores what the user cannot safely act without.
+
+related:
+  - id: incompleteness
+  - id: verbosity-failure
+  - id: summarization-loss
+  - id: audience-mismatch

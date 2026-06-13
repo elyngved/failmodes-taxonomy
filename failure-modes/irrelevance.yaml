@@ -1,0 +1,61 @@
+id: irrelevance
+categoryId: response-integrity
+name: Irrelevance
+def: |-
+  Includes content that does not materially help answer the user's question, solve the task, or support the needed decision.
+
+  Unlike Genericism, irrelevant content may be specific but off-target. Unlike Verbosity Failure, the issue is topical fit rather than length alone.
+searchPhrases:
+  - off-topic answer
+  - didn't answer the question
+  - irrelevant content
+  - beside the point
+why:
+  - Association drives generation. Surface terms in the prompt activate everything that co-occurred with them in training, and content related to the topic's neighborhood flows into the answer whether or not it serves the actual question.
+  - The model answers the template the question resembles. Common phrasings pull toward their most frequent training-data treatment, so a question that superficially matches a popular pattern gets that pattern's standard answer, including its standard digressions.
+  - Coverage is rewarded over selection. Raters score visible thoroughness more reliably than they penalize off-target passages, so including adjacent material is a safe strategy and pruning it is never reinforced.
+  - Relevance requires modeling the decision behind the question. What the user will do with the answer determines what counts as material, and that purpose usually goes unstated, leaving the model to fill the gap with everything plausibly related.
+examples:
+  - kind: fail
+    label: Answers the topic, not the question
+    text: Responds with the topic's standard material while the actual question goes unanswered.
+    quote: |-
+      User: What port does PostgreSQL listen on by default?
+      Assistant: PostgreSQL is a powerful open-source relational database first released in 1996. To get started, install it with your package manager, then initialize a data directory with initdb and create your first database with createdb.
+  - kind: warn
+    label: Answer plus digressions
+    text: Contains the answer, but surrounds it with adjacent material that serves no part of the question.
+    quote: |-
+      User: What port does PostgreSQL listen on by default?
+      Assistant: The default port is 5432. While we're on the topic, you may also want to know about connection pooling with PgBouncer, the pros and cons of logical replication, and how Postgres compares to MySQL for high-write workloads.
+  - kind: ok
+    label: Material content only
+    text: Answers the question and adds only what the asker of that question would plausibly need next.
+    quote: |-
+      User: What port does PostgreSQL listen on by default?
+      Assistant: 5432. You can change it with the port setting in postgresql.conf.
+detection:
+  - icon: ❓
+    heading: QA-based consistency checks
+    body: Run the original question against the response with an extractive QA model — if "what port does PostgreSQL listen on" cannot pull an answer out of the response, the response answered the topic instead of the question. The fail case never contains the answer at all, and this catches it mechanically.
+  - icon: ⚖️
+    heading: LLM-as-judge evaluation
+    body: Score materiality passage by passage — for each sentence, does it help answer the question, or does it belong to the topic's neighborhood? The warn-level shape is an answer present but surrounded by digressions, and only per-passage scoring separates the 5432 from the PgBouncer tour around it.
+  - icon: 🧪
+    heading: Golden-set evals
+    body: Maintain questions with short checkable answers and score two things separately — whether the answer appears, and what fraction of the response is material to the question. A system can ace the first while drowning it in the second, and both numbers matter.
+mitigation:
+  - icon: 📝
+    heading: Instruction constraints
+    body: Require the answer to the question asked to come first, and limit additions to what the asker of that question plausibly needs next — the port number, then the config setting that changes it, and nothing from the topic's neighborhood. "While we're on the topic" is a stateable anti-pattern the prompt can ban by name.
+  - icon: ✅
+    heading: Self-check pass
+    body: Add the revision pass generation lacks — before delivering, have the model score each passage against one question, does this help answer what was asked? The PgBouncer tour develops fluently because tangents are never re-examined once begun; a per-passage materiality check is where they finally get cut.
+  - icon: 🧲
+    heading: Relevance gating
+    body: Filter retrieved passages by usefulness to the question, not embedding similarity, before they reach the model. RAG injects the topic's neighborhood by construction, and the model is tuned to use what it is given — gating what arrives is cheaper than teaching it to discard.
+
+related:
+  - id: genericism
+  - id: verbosity-failure
+  - id: retrieval-distractor

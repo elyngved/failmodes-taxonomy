@@ -1,0 +1,69 @@
+id: prompt-brittleness
+categoryId: control
+name: Prompt Brittleness
+def: |-
+  Produces materially different answers when the prompt is reworded, reformatted, or rerun, even though nothing meaningful about the request changed.
+
+  Unlike Self-Contradiction, the inconsistency appears across separate runs or phrasings rather than within one response. Unlike Instruction Noncompliance, each individual response may follow the instructions; what fails is stability across immaterial variation.
+searchPhrases:
+  - different answer every time
+  - rephrasing flipped the answer
+  - inconsistent across runs
+  - small prompt change broke it
+why:
+  - Sampling is stochastic by design. At nonzero temperature the same prompt yields different token paths, and where the model's underlying uncertainty is high, those paths diverge into different confident answers rather than rewordings of one answer.
+  - Models are sensitive to semantically irrelevant features of the prompt. Formatting choices like separators, casing, and option order swing task accuracy by tens of points while leaving the meaning untouched (Sclar et al., 2024, "Quantifying Language Models' Sensitivity to Spurious Features in Prompt Design").
+  - Pretrained models encode inconsistent beliefs, so paraphrasing the same factual query can elicit different answers from the same weights. Which learned position surfaces depends on local phrasing cues, not on the question's content (Elazar et al., 2021, "Measuring and Improving Consistency in Pretrained Language Models").
+  - Prompts are tuned against one exact phrasing. A template that "works" was validated at a single point in input space, and small edits — by a developer, a paraphrasing user, or an upstream template change — move the input across decision boundaries no one can see.
+
+examples:
+  - kind: fail
+    label: Identical input, opposite verdicts
+    text: Two runs of the same classification request at the same settings reach contradictory conclusions — the instability, not either answer, is the failure.
+    quote: |-
+      User: Does this error log indicate a memory leak? [log attached]
+      Assistant: Yes — heap usage climbs steadily across restarts, which is the classic leak signature.
+      [… identical request, second run …]
+      Assistant: No — this looks like normal GC pressure under load, not a leak.
+  - kind: warn
+    label: Paraphrase flips the answer
+    text: Two phrasings any reader would call equivalent retrieve different learned positions, and the answers quietly disagree.
+    quote: |-
+      User: Is it safe to run this migration while the app is serving traffic?
+      Assistant: Yes, it's an additive schema change — safe to run live.
+      [… separate session, same migration …]
+      User: Can I run this migration without taking the app down?
+      Assistant: I'd schedule downtime — running schema changes against live traffic is risky.
+  - kind: ok
+    label: Stable across phrasings, uncertainty surfaced
+    text: The substance holds across reruns and rewordings, and where the evidence is genuinely ambiguous, the model says so consistently instead of resolving the ambiguity differently each time.
+    quote: |-
+      User: Does this error log indicate a memory leak? [log attached]
+      Assistant: Inconclusive from this log alone — heap usage climbs, but the window is too short to separate a leak from warm-up. A longer capture across two GC cycles would settle it.
+
+detection:
+  - icon: 🎲
+    heading: Self-consistency sampling
+    body: Run the same prompt several times at production settings and measure answer agreement. Divergence into different confident answers — leak versus GC pressure — maps the inputs where the system is unstable, before a user discovers it one run at a time.
+  - icon: 🔀
+    heading: Paraphrase perturbation testing
+    body: Rephrase each eval item in ways that preserve meaning — synonyms, reordered clauses, different formatting — and diff the answers across variants. Substance that moves with the wording is brittleness measured directly, and formatting-only variants isolate the spurious-feature sensitivity.
+  - icon: 🧪
+    heading: Golden-set evals
+    body: Score the eval suite on variance, not just mean accuracy — run each item multiple times and across paraphrase variants, and track per-item flip rates. A flaky eval is this failure showing up in development; treating reruns as noise to average away hides exactly the signal.
+
+mitigation:
+  - icon: 🎚️
+    heading: Deterministic decoding
+    body: Use temperature 0 or a fixed seed for classification-style and decision-style tasks where run-to-run variance is pure cost. This removes the sampling half of the failure cheaply — though not paraphrase sensitivity, and not fully on serving stacks where batching introduces its own nondeterminism.
+  - icon: 🗳️
+    heading: Majority-vote ensembling
+    body: For unstable, high-stakes calls, sample several responses and take the majority answer, treating the agreement rate as a confidence signal (Wang et al., 2023, "Self-Consistency Improves Chain of Thought Reasoning in Language Models"). A 5-of-5 verdict and a 3-of-5 verdict deserve different downstream handling.
+  - icon: 🧱
+    heading: Input canonicalization
+    body: Render user content into a fixed template before it reaches the model — normalized formatting, consistent field order, one canonical phrasing for recurring questions — so immaterial variation is removed at the boundary instead of being passed through to weights that are sensitive to it.
+
+related:
+  - id: self-contradiction
+  - id: model-update-regression
+  - id: calibration-failure

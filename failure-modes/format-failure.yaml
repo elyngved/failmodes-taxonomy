@@ -1,0 +1,63 @@
+id: format-failure
+categoryId: control
+name: Format Failure
+def: |-
+  Produces an answer in the wrong shape, organization, medium, style, or presentation format for the requested output.
+
+  Unlike JSON/Schema Failure, the output may be valid text but in the wrong form. Unlike Poor Structure, the issue is failing a requested or expected format, not merely being hard to scan.
+searchPhrases:
+  - wrong output format
+  - didn't follow the format
+  - wrong shape of answer
+  - ignored the requested format
+examples:
+  - kind: fail
+    label: Requested shape ignored
+    text: The user asked for a table to paste into a doc; the content is fine but arrives as prose with headings, which defeats the purpose.
+    quote: |-
+      User: Give me our four services with owner and on-call rotation as a markdown table — I'm pasting it into the runbook.
+      Assistant: Here's an overview of your services. **Auth service.** Owned by the identity team, with a weekly on-call rotation…
+  - kind: warn
+    label: Right format, wrong envelope
+    text: The table is there, but wrapped in preamble and follow-up prose the user will have to strip out before pasting.
+    quote: |-
+      User: Give me our four services with owner and on-call rotation as a markdown table — I'm pasting it into the runbook.
+      Assistant: Great idea to document this! Here's a table that should work nicely for your runbook: [table] Let me know if you'd like me to add more columns!
+  - kind: ok
+    label: Format followed exactly
+    text: The response is the requested artifact and nothing else, ready to paste.
+    quote: |-
+      User: Give me our four services with owner and on-call rotation as a markdown table — I'm pasting it into the runbook.
+      Assistant: | Service | Owner | On-call |
+      | Auth | Identity team | Weekly |
+      | Billing | Payments team | Biweekly | …
+why:
+  - Format instructions compete with strong priors about how content of this kind is usually presented in training data. A request for prose meets a learned habit of bullet lists, and the habit often wins.
+  - Even simple, mechanically checkable format instructions are failed at substantial rates, showing the gap is in following the spec, not understanding it (Zhou et al., 2023, "Instruction-Following Evaluation for Large Language Models").
+  - The format spec sits at the top of the prompt while generation is governed by local continuation pressure. Far into a response, the nearby text shapes the next token more than the distant instruction does.
+  - Users specify formats loosely, with terms like "brief" or "a table" that admit many readings. The model fills the unspecified dimensions from its prior, which may not match what the requester pictured.
+detection:
+  - icon: 📐
+    heading: Mechanical format checks
+    body: Verify the requested shape with deterministic checks — is there a table, does the word count fit, is the response free of preamble and trailing commentary. Most format specs decompose into assertions a script can run on every output.
+  - icon: ⚖️
+    heading: LLM-as-judge evaluation
+    body: For loosely specified formats — "brief," "something I can paste into the runbook" — run a judge asking whether the response is the requested artifact and nothing else. Wrapper prose around a correct artifact is the warn-level case worth scoring separately.
+  - icon: 🧪
+    heading: Golden-set evals
+    body: Maintain a suite of verifiable format instructions across content types and rerun it on every model or prompt change. Include long outputs, where local continuation pressure overrides a format spec stated at the top.
+mitigation:
+  - icon: 📝
+    heading: Instruction constraints
+    body: Make the spec concrete and put it where generation will feel it — a literal exemplar of the desired shape, an explicit "the response is the artifact and nothing else," and for long outputs a restatement near the end of the prompt rather than only the top. A vague "as a table" leaves every other dimension to the model's prior, which is exactly where the learned habit wins.
+  - icon: 🔁
+    heading: Validate-and-retry loops
+    body: Run the mechanical checks — table present, word count within bounds, no preamble or trailing commentary — and regenerate on failure with the specific miss named. Format compliance is probabilistic per attempt, and most requested shapes decompose into assertions cheap enough to gate every output on.
+  - icon: ✂️
+    heading: Output post-processing
+    body: When the correct artifact is present but wrapped — the warn case of preamble, pleasantries, and follow-up prose around a fine table — extract it deterministically rather than regenerating. Chat tuning makes the conversational envelope the most common failure here, and it is the one a few lines of stripping code fix for free.
+
+related:
+  - id: json-schema-failure
+  - id: poor-structure
+  - id: constraint-violation

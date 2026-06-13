@@ -1,0 +1,65 @@
+id: reasoning-error
+categoryId: reasoning
+name: Reasoning Error
+def: |-
+  Draws the wrong conclusion through invalid inference, faulty assumptions, mistaken causal reasoning, unsupported logical steps, or framing the problem with the wrong representation or abstraction.
+
+  Unlike Arithmetic Error, the faulty operation is general reasoning rather than numerical calculation. Unlike Verification Failure, the error is the bad reasoning itself, not only the missing check that would have caught it.
+searchPhrases:
+  - faulty reasoning
+  - invalid logic
+  - bad inference
+  - flawed reasoning
+examples:
+  - kind: fail
+    label: Invalid inference from true premises
+    text: Both premises are correct, but the conclusion reverses the conditional — deploy days correlate with outages, which says nothing close to "outage tomorrow."
+    quote: |-
+      User: Every outage this year happened on a deploy day. Tomorrow is a deploy day — so we should expect an outage, right?
+      Assistant: Yes — given that pattern, an outage tomorrow is likely, so I'd schedule the on-call team accordingly.
+  - kind: warn
+    label: Plausible steps, unsupported leap
+    text: The visible chain of thought reads well, but the conclusion rests on a causal claim none of the steps actually establish.
+    quote: |-
+      User: Signups dropped 20% the week we changed the pricing page. Was the redesign the cause?
+      Assistant: The timing lines up, the pricing page is the last step before signup, and nothing else changed that we know of — so yes, the redesign caused the drop.
+  - kind: ok
+    label: Valid handling of the same question
+    text: The model separates correlation from the asked-for conclusion and states what the evidence does and doesn't support.
+    quote: |-
+      User: Every outage this year happened on a deploy day. Tomorrow is a deploy day — so we should expect an outage, right?
+      Assistant: Not quite — that tells us outages cluster on deploy days, but most deploy days had no outage. With ~3 outages across ~100 deploy days this year, tomorrow's baseline risk is a few percent, not "expect an outage."
+why:
+  - >-
+    Next-token prediction learns reasoning as statistical association. Whether an inference is drawn correctly varies with how probable the content is, not just with logical form, so the same argument structure succeeds on familiar material and fails on unfamiliar material (McCoy et al., 2023, "Embers of Autoregression: Understanding Large Language Models Through the Problem They Are Trained to Solve").
+  - Models show human-like belief bias. Conclusions that are plausible in the world get judged valid regardless of whether the premises support them, and reasoning over implausible premises degrades (Dasgupta et al., 2022, "Language Models Show Human-like Content Effects on Reasoning Tasks").
+  - >-
+    A written chain of thought can be rationalization rather than the actual computation. Models produce plausible-looking steps that do not reflect what drove the answer, so the visible reasoning can pass review while the real inference is invalid (Turpin et al., 2023, "Language Models Don't Always Say What They Think: Unfaithful Explanations in Chain-of-Thought Prompting").
+  - Problem framing locks in early. The first tokens commit to a representation or abstraction, and autoregressive decoding makes reframing expensive, so a wrong initial framing propagates through the entire solution.
+detection:
+  - icon: ⚖️
+    heading: LLM-as-judge evaluation
+    body: Run a validity-focused judge that asks whether the stated steps actually entail the conclusion, separately from whether the conclusion is plausible. Prompt it for the signature patterns — reversed conditionals, correlation read as cause, and chains whose final leap none of the steps support.
+  - icon: 🎲
+    heading: Self-consistency sampling
+    body: Sample several independent reasoning paths for the same problem and compare conclusions. Agreement is no proof of validity, but divergence is a cheap, reliable flag that the inference is unstable and needs checking before anything is built on it.
+  - icon: 🧪
+    heading: Golden-set evals
+    body: Use matched pairs that hold the logical form constant while varying content plausibility — valid arguments with implausible conclusions, invalid ones with plausible conclusions. The accuracy gap between the pair measures belief bias directly, which aggregate logic scores hide.
+mitigation:
+  - icon: 📝
+    heading: Instruction constraints
+    body: Make the logical form explicit work — state the premises, state what they do and don't entail, and separate "the evidence shows X" from "the user asked whether Y" before concluding. The deploy-day question is answered correctly the moment base rates are demanded; the instruction forces the step that fluent continuation skips.
+  - icon: 🔣
+    heading: Symbolic abstraction
+    body: >-
+      For load-bearing inferences, restate the argument with neutral symbols — "all A happened on B-days; tomorrow is a B-day" — and evaluate validity on the abstracted form. Belief bias is content-driven, so stripping the content is the direct countermeasure: an invalid form stays visibly invalid when there's no plausible conclusion to vouch for it.
+  - icon: 🛠️
+    heading: Tool-backed computation
+    body: Where the inference is formalizable — probability and base-rate calculations, logical entailment over enumerable cases — set up the computation and let code or a solver execute it. The ok example's "3 outages across 100 deploy days" is arithmetic wearing a reasoning costume, and the same is true of more inference than it appears.
+
+related:
+  - id: arithmetic-error
+  - id: verification-failure
+  - id: compositional-failure
+  - id: error-accumulation

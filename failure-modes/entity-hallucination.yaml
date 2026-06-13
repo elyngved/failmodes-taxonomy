@@ -1,0 +1,73 @@
+id: entity-hallucination
+categoryId: fabrication
+name: Entity Hallucination
+def: |-
+  Introduces a named person, organization, product, place, dataset, model, or other entity that is not supported by the available evidence.
+
+  Unlike Specificity Hallucination, the unsupported detail is a named entity. Unlike Citation Hallucination, the fabricated object is part of the answer's factual content rather than a reference used to support it.
+searchPhrases:
+  - made up a name
+  - invented a company
+  - fabricated a person
+  - named a product that doesn't exist
+why:
+  - Facts about specific people, companies, and products live in the long tail of training data. The less often an entity appears, the weaker the model's memory of it, and the more likely it fills the gap with something plausible (Kandpal et al., 2023, "Large Language Models Struggle to Learn Long-Tail Knowledge").
+  - The model stores entities as overlapping patterns in shared weights rather than as separate records. Similar entities blur together, so attributes from one person or product get transferred to another, or merge into a composite that never existed.
+  - Names are highly composable, and nothing at decoding time distinguishes a recalled name from a constructed one. The model has learned what company names, drug names, and dataset names look like, so it can generate a brand-new one that fits the pattern as easily as recalling a real one.
+  - Once an invented entity appears in the output, the model treats its own earlier text as established context and keeps building on it, a dynamic known as hallucination snowballing (Zhang et al., 2023, "How Language Model Hallucinations Can Snowball").
+
+examples:
+  - kind: fail
+    label: Invented entity
+    text: Slips a fabricated dataset in alongside real ones. The real neighbors make the invented name look vetted.
+    quote: |-
+      User: What datasets can I use to benchmark table-to-text generation?
+      Assistant: The standard ones are ToTTo, WikiBio, and TabFact-Gen, a 2021 corpus of 180k table-summary pairs from Wikipedia.
+      [… ToTTo and WikiBio are real; TabFact-Gen does not exist …]
+  - kind: fail
+    label: Blended entities
+    text: Merges two similar companies into one, transferring an acquisition from one entity to its near-neighbor in the weights.
+    quote: |-
+      User: Who owns the Figma plugin marketplace?
+      Assistant: It's run by Figma, which Microsoft acquired in 2023 as part of its design tooling push.
+      [… the model has fused the abandoned Adobe-Figma deal with Microsoft's unrelated acquisitions …]
+  - kind: warn
+    label: Unflagged long-tail recall
+    text: Names a specific person for a long-tail fact without signaling that its memory at this level of obscurity is unreliable. Nothing is checkably false yet, but the confidence is unearned.
+    quote: |-
+      User: Who maintains the libyaml bindings for OCaml?
+      Assistant: That package is maintained by David Renshaw.
+  - kind: ok
+    label: Bounded recall
+    text: Gives the entities it can support and marks the boundary of its knowledge instead of filling the gap with a plausible name.
+    quote: |-
+      User: What datasets can I use to benchmark table-to-text generation?
+      Assistant: ToTTo and WikiBio are the two I can name with confidence. There are newer ones, but I'm not certain enough of their names to list them — a search for "table-to-text benchmark" on Papers with Code will give you the current set.
+
+detection:
+  - icon: 🔎
+    heading: Claim-to-source verification
+    body: Extract every named person, organization, product, dataset, and place from the output and look each one up against a knowledge base, search index, or the provided context. A fabricated entity fails the lookup even when it sits in a list of real neighbors that make it look vetted.
+  - icon: ⚖️
+    heading: LLM-as-judge evaluation
+    body: Run a judge that compares the response against the supplied evidence and flags entities introduced from nowhere — especially attribute transfers, where a real claim is attached to the wrong entity, which existence lookups alone won't catch.
+  - icon: 🧪
+    heading: Golden-set evals
+    body: Maintain questions about long-tail entities — obscure maintainers, niche datasets, small companies — where the model has only gist-level knowledge, and regression-test whether it bounds its recall instead of filling gaps with plausible names.
+
+mitigation:
+  - icon: 📚
+    heading: Retrieval grounding
+    body: Require named entities to come from retrieved context or a knowledge base rather than parametric memory, especially for long-tail facts where the model's recall is weakest and a constructed name is as fluent as a real one.
+  - icon: 📝
+    heading: Instruction constraints
+    body: Instruct the model to name only entities it can support and to mark the boundary of its recall — "ToTTo and WikiBio are the two I can name with confidence" — instead of padding lists with plausible neighbors.
+  - icon: ✅
+    heading: Self-check pass
+    body: Before answering, have the model re-read its draft and verify each named person, organization, product, and dataset against the available evidence — dropping or flagging any it cannot trace. This also interrupts snowballing, where an invented entity becomes context the rest of the answer builds on.
+
+related:
+  - id: specificity-hallucination
+  - id: citation-hallucination
+  - id: memory-hallucination
+  - id: extrinsic-hallucination

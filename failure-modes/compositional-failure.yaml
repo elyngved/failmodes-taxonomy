@@ -1,0 +1,62 @@
+id: compositional-failure
+categoryId: reasoning
+name: Compositional Failure
+def: |-
+  Fails to combine multiple facts, constraints, operations, sources, or subproblem results into a coherent answer.
+
+  Unlike Partial Retrieval, the needed pieces may be present but not integrated. Unlike Reasoning Error, the problem is integration across parts rather than a flawed inference or wrong problem framing.
+searchPhrases:
+  - didn't combine the steps
+  - failed to put it together
+  - couldn't combine the facts
+  - didn't integrate the parts
+examples:
+  - kind: fail
+    label: Constraints handled separately, never jointly
+    text: Each fact is used correctly in isolation, but the proposed answer violates their combination.
+    quote: |-
+      User: Find us a 30-minute slot — Anna in Berlin is only free after 4pm her time, Raj in San Francisco is only free before 10am his.
+      Assistant: Anna is free after 4pm and Raj before 10am, so let's book 4pm Berlin / 10am San Francisco.
+  - kind: warn
+    label: Pieces restated, conclusion missing
+    text: The model faithfully presents every input side by side but never derives the answer their combination implies — the user is left to do the integration.
+    quote: |-
+      User: Find us a 30-minute slot — Anna in Berlin is only free after 4pm her time, Raj in San Francisco is only free before 10am his.
+      Assistant: To summarize the constraints — Anna: after 4pm CET. Raj: before 10am PT. Berlin is 9 hours ahead of San Francisco. Let me know which time you'd like to go with.
+  - kind: ok
+    label: Facts combined into the answer
+    text: The time difference and both availability windows are reconciled into a slot that satisfies everything at once.
+    quote: |-
+      User: Find us a 30-minute slot — Anna in Berlin is only free after 4pm her time, Raj in San Francisco is only free before 10am his.
+      Assistant: Berlin is 9 hours ahead, so the windows overlap from 4pm–7pm Berlin (7am–10am SF). I'd book 5:00–5:30pm Berlin / 8:00–8:30am SF.
+why:
+  - >-
+    Transformers tend to solve compositional tasks by matching subproblems seen in training rather than executing the full composition. Performance degrades sharply as the depth and breadth of required composition grow beyond familiar patterns (Dziri et al., 2023, "Faith and Fate: Limits of Transformers on Compositionality").
+  - A single forward pass supports limited serial computation. Combining many facts or constraints needs more sequential steps than the architecture provides unless the work is externalized into chain-of-thought, and prompts often do not force that.
+  - The training objective enforces local coherence, not joint consistency. Each span of the answer can faithfully reflect one source or constraint while the answer as a whole never reconciles them.
+  - Training data demonstrates juxtaposition more than integration. Articles and summaries typically present facts side by side, so models learn to restate the pieces rather than derive the conclusion their combination implies.
+detection:
+  - icon: 📏
+    heading: Constraint preservation checks
+    body: Verify the final answer against all constraints jointly, not one at a time — checking each in isolation is exactly how this failure hides. A proposed meeting slot either satisfies both availability windows and the timezone math or it does not, and that is mechanically checkable.
+  - icon: ⚖️
+    heading: LLM-as-judge evaluation
+    body: Prompt the judge for juxtaposition without integration — responses that faithfully restate every input side by side but never derive the conclusion their combination implies, leaving the user to do the actual reconciliation.
+  - icon: 🧪
+    heading: Golden-set evals
+    body: Maintain tasks with mechanically verifiable joint solutions and scale the number of interacting facts and constraints. Performance degrades with compositional depth, so charting accuracy against the number of parts locates the cliff before production finds it.
+mitigation:
+  - icon: 🪜
+    heading: Task decomposition
+    body: Externalize the composition the architecture can't do in one pass — solve the subproblems explicitly, then make their combination its own visible step. The timezone conversion, each availability window, and the overlap calculation each get written down before the slot is proposed, so the joint constraint is computed rather than pattern-matched.
+  - icon: 📝
+    heading: Instruction constraints
+    body: Demand the derived conclusion, not the assembled inputs — instruct the model that restating the constraints side by side is not an answer, and the response must commit to what their combination implies. Training data teaches juxtaposition over integration, so the integration step has to be named as the deliverable.
+  - icon: 🛠️
+    heading: Tool-backed computation
+    body: When the combination is mechanical — interval overlaps, budget arithmetic across constraints, schedule feasibility — encode the pieces and let code or a solver do the joint reconciliation. Per-fact extraction is what models do reliably; the cross-product of constraints is where they degrade, and it's exactly the part a few lines of code performs flawlessly.
+
+related:
+  - id: reasoning-error
+  - id: partial-retrieval
+  - id: conflicting-source-failure

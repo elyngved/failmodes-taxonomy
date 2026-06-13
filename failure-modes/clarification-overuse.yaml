@@ -1,0 +1,60 @@
+id: clarification-overuse
+categoryId: control
+name: Clarification Overuse
+def: |-
+  Asks the user for clarification when the task is already sufficiently specified, stalling on details the system could reasonably infer or safely proceed without.
+
+  Unlike Clarification Underuse, the error is asking when it should act, not acting when it should ask. Unlike Insufficient Agency, the system does respond, by asking, rather than failing silently to make an obvious next move.
+searchPhrases:
+  - asked too many questions
+  - kept asking instead of doing
+  - asked when it was obvious
+  - stalled asking for details
+examples:
+  - kind: fail
+    label: Stalling on the obvious
+    text: The task is fully specified and mechanically checkable, but the model burns a round trip asking about details with obvious answers.
+    quote: |-
+      User: Rename the function getUser to fetchUser everywhere in the repo.
+      Assistant: Before I start — should I also update the call sites? And do you want the test files included, or just source files?
+  - kind: warn
+    label: Acting but hedging with questions
+    text: The work gets done, but the response trails off into unnecessary questions that invite another turn the user doesn't need.
+    quote: |-
+      User: Rename the function getUser to fetchUser everywhere in the repo.
+      Assistant: Done — renamed in all 14 files. Would you like me to verify the tests still pass? Should I also check for any documentation mentions? Let me know how you'd like to proceed.
+  - kind: ok
+    label: Proceeding on reasonable defaults
+    text: The model commits to the obvious interpretation, completes the task, and surfaces its choices for review instead of asking first.
+    quote: |-
+      User: Rename the function getUser to fetchUser everywhere in the repo.
+      Assistant: Renamed across 14 files, including call sites, tests, and the two doc references. Tests pass.
+why:
+  - Preference tuning penalizes a confidently wrong action more than an unnecessary question, and asking reads as conscientious to human evaluators. Under uncertainty, asking is the low-risk move for the model even when the expected cost to the user is higher.
+  - Safety and carefulness training generalize broadly. "Check before acting" is reinforced for genuinely risky operations, and the learned caution spills over into benign, fully specified tasks.
+  - Models do not reliably track which missing details are recoverable from context, convention, or a cheap reversible attempt. Without that judgment, every unknown looks like grounds for a question.
+detection:
+  - icon: 📊
+    heading: Clarification rate monitoring
+    body: Track question-turns on tasks that are fully specified, plus round trips burned before any work starts and the density of trailing questions after completed work. A rising ask-rate on mechanically checkable tasks is this mode's production signature.
+  - icon: ⚖️
+    heading: LLM-as-judge evaluation
+    body: For each clarifying question asked, have a judge assess whether the answer was recoverable from context, convention, or a cheap reversible attempt. Questions with obvious answers are the failure even when they sound conscientious.
+  - icon: 🧪
+    heading: Golden-set evals
+    body: Maintain fully specified tasks with verifiable outcomes and score whether the model completes them without a round trip. Score the warn case too — work that gets done but trails off into unnecessary questions inviting another turn.
+mitigation:
+  - icon: 📝
+    heading: Instruction constraints
+    body: Instruct the model to proceed on reasonable defaults and report the choices it made for review, rather than asking first — and explicitly ban the trailing-question habit, where finished work dissolves into "would you like me to…?" Asking is the model's low-risk move; the prompt has to assign the cost of the round trip that preference tuning never charged it for.
+  - icon: ✅
+    heading: Self-check pass
+    body: Before asking, require the model to check whether the answer is recoverable — from context, from convention, or from a cheap reversible attempt. A question that survives that filter is worth the user's turn; "should I update the call sites?" does not, because renaming a function everywhere answers it by definition.
+  - icon: ♻️
+    heading: Reversible-by-default execution
+    body: For cheap, undoable work, make attempting the default — commit to the obvious interpretation, do the rename, and surface what was chosen. A wrong guess costs one revert; the question costs a round trip even when the guess would have been right. Reversibility is what makes proceeding the rational policy.
+
+related:
+  - id: clarification-underuse
+  - id: insufficient-agency
+  - id: refusal-overreach

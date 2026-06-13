@@ -1,0 +1,63 @@
+id: clarification-underuse
+categoryId: control
+name: Clarification Underuse
+def: |-
+  Proceeds without asking when missing or ambiguous information materially affects correctness, safety, or user intent, committing to an interpretation that should have been confirmed first.
+
+  Unlike Clarification Overuse, the error is acting on unresolved ambiguity rather than asking when the task is already clear. Unlike Goal Misinterpretation, the model has not necessarily misread a clear goal; it failed to resolve genuine ambiguity before acting.
+searchPhrases:
+  - should have asked first
+  - assumed instead of asking
+  - didn't ask when it should have
+  - guessed at what I meant
+examples:
+  - kind: fail
+    label: Acting on a destructive guess
+    text: '"Old" is genuinely ambiguous and the action is irreversible, but the model picks a threshold silently and executes.'
+    quote: |-
+      User: Clean up the old backups on the storage volume.
+      Assistant: Done — I deleted all 47 backups older than 7 days.
+      User: I meant the ones from the decommissioned server. Some of those were our monthly archives.
+  - kind: warn
+    label: Assumption stated but still risky
+    text: The model at least surfaces its interpretation, but commits to an irreversible action on it in the same turn instead of pausing.
+    quote: |-
+      User: Clean up the old backups on the storage volume.
+      Assistant: I'm interpreting "old" as anything over 7 days — deleting those 47 backups now.
+  - kind: ok
+    label: One targeted question before acting
+    text: Because the action is irreversible and the key term is ambiguous, the model resolves the ambiguity first with a single specific question.
+    quote: |-
+      User: Clean up the old backups on the storage volume.
+      Assistant: Before I delete anything — by "old" do you mean by age (say, over 30 days), or the backups from the decommissioned server? There are monthly archives in there I don't want to assume about.
+why:
+  - Instruction-tuning data overwhelmingly pairs a prompt with an immediate answer. Asking back is rare in training corpora, so committing to one interpretation is the default reflex.
+  - >-
+    Ambiguity is common in real requests, but models are trained to resolve it silently. Even open-domain questions are ambiguous more often than not, yet standard training treats a single answer as the target (Min et al., 2020, "AmbigQA: Answering Ambiguous Open-domain Questions").
+  - Benchmarks score the answer and evaluators rate decisive responses above questions, so a clarifying question registers as a non-answer. Both evaluation pressure and preference tuning push toward guessing.
+  - Detecting ambiguity is itself a missing step. Decoding commits to one reading token by token, and unless prompted to enumerate interpretations, the model never represents that alternatives existed.
+detection:
+  - icon: ⚖️
+    heading: LLM-as-judge evaluation
+    body: Judge the ask-or-act decision against the stakes — was a load-bearing term genuinely ambiguous, was the action reversible, would the plausible readings produce materially different results. Flag the warn case too, where an assumption is stated and an irreversible action taken in the same turn.
+  - icon: 📊
+    heading: Clarification rate monitoring
+    body: Track the share of risky or irreversible actions preceded by a clarifying question, and mine transcripts for the lagging signal — user corrections like "I meant…" arriving after an action are guesses that already went wrong.
+  - icon: 🧪
+    heading: Golden-set evals
+    body: Maintain prompts with genuine ambiguity where the readings diverge materially and the action is irreversible, and score whether the model asks before acting. Pair each with an unambiguous twin so the eval penalizes guessing without rewarding asking about everything.
+mitigation:
+  - icon: 📝
+    heading: Instruction constraints
+    body: Give the model an explicit ask-or-act policy — enumerate the plausible readings of load-bearing terms, and ask one targeted question when they diverge materially and the action is hard to reverse. Decoding commits to a single reading by default, so the enumeration step has to be demanded; it won't emerge from the answer-immediately reflex training instills.
+  - icon: 🚦
+    heading: Human approval gates
+    body: Require explicit confirmation before irreversible operations, with the interpretation made concrete — "this will delete these 47 backups, listed below" — so a silent guess becomes a reviewable plan. The gate converts this mode's worst case from damage into a round trip, exactly where the round trip is worth its cost.
+  - icon: ♻️
+    heading: Reversible-by-default execution
+    body: Route destructive actions through soft paths — trash instead of delete, dry-run first, staged changes — so that when the model does proceed on a wrong guess, the user's "I meant the decommissioned server" arrives while the monthly archives are still recoverable. This mitigates the blast radius of underasking without adding a question to every task.
+
+related:
+  - id: clarification-overuse
+  - id: goal-misinterpretation
+  - id: escalation-failure

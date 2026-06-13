@@ -1,0 +1,76 @@
+id: temporal-hallucination
+categoryId: freshness
+name: Temporal Hallucination
+def: |-
+  Presents outdated or temporally wrong information as current, including incorrect present-day facts, timelines, sequence, recency, release status, or the current state of a system, organization, or event.
+
+  Unlike Outdated Source Reliance, this describes the generated claim itself, whatever its cause (training data, memory, retrieval, or reasoning), not a decision to trust a stale source. Unlike Date/Deadline Confusion, it concerns factual claims about time and current state rather than scheduling boundaries within a task.
+searchPhrases:
+  - out of date answer
+  - said old info is current
+  - wrong current state
+  - presented outdated info as current
+
+why:
+  - Model weights freeze the world at the training cutoff, but pretraining text encodes mutable facts — officeholders, prices, product lineups — as timeless assertions. The model learns "X is Y" rather than "X was Y as of 2023," so it states frozen facts in the present tense with no representation of which ones expire (Lazaridou et al., 2021, "Mind the Gap"; Dhingra et al., 2022, "Time-Aware Language Models as Temporal Knowledge Bases").
+  - A model's effective knowledge of a topic often lags its nominal cutoff. Training corpora mix crawls from many years, and older versions of a fact can dominate by volume, so the model resolves to an earlier state than its cutoff date implies (Cheng et al., 2024, "Dated Data").
+  - Models answer fast-changing questions with the same fluency and confidence as stable ones. On benchmarks of questions whose answers change over time, models confidently produce superseded answers rather than flagging uncertainty or declining (Vu et al., 2023, "FreshLLMs").
+  - Even with retrieval available, systems often skip it when the model is confident, and the parametric answer wins. Routing logic keyed on model confidence misses that confidence says nothing about whether a fact is still current.
+
+examples:
+  - kind: fail
+    label: Frozen fact in the present tense
+    text: States the world as of its training cutoff as the current state, with no signal that the fact is the kind that expires.
+    quote: |-
+      User: What's the latest LTS release of Node.js?
+      Assistant: The latest LTS release is Node 20, codenamed Iron.
+      [… two LTS releases have shipped since the model's training cutoff …]
+  - kind: fail
+    label: Wrong release status
+    text: Describes a product that already shipped as still upcoming — the model's timeline froze mid-announcement.
+    quote: |-
+      User: Can I use the new image-editing API in production?
+      Assistant: Not yet — it was announced in beta and hasn't had a general-availability release.
+      [… the API reached general availability eight months ago …]
+  - kind: warn
+    label: Fast-changing question, no cutoff flag
+    text: Answers a question whose answer churns constantly with full confidence and no mention that the information has a shelf life. Nothing in the transcript is checkably false — but nothing marks it as perishable either.
+    quote: |-
+      User: Which model tops the leaderboard for code generation right now?
+      Assistant: The top-ranked model for code generation is Claude.
+  - kind: ok
+    label: Cutoff acknowledged, freshness routed
+    text: Separates what it knew at training time from what is true now, and reaches for a live source for the part that expires.
+    quote: |-
+      User: What's the latest LTS release of Node.js?
+      Assistant: As of my training data the latest LTS was Node 22, but a newer one has likely shipped since — LTS releases land every October. Let me check.
+      Tool: web search — nodejs.org lists Node 24 as the active LTS
+      Assistant: The current LTS is Node 24.
+
+detection:
+  - icon: 🔎
+    heading: Claim-to-source verification
+    body: Extract present-tense claims about mutable facts — latest releases, current officeholders, product status, prices — and verify each against a live source. A frozen fact stated as current fails the check even though it was true at training time, which is what makes this mode invisible to static fact-checking.
+  - icon: ⚖️
+    heading: LLM-as-judge evaluation
+    body: Run a judge that classifies each claim by shelf life and flags perishable facts asserted confidently without a freshness marker or live lookup. The warn-grade case — a leaderboard answer with no hint that it expires — is detectable even when nothing is checkably false yet.
+  - icon: 🧪
+    heading: Golden-set evals
+    body: Maintain a FreshQA-style set of questions whose answers change on known cadences — LTS releases, rankings, release statuses — with periodically refreshed ground truth, and regression-test whether the model answers with superseded facts, flags its cutoff, or routes to a live source.
+
+mitigation:
+  - icon: 🛠️
+    heading: Tool-backed lookup
+    body: Route perishable facts — latest releases, rankings, product status, prices — to a live search or fetch, and key the routing on the question's shelf life rather than the model's confidence, since a frozen fact is generated with exactly the same confidence as a stable one.
+  - icon: 📝
+    heading: Instruction constraints
+    body: Give the model its training cutoff and today's date, and instruct it to date its claims about mutable facts — "as of my training data" — instead of asserting them in the timeless present tense the training corpus taught it. Tuning suppresses this disclaimer, so the prompt must restore it.
+  - icon: 📚
+    heading: Retrieval grounding
+    body: For questions about current state, require the answer to come from a retrieved, dated source rather than parametric memory — the weights froze the world at the cutoff, so on anything that changes, retrieval isn't an enhancement but the only grounded path to "now."
+
+related:
+  - id: outdated-source-reliance
+  - id: date-deadline-confusion
+  - id: version-hallucination
+  - id: memory-staleness

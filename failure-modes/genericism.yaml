@@ -1,0 +1,61 @@
+id: genericism
+categoryId: response-integrity
+name: Genericism
+def: |-
+  Gives vague, boilerplate, or template-like guidance that is too nonspecific or abstract for the user to act on, instead of concrete help grounded in their task.
+
+  Unlike Irrelevance, generic content may be on topic but too nonspecific to be useful. Unlike Incompleteness, the topic may be covered while the answer still offers nothing the user can actually execute.
+searchPhrases:
+  - generic boilerplate answer
+  - too vague to act on
+  - template-like response
+  - nonspecific advice
+why:
+  - Next-token prediction averages over the training distribution. For any common question, the highest-likelihood response is the one that fit the most past contexts, which is by construction the least specific to this one.
+  - Alignment tuning collapses output diversity. RLHF concentrates probability on a narrow band of safe, high-scoring response shapes, trading the distribution's tails, where situation-specific answers live, for the reliable middle (Kirk et al., 2024, "Understanding the Effects of RLHF on LLM Generalisation and Diversity").
+  - Generic advice is unfalsifiable, and the reward signal notices. Boilerplate cannot be wrong, so it never draws the penalty a concrete recommendation risks, and preference tuning steadily favors the answer that no rater can fault.
+  - The model lacks the context specificity requires, and is tuned not to ask. Concrete guidance depends on constraints the prompt omits, and since clarifying questions rate poorly, the model answers anyway at the only altitude the missing information allows.
+examples:
+  - kind: fail
+    label: Boilerplate instead of help
+    text: Returns the listicle any churn question gets, using none of the specifics the user provided.
+    quote: |-
+      User: My B2B SaaS churn jumped from 3% to 8% last quarter, right after we raised prices 40% and sunset the legacy plan. What should I do?
+      Assistant: Reducing churn starts with understanding your customers. Improve onboarding, gather feedback regularly, build customer loyalty, and deliver consistent value. Engaged customers are retained customers!
+  - kind: warn
+    label: On-topic but unexecutable
+    text: Engages with the situation but stays at an altitude where nothing said implies a next action.
+    quote: |-
+      User: My B2B SaaS churn jumped from 3% to 8% last quarter, right after we raised prices 40% and sunset the legacy plan. What should I do?
+      Assistant: A price increase of that size can definitely impact retention. You'll want to look at whether the churn is price-related and consider whether your value communication matched the change.
+  - kind: ok
+    label: Grounded in the specifics
+    text: Builds the answer from the facts given and ends in steps the user can execute this week.
+    quote: |-
+      User: My B2B SaaS churn jumped from 3% to 8% last quarter, right after we raised prices 40% and sunset the legacy plan. What should I do?
+      Assistant: The timing points at the migration, not churn in general. First, split last quarter's churned accounts into legacy-plan migrants vs. everyone else — if migrants dominate, this is a one-time cohort event, not a trend. For accounts still in their migration window, offer a 12-month grandfathered rate; that usually stanches the bleeding while you confirm the cohort theory.
+detection:
+  - icon: 📏
+    heading: Specificity scoring
+    body: Count how many of the prompt's particulars the answer actually uses — the 40% price raise, the sunset legacy plan, the 3-to-8% jump. An answer that references none of them could have been written without reading the question, which is the definition of template output, measurable mechanically.
+  - icon: ⚖️
+    heading: LLM-as-judge evaluation
+    body: Ask the judge two questions — could this response have been generated from the topic alone, and what concrete action does it imply for this user this week? The warn-level case engages with the situation but answers at an altitude where nothing said implies a next step, and only the second question catches it.
+  - icon: 🧪
+    heading: Golden-set evals
+    body: Build detail-rich scenarios where the right answer depends on the supplied facts — the timing of the churn spike points at the migration cohort, not churn in general — and score whether the recommendations change when the details do. Generic output scores identically across scenario variants; grounded output cannot.
+mitigation:
+  - icon: 📝
+    heading: Instruction constraints
+    body: Require the answer to use the particulars the user supplied and to end in steps executable this week — and when the specifics needed for concrete guidance are missing, to ask for them instead of answering at the altitude the gap allows. The listicle is the trained default; both halves of the constraint exist to make it unavailable.
+  - icon: ✅
+    heading: Self-check pass
+    body: Before delivering, have the model check which of the prompt's facts the draft actually uses — the 40% raise, the sunset plan, the 3-to-8% jump. A draft that uses none could have been written without reading the question; that test failing is the signal to regenerate from the specifics rather than polish the template.
+  - icon: 🧑‍🏫
+    heading: Preference data curation
+    body: Rate concrete, falsifiable recommendations above polished boilerplate, deliberately rewarding answers that take a position a rater could fault. Genericism is reinforced precisely because unfalsifiable advice never draws a penalty; until the data charges for it, tuning keeps collapsing toward the safe middle.
+
+related:
+  - id: irrelevance
+  - id: incompleteness
+  - id: audience-mismatch

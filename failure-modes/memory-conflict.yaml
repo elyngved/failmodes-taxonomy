@@ -1,0 +1,68 @@
+id: memory-conflict
+categoryId: memory
+name: Memory Conflict
+def: |-
+  Mishandles competing memories: fails to notice that stored memories, preferences, prior decisions, or persisted state disagree, or resolves the conflict with the wrong precedence, freshness, authority, or specificity rule.
+
+  Unlike Memory Staleness, more than one stored memory is in play rather than a single outdated one. Unlike Self-Contradiction, the conflicting claims come from persisted memory rather than the model's own outputs.
+searchPhrases:
+  - conflicting saved preferences
+  - didn't resolve memory conflict
+  - two memories disagreed
+  - picked the wrong remembered setting
+examples:
+  - kind: fail
+    label: Wrong precedence
+    text: A project-specific rule should beat a general preference, but the model applies the global memory and breaks the project convention.
+    quote: |-
+      User: Add a health-check endpoint to the Acme service.
+      [… memory retrieval returns "user prefers Python" (saved last year) and "all Acme services are TypeScript" (project rule) …]
+      Assistant: Here's the health-check endpoint in Python, since that's your preferred language.
+  - kind: warn
+    label: Conflict smoothed over
+    text: The model lands on a defensible choice, but never acknowledges that its memories disagree — the user can't tell a conflict was silently resolved.
+    quote: |-
+      User: Add a health-check endpoint to the Acme service.
+      [… memory retrieval returns "user prefers Python" (saved last year) and "all Acme services are TypeScript" (project rule) …]
+      Assistant: Here's the endpoint in TypeScript.
+  - kind: ok
+    label: Conflict surfaced and resolved
+    text: The model notices the disagreement, applies the more specific rule, and tells the user which memory won and why.
+    quote: |-
+      User: Add a health-check endpoint to the Acme service.
+      [… memory retrieval returns "user prefers Python" (saved last year) and "all Acme services are TypeScript" (project rule) …]
+      Assistant: Your general preference is Python, but the Acme project rule says TypeScript — going with TypeScript since the project rule is more specific. Say the word if you want this one in Python.
+why:
+  - Memory stores are append-heavy by design. Writes rarely locate and invalidate the entries they supersede, so contradictory memories accumulate as a normal byproduct of use.
+  - Retrieval returns competing entries side by side, often without the metadata needed to rank them. Timestamps, source authority, and scope are frequently missing, and even when present, models are weakly trained to condition on them.
+  - Pretraining teaches models to smooth over contradictions in text rather than flag them. Web corpora are full of disagreeing statements, and the learned behavior is to produce a coherent continuation, not to surface the inconsistency.
+  - Correct resolution requires precedence reasoning, such as a project-level override beating a global preference, or an explicit instruction beating an inferred habit. These rules are rarely encoded anywhere, so the model improvises them per response — and which memory wins is often decided by where each entry happens to land in the prompt.
+detection:
+  - icon: 🔍
+    heading: Memory store auditing
+    body: Run pairwise contradiction checks over the store itself with an NLI model or judge — conflicting preferences, decisions saved alongside the entries they superseded. Conflicts accumulate at write time, so they are detectable in the store before any response goes wrong.
+  - icon: 🔀
+    heading: Position permutation testing
+    body: Shuffle the order of retrieved memory entries and rerun the request. If which memory wins flips with ordering, resolution is being decided by prompt mechanics rather than precedence, freshness, or specificity.
+  - icon: ⚖️
+    heading: LLM-as-judge evaluation
+    body: Give the judge the retrieved entries and ask both whether they disagree and whether the response surfaced the disagreement. Silent side-taking — a defensible choice that never acknowledges the conflict — is the case that outcome-only checks miss.
+  - icon: 🧪
+    heading: Golden-set evals
+    body: Seed stores with deliberately conflicting entries whose correct resolution is known — project rule vs. global preference, newer vs. older, explicit vs. inferred — and regression-test which entry wins and whether the conflict is acknowledged.
+mitigation:
+  - icon: 🗃️
+    heading: Supersession-aware writes
+    body: At write time, search the store for entries the new memory contradicts or replaces, and mark them superseded instead of appending alongside them. Conflicts accumulate because writes never look back; a store that reconciles on write hands the model one current answer instead of a disagreement to improvise over.
+  - icon: 🥇
+    heading: Explicit precedence rules
+    body: Attach scope, recency, and source metadata to every entry and encode the resolution order in the pipeline — project rule beats global preference, explicit instruction beats inferred habit, newer beats older within a scope. Rank or annotate retrieved entries by these rules before injection, so the winner is decided by precedence rather than by which entry lands last in the prompt.
+  - icon: 📝
+    heading: Instruction constraints
+    body: Instruct the model that when retrieved memories disagree, it should name the conflict, say which entry it followed and why, and offer the alternative — the behavior in the ok example. This targets the smoothed-over case directly, since pretraining biases the model toward producing a coherent continuation rather than surfacing the inconsistency.
+
+related:
+  - id: memory-staleness
+  - id: memory-omission
+  - id: self-contradiction
+  - id: recency-bias

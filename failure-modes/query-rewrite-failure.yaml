@@ -1,0 +1,75 @@
+id: query-rewrite-failure
+categoryId: retrieval
+name: Query Rewrite Failure
+def: |-
+  Reformulates a user's search, retrieval, or tool query in a way that drops intent, adds false constraints, or searches the wrong concept.
+
+  Unlike Retrieval Miss, the failure originates in the rewritten query rather than only in retrieval ranking or coverage. Unlike Goal Misinterpretation, the misunderstanding is expressed specifically through the query sent downstream.
+searchPhrases:
+  - rewrote my search badly
+  - dropped my intent in the query
+  - searched the wrong thing
+  - bad query reformulation
+
+why:
+  - Rewriters optimize for what retrieves well, not for what the user meant. A reformulation is judged by whether it surfaces high-scoring documents, so rewrites drift toward retrievable phrasings of a different question (Ma et al., 2023, "Query Rewriting for Retrieval-Augmented Large Language Models").
+  - Rewriting is paraphrase, and paraphrase regenerates meaning through the model's priors. Rare constraints — a negation, an exact version, a jurisdiction — are low-probability tokens that the rewrite drops, and domain jargon or internal codenames get "corrected" into generic vocabulary that no longer matches the corpus.
+  - The rewriter fills ambiguity with assumptions. Short or underspecified user queries get expanded with plausible details the user never stated, and those invented constraints then exclude the documents that actually answer the real question.
+  - Conversational rewriting depends on resolving references across turns. Expanding "what about the second one?" into a standalone query requires correctly identifying the antecedent, and a wrong resolution sends retrieval after the wrong entity entirely.
+
+examples:
+  - kind: fail
+    label: Negation dropped in rewrite
+    text: The user's "not caused by timeouts" is a low-probability constraint that the rewrite normalizes away — retrieval then fetches exactly the documents the user excluded.
+    quote: |-
+      User: Show me the incidents from last quarter that were not caused by timeouts.
+      [… rewritten query: "timeout incidents last quarter" …]
+      Assistant: Here are last quarter's incidents — all five were timeout-related.
+  - kind: fail
+    label: Wrong antecedent resolved
+    text: Expanding "the second one" into a standalone query requires picking the right referent from the conversation, and the rewriter picks the wrong list.
+    quote: |-
+      User: Compare the two auth approaches you mentioned. Actually, tell me more about the second one.
+      [… rewriter resolves "the second one" to the second search result from an earlier turn, not the second auth approach; query becomes "session token expiration" …]
+      Assistant: Session tokens expire after 24 hours by default…
+  - kind: warn
+    label: Codename "corrected" into generic vocabulary
+    text: The internal project name looks like a typo to the rewriter, which normalizes it into common words that no longer match the corpus. Retrieval still returns plausible-looking results.
+    quote: |-
+      User: What's the rollout status of Project Kestrel?
+      [… rewritten query: "bird species rollout status" returns generic deployment docs …]
+      Assistant: Based on the deployment documentation, rollouts proceed in three phases…
+  - kind: ok
+    label: Constraints carried through
+    text: The rewrite expands vocabulary for retrievability but keeps the negation explicit, and the issued query is logged so the step is auditable.
+    quote: |-
+      User: Show me the incidents from last quarter that were not caused by timeouts.
+      Tool: search "Q1 incidents -timeout" with cause filter excluding "timeout" — returns 3 results
+      Assistant: Three of last quarter's eight incidents were unrelated to timeouts: a certificate expiry, a bad config push, and a disk-full event.
+
+detection:
+  - icon: 📏
+    heading: Constraint preservation checks
+    body: Mechanically diff the original query against the rewrite for load-bearing tokens — negations, version numbers, jurisdictions, quoted names, codenames. A rewrite that drops "not", flips an exclusion, or "corrects" Project Kestrel into common words fails the check before retrieval ever runs.
+  - icon: ⚖️
+    heading: LLM-as-judge evaluation
+    body: Log every rewrite and run a judge comparing it against the user's original request and conversation, asking whether intent survived — constraints dropped, plausible details invented, references like "the second one" resolved to the wrong antecedent. The rewrite must be logged at all for this to be possible.
+  - icon: 🧪
+    heading: Golden-set evals
+    body: Maintain conversational queries that stress rewriting — negated constraints, internal jargon outside the rewriter's training distribution, multi-turn reference resolution — with gold evidence labeled, so a bad rewrite shows up as a retrieval score drop attributable to the rewrite step.
+
+mitigation:
+  - icon: 📏
+    heading: Constraint preservation checks
+    body: Run the same load-bearing-token diff as a gate before the query is issued — a rewrite that drops a negation, loses a version number, or "corrects" Project Kestrel gets repaired or replaced with the original instead of silently sent downstream.
+  - icon: 📝
+    heading: Instruction constraints
+    body: Prompt the rewriter to expand rather than replace — preserve negations, quoted names, codenames, and version numbers verbatim, and treat unfamiliar terms as domain vocabulary to keep, not typos to normalize toward common words.
+  - icon: 🔀
+    heading: Query ensembling
+    body: Issue the original query alongside the rewrite and merge results, so the rewrite can only add recall, never lose what the user's own phrasing would have found — a dropped "not" or a mangled codename no longer controls the entire retrieved set.
+
+related:
+  - id: retrieval-miss
+  - id: goal-misinterpretation
+  - id: retrieval-distractor

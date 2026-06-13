@@ -1,0 +1,64 @@
+id: incompleteness
+categoryId: response-integrity
+name: Incompleteness
+def: |-
+  Leaves out information, constraints, caveats, steps, options, or outputs needed to satisfy the user's task.
+
+  Unlike Step Omission, the missing material appears in the final answer rather than necessarily in the work process. Unlike Concision Failure, incompleteness can happen even when the answer is not especially brief.
+searchPhrases:
+  - left out part of the answer
+  - incomplete answer
+  - missed some of the steps
+  - didn't cover everything
+why:
+  - Instruction-following degrades with the number of requirements. As a request stacks parts, constraints, and asked-for outputs, the probability of satisfying all of them falls, and the dropped ones are simply absent rather than flagged.
+  - Attention to the request decays over a long generation. Early parts of the answer track the question closely, while later sections increasingly condition on the answer's own momentum, so trailing requirements are the ones that vanish.
+  - Nothing checks the answer against the request. Generation ends when a closing pattern becomes likely, not when a completeness check passes, and few scaffolds add a verification pass that re-reads the question before sending.
+  - Coverage requires knowing what the task implies, not just what it states. Necessary caveats, options, and prerequisites are part of domain pragmatics, and where the model's task model is shallow it does not know what a complete answer would contain.
+examples:
+  - kind: fail
+    label: Dropped requirement
+    text: Answers two of three explicitly requested parts and never acknowledges the third.
+    quote: |-
+      User: Give me a regex for US phone numbers, explain how it works, and show one input it incorrectly rejects.
+      Assistant: Here's the regex: ^\d{3}-\d{3}-\d{4}$ — it matches three digits, a hyphen, three digits, a hyphen, and four digits. Let me know if you need anything else!
+  - kind: warn
+    label: Missing implied coverage
+    text: Answers what was literally asked but omits the option any complete answer would include.
+    quote: |-
+      User: How do I share this 30 GB file with a client?
+      Assistant: Upload it to Google Drive and send them the link.
+      [… no mention that free Drive accounts cap at 15 GB, or of alternatives that handle the size …]
+  - kind: ok
+    label: Full coverage
+    text: Satisfies each requested part, in the order asked, and flags the known limitation.
+    quote: |-
+      User: Give me a regex for US phone numbers, explain how it works, and show one input it incorrectly rejects.
+      Assistant: Regex: ^\d{3}-\d{3}-\d{4}$ — three digits, hyphen, three digits, hyphen, four digits. It incorrectly rejects "(555) 123-4567", a common valid format, because it only accepts hyphenated input.
+detection:
+  - icon: 📋
+    heading: Instruction checklist scoring
+    body: Extract the request's enumerable parts — three questions asked, the constraint stated, the example demanded — and mechanically check each against the response. Two of three parts answered with the third silently absent is countable without judging quality, and per-part scoring shows which positions get dropped.
+  - icon: ⚖️
+    heading: LLM-as-judge evaluation
+    body: Have the judge ask what a complete answer to this task would contain, beyond what was literally enumerated — the 15 GB cap that makes the suggested upload impossible, the option any practitioner would mention. Implied coverage is where checklist extraction runs out and judgment has to take over.
+  - icon: 🧪
+    heading: Golden-set evals
+    body: Maintain multi-part requests with countable elements and chart per-part coverage against requirement count and position. Trailing requirements vanish first as requests stack up — the curve tells you how many parts a request can carry before the system starts shedding them.
+mitigation:
+  - icon: ✅
+    heading: Self-check pass
+    body: Before sending, have the model re-read the request, extract its enumerable parts, and point at where the response satisfies each — regex, explanation, and the incorrectly rejected input all get an address or the answer isn't done. Generation ends when a closing pattern becomes likely; this pass replaces that stopping rule with the request's own list.
+  - icon: 🔁
+    heading: Validate-and-retry loops
+    body: Run the checklist extraction mechanically in the scaffold and bounce incomplete responses back with the missing part named — "the third requested item, an input the regex incorrectly rejects, is absent." Per-part checking is exactly what raters skip and what made the shortcut survivable; the loop does it on every response.
+  - icon: 🪜
+    heading: Task decomposition
+    body: Split multi-part requests so each part is generated and verified on its own before assembly. Instruction-following degrades as requirements stack and trailing parts vanish first; decomposition means no part is ever trailing, which removes the position effect rather than fighting it.
+
+related:
+  - id: step-omission
+  - id: concision-failure
+  - id: premature-termination
+  - id: genericism
+  - id: output-truncation

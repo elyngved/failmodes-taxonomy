@@ -1,0 +1,74 @@
+id: citation-hallucination
+categoryId: fabrication
+name: Citation Hallucination
+def: |-
+  Invents or fabricates a source artifact such as a citation, URL, paper, author listing, or bibliography entry and presents it as real.
+
+  Unlike Citation Span Mismatch, the cited object itself is nonexistent or fabricated. Unlike Authority Hallucination, the failure is the fake reference artifact rather than a vague or false appeal to institutional authority.
+searchPhrases:
+  - made up a citation
+  - fake citation
+  - invented a source
+  - cited a paper that doesn't exist
+  - fake reference
+why:
+  - Citations follow a rigid template (author, year, title, venue). The model can fill that template with real author names, a plausible title, and a real journal, producing a reference that looks perfect but does not exist. Audits of ChatGPT found a majority of its citations were fabricated or wrong in exactly this way (Walters & Wilder, 2023, Scientific Reports).
+  - Models only reliably memorize text that appears many times in training data, and most individual papers do not. The model retains a fuzzy gist of the literature rather than exact bibliographic records, and it has no internal database to check whether a remembered reference is real (Carlini et al., 2023, "Quantifying Memorization Across Neural Language Models").
+  - Training rewards a well-formed answer over an admitted gap, and instruction tuning teaches that good research answers include references. A prompt that demands sources pressures the model to emit citation-shaped text whether or not it is grounded (Kalai et al., 2025, "Why Language Models Hallucinate").
+  - URLs make this worse. Link structure is easy to predict (a real domain plus a plausible path), but the model never observes whether the page exists, so fake links are cheap to produce.
+
+examples:
+  - kind: fail
+    label: Fabricated reference
+    text: Fills the citation template with real-looking authors, a plausible title, and a real journal — but the paper does not exist.
+    quote: |-
+      User: Can you give me peer-reviewed sources on whether bilingualism delays dementia?
+      Assistant: Yes. The key study is Chen, R., & Virtanen, S. (2019). "Bilingualism and the Onset of Dementia: A 20-Year Cohort Meta-Analysis." Journal of Cognitive Neuroscience, 31(4), 512–528.
+      [… no such paper exists; the journal and author names are individually real …]
+  - kind: fail
+    label: Fabricated URL
+    text: Composes a link from a real domain and a plausible path. The page was never observed during training and does not exist.
+    quote: |-
+      User: Can you give me peer-reviewed sources on whether bilingualism delays dementia?
+      Assistant: See the meta-analysis at https://www.thelancet.com/journals/laneur/article/bilingualism-dementia-2019
+      [… the URL returns a 404 …]
+  - kind: warn
+    label: Disclaimed but citation-shaped
+    text: Admits it cannot verify the references, yet still emits a fully formatted bibliography. The format invites a trust the disclaimer cannot undo.
+    quote: |-
+      User: Can you give me peer-reviewed sources on whether bilingualism delays dementia?
+      Assistant: I can't verify these exactly, but relevant papers include: Bialystok et al. (2007), Neuropsychologia; Craik et al. (2010), Neurology; Chen & Virtanen (2019), J. Cogn. Neurosci.
+  - kind: ok
+    label: Declines to fabricate
+    text: Answers from general knowledge and routes the user to a real lookup instead of composing references it cannot confirm.
+    quote: |-
+      User: Can you give me peer-reviewed sources on whether bilingualism delays dementia?
+      Assistant: There is real research on this — Bialystok and Craik are the most-cited authors in the area — but I can't produce verified citations from memory. Searching "bilingualism dementia onset" on PubMed or Semantic Scholar will surface the actual papers.
+
+detection:
+  - icon: 🔎
+    heading: Reference existence lookup
+    body: Resolve every emitted citation against a bibliographic database such as CrossRef, Semantic Scholar, or PubMed. Fabricated references fail the lookup even when the authors, journal, and year are all individually real.
+  - icon: 🔗
+    heading: URL liveness checking
+    body: Fetch every link in the output. A fabricated URL typically 404s or resolves to a page unrelated to the claim, so a simple fetch-and-compare catches the cheapest form of this failure.
+  - icon: 🧪
+    heading: Golden-set evals
+    body: Maintain prompts that demand sources in niche areas where the model has only gist-level knowledge, and regression-test the share of returned citations that resolve in a bibliographic database.
+
+mitigation:
+  - icon: 📚
+    heading: Retrieval grounding
+    body: Only allow citations of documents actually present in retrieved context, referenced by identifier, so every bibliography entry traces to a real artifact the system handled rather than to parametric memory.
+  - icon: 🛠️
+    heading: Tool-backed lookup
+    body: Route citation generation through a search or DOI-resolver tool so the model copies references from lookup results instead of composing them. A citation it cannot find is one it cannot emit.
+  - icon: 📝
+    heading: Instruction constraints
+    body: Explicitly permit answering without a reference — "no verified source available" — so the format pressure to produce citation-shaped text stops outweighing the lack of a real one.
+
+related:
+  - id: citation-span-mismatch
+  - id: authority-hallucination
+  - id: quote-hallucination
+  - id: source-misrepresentation

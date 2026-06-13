@@ -1,0 +1,77 @@
+id: retrieval-miss
+categoryId: retrieval
+name: Retrieval Miss
+def: |-
+  Fails to retrieve relevant material that exists in the available corpus and should have been used.
+
+  Unlike Partial Retrieval, the key evidence is absent from the retrieved set rather than only incomplete. Unlike Metadata Filter Failure, the cause is not necessarily an incorrect filter or access predicate.
+searchPhrases:
+  - didn't find the document
+  - missed the relevant source
+  - failed to retrieve it
+  - search missed it
+
+why:
+  - Queries and documents describe the same thing in different words — the classic vocabulary mismatch problem. Lexical search misses synonyms outright, and dense retrieval only closes the gap where its training data covered the paraphrase pattern, degrading sharply on specialized corpora like legal, biomedical, or internal jargon (Thakur et al., 2021, "BEIR").
+  - Dense vectors compress a passage into a few hundred dimensions, which preserves topical gist but blurs exact identifiers. Queries hinging on a specific error code, part number, or name often lose to passages that are merely about the same topic.
+  - Single-shot retrieval gets one attempt. Without iterative reformulation, relevance feedback, or fallback strategies, a query that happens to embed badly produces a miss with no recovery path.
+  - Misses are silent while distractors are visible. The system still returns k confident results, the model still answers from them or from priors, and no signal indicates that the best document in the corpus was never fetched.
+
+examples:
+  - kind: fail
+    label: Vocabulary mismatch hides the document
+    text: The corpus answers the question, but in different words — the query says "PTO carryover" while the policy says "annual leave accrual" — and the right document never surfaces.
+    quote: |-
+      User: How much PTO can I carry over into next year?
+      [… the answer lives in "Annual Leave Accrual Policy", which shares no vocabulary with the query and ranks below the cutoff …]
+      Assistant: I couldn't find a carryover policy — your organization may not allow PTO carryover.
+  - kind: fail
+    label: Exact identifier blurred by embeddings
+    text: The query hinges on a specific error code, but dense vectors preserve topic rather than identifiers, so generic troubleshooting pages outrank the one document about this exact code.
+    quote: |-
+      User: What does error E-4031 mean on the payment terminal?
+      [… the E-4031 reference page exists but loses to general "payment terminal troubleshooting" passages …]
+      Assistant: Error E-4031 typically indicates a network connectivity issue — try restarting the terminal.
+      [… per the unretrieved reference page, E-4031 is a tamper lockout requiring a replacement device …]
+  - kind: warn
+    label: One shot, no recovery
+    text: The first query embeds badly and returns weak results, and the system answers from them anyway — no reformulation, no fallback, no signal that the corpus had better.
+    quote: |-
+      User: Why did we choose Kafka over a simpler queue?
+      [… single retrieval returns tangential architecture overviews; the ADR that answers the question directly is never fetched …]
+      Assistant: The documentation doesn't go into the reasoning, but generally Kafka is chosen for throughput.
+  - kind: ok
+    label: Reformulate before concluding absence
+    text: When the first query comes back thin, the system tries synonym and adjacent-vocabulary reformulations before reporting that the corpus lacks the answer.
+    quote: |-
+      User: How much PTO can I carry over into next year?
+      Tool: search "PTO carryover" — weak results; retry "vacation rollover", "annual leave accrual" — returns leave policy
+      Assistant: Found it under the Annual Leave Accrual Policy: you can carry up to 40 hours into the next calendar year; anything above that is forfeited on January 1.
+
+detection:
+  - icon: 🧪
+    heading: Golden-set evals
+    body: Maintain labeled query-to-document pairs concentrated on the known blind spots — vocabulary mismatch ("PTO carryover" vs "annual leave accrual"), exact identifiers like error codes, and inferential gaps where the answering document shares no surface form with the question — and track recall@k as the primary metric.
+  - icon: 🔍
+    heading: Negative-result auditing
+    body: Sample the cases where the system reported "not found" or answered thinly, and verify each against the corpus with human search or a judge with full corpus access. Misses are silent in production, so absence claims are the only queue where they reliably surface.
+  - icon: 🔀
+    heading: Retriever disagreement analysis
+    body: Run lexical and dense retrieval side by side offline and diff their results. Documents one retriever finds and the other misses map each system's blind spots — identifier queries dense vectors blur, paraphrases lexical match can't bridge — and tell you where a hybrid or fallback would recover the miss.
+
+mitigation:
+  - icon: 🔀
+    heading: Hybrid retrieval
+    body: Combine lexical and dense retrieval so each covers the other's blind spot — exact identifiers like E-4031 that embeddings blur into topic, and paraphrases like "PTO carryover" versus "annual leave accrual" that keyword match can't bridge.
+  - icon: 🔁
+    heading: Iterative retrieval
+    body: When the first query returns thin results, reformulate with synonyms and adjacent vocabulary before answering or concluding absence — a query that happens to embed badly should cost a retry, not produce a confident "your organization may not allow carryover."
+  - icon: 🧩
+    heading: Retrieval tuning
+    body: Adapt the retriever to the corpus it actually serves — fine-tune or benchmark embeddings on domain text, and add query expansion for the corpus's own vocabulary — since retrievers tuned on web QA degrade sharply on the legal, biomedical, and internal-jargon documents that matter most.
+
+related:
+  - id: partial-retrieval
+  - id: metadata-filter-failure
+  - id: index-drift
+  - id: query-rewrite-failure

@@ -1,0 +1,64 @@
+id: memory-overreach
+categoryId: memory
+name: Memory Overreach
+def: |-
+  Applies a valid memory beyond the user, task, project, role, time, or domain scope where it should influence behavior.
+
+  Unlike Memory Scope Leakage, the memory may be visible and nonsecret but used too broadly. Unlike User Conformity, the issue is improper memory generalization, not tailoring claims to please the user.
+searchPhrases:
+  - applied a preference too broadly
+  - used a memory out of context
+  - over-generalized a saved setting
+  - memory applied where it shouldn't
+examples:
+  - kind: fail
+    label: Preference generalized past its scope
+    text: A brevity preference learned from daily stand-up summaries is applied to a compliance question, stripping exactly the caveats the situation requires.
+    quote: |-
+      User: Can we store EU customer data on the new US-hosted analytics cluster?
+      [… memory retrieval returns "user prefers very short, bottom-line answers" (saved during stand-up summaries) …]
+      Assistant: Yes, go ahead.
+  - kind: warn
+    label: Out-of-scope memory steering tone
+    text: The answer is still correct, but a preference from a different role is visibly distorting how a high-stakes topic gets treated.
+    quote: |-
+      User: Can we store EU customer data on the new US-hosted analytics cluster?
+      [… memory retrieval returns "user prefers very short, bottom-line answers" (saved during stand-up summaries) …]
+      Assistant: Short answer: probably not without extra paperwork. (Keeping it brief per your preference.)
+  - kind: ok
+    label: Scope checked before applying
+    text: The model recognizes the preference came from a different kind of task and sets it aside where the stakes demand detail.
+    quote: |-
+      User: Can we store EU customer data on the new US-hosted analytics cluster?
+      [… memory retrieval returns "user prefers very short, bottom-line answers" (saved during stand-up summaries) …]
+      Assistant: You normally want brevity, but this one needs the caveats: GDPR transfers to US hosting require an adequacy mechanism — here are the three conditions you'd have to meet…
+why:
+  - Memories are usually stored as bare facts stripped of the situation in which they were learned. "User prefers concise answers" loses the qualifier that it applied to status updates, so the scope information is destroyed at write time and cannot be recovered at read time.
+  - Retrieval matches topical similarity, not scope applicability. A memory from one project or role surfaces whenever the subject matter is close, with no check that its conditions of validity hold in the current task.
+  - Generalization is the core skill models are optimized for. Applying a learned pattern beyond its original instance is rewarded throughout training, so narrowly conditional application fights the model's strongest prior.
+  - Personalization tuning rewards visible use of memory. Demonstrating recall reads as attentiveness to evaluators and users, biasing systems toward applying any retrieved memory rather than questioning whether it belongs.
+detection:
+  - icon: 🔬
+    heading: Context ablation testing
+    body: Rerun the same query with the retrieved memory withheld and compare. If a high-stakes answer regains the caveats and detail the memory stripped away, the memory was steering behavior outside the scope where it belongs.
+  - icon: ⚖️
+    heading: LLM-as-judge evaluation
+    body: Run a judge that sees each retrieved memory alongside the situation it was saved in, and ask whether the current task matches that scope. Have it flag tone- and format-level steering too — a brevity preference distorting a compliance answer is the failure even when every fact stays correct.
+  - icon: 🧪
+    heading: Golden-set evals
+    body: Store preferences with known scopes — brevity for stand-up summaries, a language preference tied to one project — and probe with tasks outside those scopes. Score whether the preference stays contained, not just whether it is honored, since personalization metrics reward the latter alone.
+mitigation:
+  - icon: ✍️
+    heading: Scope-preserving capture
+    body: Store the situation alongside the fact — "prefers very short answers, observed in stand-up summaries" rather than "prefers very short answers." Scope is destroyed at write time and cannot be reconstructed at read time, so the write path is the only place the qualifier can be saved.
+  - icon: 🏷️
+    heading: Scoped retrieval filtering
+    body: Match retrieved memories on scope applicability, not just topical similarity — a preference saved under one role or task type should rank down or carry a visible caveat when the current task falls outside it. Similarity alone surfaces the brevity preference for the compliance question precisely because the subject matter is close.
+  - icon: 📝
+    heading: Instruction constraints
+    body: Instruct the model to check each memory's saved scope against the current task before applying it, and to set preferences aside when stakes demand otherwise — brevity yields to caveats on a compliance question. This pushes against both the generalization prior and personalization tuning's reward for visibly using whatever was retrieved.
+
+related:
+  - id: memory-scope-leakage
+  - id: memory-contamination
+  - id: user-conformity

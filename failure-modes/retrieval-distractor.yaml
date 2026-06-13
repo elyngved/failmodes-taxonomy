@@ -1,0 +1,79 @@
+id: retrieval-distractor
+categoryId: retrieval
+name: Retrieval Distractor
+def: |-
+  Retrieves or elevates irrelevant, superficially similar, or misleading evidence that pulls the answer away from the user's actual need.
+
+  Unlike RAG Poisoning, the distractor need not be malicious or corrupted. Unlike Query Rewrite Failure, the retrieval may match the issued query while the selected evidence is still the wrong evidence to trust.
+searchPhrases:
+  - retrieved a misleading doc
+  - distracted by similar content
+  - pulled the wrong evidence
+  - irrelevant retrieved result
+
+why:
+  - Similarity is not relevance. Embedding retrieval ranks by semantic closeness, and the corpus is full of passages about the same entities and topics that do not bear on the user's actual question — near-duplicates, adjacent versions, discussions of a similar but different case.
+  - Retrieval always returns k results. When the corpus lacks good evidence, the retriever fills the slots with the least-bad matches at the same confident rank positions, and nothing downstream distinguishes a strong top result from a best-of-a-bad-lot one.
+  - Models do not ignore bad context. Adding irrelevant passages to a prompt measurably degrades answers even when the model is told it may disregard them; the model treats retrieved text as implicitly endorsed evidence (Shi et al., 2023, "Large Language Models Can Be Easily Distracted by Irrelevant Context").
+  - The most damaging distractors are the most retrievable ones. Highly semantically related but wrong passages hurt answer quality more than random irrelevant text, and they are precisely what a similarity ranker promotes (Cuconasu et al., 2024, "The Power of Noise").
+
+examples:
+  - kind: fail
+    label: Similar case, wrong case
+    text: The contractor policy is semantically close to the employee question and outranks the right document. The model answers the user's question with the neighboring case's rules.
+    quote: |-
+      User: How much notice do I need to give before resigning? I'm a full-time employee.
+      [… top result is the contractor offboarding policy: "30 days written notice" — the employee policy (2 weeks) ranks below the cutoff …]
+      Assistant: You're required to give 30 days written notice.
+  - kind: fail
+    label: Best of a bad lot
+    text: The corpus has no document about this integration, so the retriever fills its slots with passages about a different one — and the model treats the least-bad match as authoritative evidence.
+    quote: |-
+      User: How do I configure the Salesforce integration?
+      [… no Salesforce docs exist; top results are HubSpot integration docs at confident rank positions …]
+      Assistant: In the integrations panel, paste your API key and map the contact fields — sync runs every 15 minutes.
+      [… every detail describes the HubSpot integration …]
+  - kind: warn
+    label: Stale near-duplicate in the mix
+    text: An older draft of the same document retrieves alongside the current one, and a detail from the draft leaks into an otherwise correct answer. Nothing flags that two versions were blended.
+    quote: |-
+      User: What's the on-call escalation procedure?
+      [… results include both the current runbook and a superseded draft with a different escalation contact …]
+      Assistant: Page the primary on-call first; if no response in 15 minutes, escalate to the platform team lead.
+      [… "platform team lead" comes from the draft; the current runbook says incident commander …]
+  - kind: ok
+    label: Relevance judged before use
+    text: The model checks whether the retrieved evidence is actually about the user's case before building on it, and says so when it is not.
+    quote: |-
+      User: How much notice do I need to give before resigning? I'm a full-time employee.
+      Assistant: The top document I found is the contractor policy, which doesn't apply to you. Searching the employee handbook specifically…
+      Tool: search "employee resignation notice handbook" — returns employee policy
+      Assistant: As a full-time employee, the handbook asks for two weeks' notice.
+
+detection:
+  - icon: ⚖️
+    heading: LLM-as-judge evaluation
+    body: Insert a relevance judgment between retrieval and generation — for each passage, does it bear on the user's actual case, not just the query's topic? This is the step similarity ranking never performs, and it is what separates the contractor policy from the employee question it superficially matches.
+  - icon: 📉
+    heading: Retrieval score monitoring
+    body: Watch the score distribution of returned results, not just their order. Uniformly weak scores signal a best-of-a-bad-lot result set being served at confident rank positions, and near-identical scores on near-duplicate chunks flag version blends like a draft retrieving alongside the current runbook.
+  - icon: 🧪
+    heading: Golden-set evals
+    body: Maintain queries whose corpus contains engineered near-misses — the adjacent policy, the similar-but-different integration, the superseded draft — and score whether answers draw on the distractor, including no-answer cases where the corpus holds nothing and the right behavior is saying so.
+
+mitigation:
+  - icon: 🚪
+    heading: Relevance gating
+    body: Add the judgment similarity ranking never makes — between retrieval and generation, ask of each passage whether it bears on the user's actual case, not just the query's topic, and drop what doesn't. The contractor policy is semantically close to the employee question; the gate is what knows it doesn't apply.
+  - icon: 🎚️
+    heading: Confidence-based abstention
+    body: When retrieval scores are uniformly weak, say the corpus lacks the answer instead of generating from the least-bad matches — the HubSpot-for-Salesforce failure happens because k slots filled at confident rank positions look identical to a genuine hit.
+  - icon: 🧩
+    heading: Retrieval tuning
+    body: Clean the near-miss structure out of the index — deduplicate near-identical chunks, mark superseded drafts so the current version outranks or replaces them, and separate adjacent document types — so the most retrievable distractors stop being one rank position from the right answer.
+
+related:
+  - id: rag-poisoning
+  - id: query-rewrite-failure
+  - id: retrieval-miss
+  - id: irrelevance

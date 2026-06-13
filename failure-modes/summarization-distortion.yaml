@@ -1,0 +1,75 @@
+id: summarization-distortion
+categoryId: faithfulness
+name: Summarization Distortion
+def: |-
+  Compresses source material in a way that changes its meaning, emphasis, causal structure, uncertainty, or implications.
+
+  Unlike Summarization Loss, the issue is not just omission of nuance but an altered meaning. Unlike Source Misrepresentation, it specifically occurs during summarization or compression.
+searchPhrases:
+  - summary changed the meaning
+  - distorted the summary
+  - summary misrepresented it
+  - summary altered the emphasis
+
+why:
+  - Compression forces choices about what matters, and the model's salience judgments come from pretraining priors rather than from the document's own structure. Widely used summarization corpora make this worse by pairing documents with reference summaries that themselves add or alter information, teaching that meaning shift is acceptable (Maynez et al., 2020, "On Faithfulness and Factuality in Abstractive Summarization").
+  - Hedges, qualifiers, and uncertainty markers are the first casualties of compression. Dropping "may," "in some cases," or "the authors caution" shortens the text while silently strengthening its claims.
+  - Common errors concentrate on relations rather than entities. Summaries keep the right people and numbers but rewire who did what to whom, swap causal direction, or merge separate findings into one claim (Pagnoni et al., 2021, "Understanding Factuality in Abstractive Summarization with FRANK").
+  - In agent pipelines, summaries are often produced over already-summarized context. Each compression pass re-decides emphasis, so small shifts compound across steps into a materially different account.
+
+examples:
+  - kind: fail
+    label: Causal direction rewired
+    text: The summary keeps the right entities and events but invents a causal link the source explicitly disclaims.
+    quote: |-
+      [… source article: "Layoffs were announced two months after the merger. Executives said the two were unrelated." …]
+      User: Summarize this article in one sentence.
+      Assistant: The merger led the company to lay off staff two months later.
+  - kind: fail
+    label: Hedges compressed away
+    text: Compression drops "preliminary," "small sample," and "the authors caution," so the summary asserts what the source only tentatively suggests.
+    quote: |-
+      [… source: "Preliminary results from a small sample suggest a possible link; the authors caution against drawing conclusions." …]
+      User: Give me a one-line summary of the findings.
+      Assistant: The study found a link between the two.
+  - kind: warn
+    label: Drift across compression passes
+    text: Each summary-of-a-summary is a reasonable compression of its input, but the emphasis shifts a little each pass, and the final account no longer matches the original.
+    quote: |-
+      [… original meeting notes: budget approved, with a concern raised about Q3 staffing …]
+      [… summary of summary, two compression passes later …]
+      Assistant: Key takeaway from the meeting: serious staffing concerns are putting Q3 at risk.
+  - kind: ok
+    label: Meaning-preserving compression
+    text: The summary is just as short but keeps the uncertainty and the source's own framing of what mattered.
+    quote: |-
+      [… source: "Preliminary results from a small sample suggest a possible link; the authors caution against drawing conclusions." …]
+      User: Give me a one-line summary of the findings.
+      Assistant: Early small-sample results hint at a possible link, but the authors say it's too soon to conclude anything.
+
+detection:
+  - icon: 🔗
+    heading: Entailment checking
+    body: Run an NLI model between each summary sentence and the source document. Rewired causal links and strengthened claims fail entailment even when every entity and number in the sentence is correct — which is precisely where overlap metrics like ROUGE see nothing wrong.
+  - icon: ❓
+    heading: QA-based consistency checks
+    body: Generate questions from the summary, answer them from the source, and compare. A summary that says "the merger led to layoffs" yields a question whose source-grounded answer is "executives said the two were unrelated" — the distortion surfaces as an answer mismatch.
+  - icon: ⚖️
+    heading: LLM-as-judge evaluation
+    body: Run a judge that compares summary against source specifically for compression casualties — dropped hedges, shifted emphasis, merged findings, and causal direction — rather than general quality. In multi-pass pipelines, run it per compression step so small shifts are caught before they compound.
+
+mitigation:
+  - icon: 📝
+    heading: Instruction constraints
+    body: Make hedges and causal framing explicit survival requirements of the compression — "preserve uncertainty markers and stated non-causation even at the cost of length" — so "may suggest a possible link" doesn't shorten to "found a link" and a disclaimed coincidence doesn't become a cause.
+  - icon: 🚪
+    heading: Entailment gating
+    body: Gate each summary sentence on entailment by the source before it ships. Rewired causal links and strengthened claims fail the check even when every entity and number is right — exactly the errors overlap metrics like ROUGE never penalize.
+  - icon: 🧷
+    heading: Source-anchored compression
+    body: In multi-pass pipelines, summarize from the original document rather than chaining summaries of summaries. Each pass that re-decides emphasis from a compressed input adds drift, so anchor every compression to the source and carry forward the original's stated priorities.
+
+related:
+  - id: summarization-loss
+  - id: source-misrepresentation
+  - id: concision-failure

@@ -1,0 +1,75 @@
+id: extrinsic-hallucination
+categoryId: faithfulness
+name: Extrinsic Hallucination
+def: |-
+  Adds information that cannot be verified from the provided source material, neither supported nor contradicted by it, while making the answer appear source-grounded.
+
+  Unlike Context-Conflicting Hallucination, the added content does not contradict the source; it is simply ungrounded in it. Unlike Specificity Hallucination, the defining issue is lack of source support rather than fabricated precision.
+searchPhrases:
+  - added info not in the source
+  - made up details not in the document
+  - unsupported by the source
+  - info that isn't grounded
+
+why:
+  - Pretraining stores vast world knowledge in the model's weights, and generation draws on it freely. Nothing architecturally separates "what the source said" from "what the model knows," so background knowledge leaks into source-grounded tasks (Maynez et al., 2020, "On Faithfulness and Factuality in Abstractive Summarization").
+  - Training and evaluation reward confident, complete-sounding answers over abstentions. A model gains nothing by saying the source does not cover something, so it fills gaps with plausible content instead (Kalai et al., 2025, "Why Language Models Hallucinate").
+  - Extrinsic additions are the hardest faithfulness errors to catch automatically. They contradict nothing, so consistency checkers and entailment filters pass them, and they survive into deployed systems (Ji et al., 2023, "Survey of Hallucination in Natural Language Generation").
+  - Prompts often blur the boundary, asking the model to "use the document" rather than to answer only from it. Without an explicit grounding constraint, mixing in parametric knowledge is the default behavior.
+
+examples:
+  - kind: fail
+    label: Ungrounded detail presented as from the source
+    text: The answer is framed as a reading of the report, but the cause it states appears nowhere in it. Nothing contradicts the source — the claim is simply not in it.
+    quote: |-
+      [… uploaded incident report describes a 40-minute outage; it never states a cause …]
+      User: Summarize what this report says about the outage.
+      Assistant: The report explains that a 40-minute outage occurred, caused by a misconfigured load balancer during a routine deploy.
+  - kind: fail
+    label: Gap filled instead of flagged
+    text: Asked about something the source does not cover, the model supplies a plausible answer rather than saying the document is silent.
+    quote: |-
+      [… uploaded report does not mention affected customers …]
+      User: According to the report, how many customers were affected?
+      Assistant: The report indicates that roughly 1,200 customers experienced degraded service during the window.
+  - kind: warn
+    label: Unmarked background knowledge
+    text: Mixes accurate general knowledge into a source-grounded answer without marking where the document ends and the model's own knowledge begins.
+    quote: |-
+      [… uploaded report describes the outage but never mentions load balancers in general …]
+      User: Summarize what this report says about the outage.
+      Assistant: The report describes a 40-minute outage. Load balancer misconfigurations like this are among the most common causes of such incidents.
+  - kind: ok
+    label: Source boundary kept visible
+    text: Answers strictly from the document and labels anything beyond it as the model's own addition.
+    quote: |-
+      User: Summarize what this report says about the outage.
+      Assistant: The report covers a 40-minute outage on March 3 and the recovery steps taken. It does not state a root cause or a customer-impact count. If useful, I can suggest likely causes — but that would be my inference, not the report.
+
+detection:
+  - icon: 🔗
+    heading: Entailment checking
+    body: Run an NLI model between each output claim and the source, and treat the neutral label as the signal — extrinsic content is neither entailed nor contradicted. Pipelines that only alert on contradiction pass this mode by construction, so the neutral bucket is the one to inspect.
+  - icon: ⚖️
+    heading: LLM-as-judge evaluation
+    body: Run a judge that sees only the source document and the answer — no world knowledge allowed — and asks for each claim where in the source it comes from. Plausible background facts that the judge cannot point to a passage for are exactly this failure.
+  - icon: 🧪
+    heading: Golden-set evals
+    body: Maintain source documents with known, deliberate gaps — an incident report that never states a cause, a study that never gives a sample size — and regression-test whether summaries fill those gaps from parametric knowledge while staying framed as a reading of the source.
+
+mitigation:
+  - icon: 📝
+    heading: Instruction constraints
+    body: Say "answer only from the document," not "use the document," and make "the report doesn't state this" an expected answer shape. Require anything beyond the source to be labeled as the model's own inference, so the source boundary stays visible instead of blurring by default.
+  - icon: ✅
+    heading: Self-check pass
+    body: Before answering, have the model point each claim in its draft at the passage it comes from and strip or relabel anything it cannot trace. Plausible background facts are exactly what this catches — they feel source-grounded but have no passage to point to.
+  - icon: 🚪
+    heading: Entailment gating
+    body: Gate output on an NLI check between each claim and the source, treating the neutral label as a block, not a pass. Pipelines that only gate on contradiction admit this mode by construction, since extrinsic additions contradict nothing.
+
+related:
+  - id: context-conflicting-hallucination
+  - id: specificity-hallucination
+  - id: entity-hallucination
+  - id: unknown-answer-fabrication

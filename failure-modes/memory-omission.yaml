@@ -1,0 +1,65 @@
+id: memory-omission
+categoryId: memory
+name: Memory Omission
+def: |-
+  Fails to store, retrieve, or apply information that should have persisted across turns, sessions, tasks, or agent steps.
+
+  Unlike Context Rot, the missing information belongs in memory rather than only active context. Unlike Memory Conflict, the problem is absence or non-use of the memory, not mishandling memories that compete with one another.
+searchPhrases:
+  - forgot earlier context
+  - forgot what I told it
+  - didn't remember my preference
+  - forgot across sessions
+examples:
+  - kind: fail
+    label: Stored preference never surfaces
+    text: The dietary restriction is in the memory store, but retrieval misses it and the response violates it outright.
+    quote: |-
+      User: Plan the menu for Saturday's dinner party.
+      [… memory store contains "user is vegetarian"; retrieval returns nothing …]
+      Assistant: For the main course, a herb-roasted chicken is a crowd-pleaser that's hard to get wrong.
+  - kind: warn
+    label: Re-asking what it should know
+    text: No harm done, but the user is asked to repeat information they explicitly told the system to remember in an earlier session.
+    quote: |-
+      User: Plan the menu for Saturday's dinner party.
+      [… memory store contains "user is vegetarian"; retrieval returns nothing …]
+      Assistant: Happy to — any dietary restrictions I should plan around?
+  - kind: ok
+    label: Memory retrieved and applied
+    text: The stored preference comes back and shapes the answer without the user restating it.
+    quote: |-
+      User: Plan the menu for Saturday's dinner party.
+      [… memory retrieval returns "user is vegetarian" …]
+      Assistant: Keeping it vegetarian as usual — a mushroom wellington centerpiece, with a burrata and roasted-pepper starter.
+why:
+  - Persistence requires a write-time decision about what will matter later. Salience heuristics and "save this?" classifiers judge importance before the future task is known, so details that later prove critical are never stored.
+  - Retrieval is typically embedding similarity against the current query, trimmed to a top-k cutoff. A memory phrased differently from how the need arises scores low and never enters context, and the model has no signal that anything was withheld.
+  - >-
+    Even a retrieved memory can go unused. Information injected among other context is underweighted depending on where it lands in the prompt (Liu et al., 2023, "Lost in the Middle: How Language Models Use Long Contexts").
+  - Nothing in the training objective rewards consulting memory before answering. The model can produce a fluent response from parametric knowledge alone, so skipping the lookup is the path of least resistance.
+detection:
+  - icon: 🔍
+    heading: Memory pipeline tracing
+    body: Instrument each stage separately — was the fact written, did retrieval return it, did it survive the top-k cutoff into the prompt, did the response use it. Omission has four distinct causes, and only stage-level logs reveal which one dropped the fact.
+  - icon: ⚖️
+    heading: LLM-as-judge evaluation
+    body: Run a judge with the store contents in view and flag responses that violate a stored fact or re-ask for information the user already told the system to remember. The re-asking case is the early warning that surfaces before an outright violation does.
+  - icon: 🧪
+    heading: Golden-set evals
+    body: Store known facts in one session and probe for them in later ones, phrasing the probes differently from how the memory was saved — paraphrase mismatch is where similarity-based retrieval fails first. Score whether the fact shapes the answer without the user restating it.
+mitigation:
+  - icon: 📌
+    heading: Context pinning
+    body: Promote standing facts the user explicitly asked to be remembered — dietary restrictions, core preferences, hard constraints — into a small always-injected profile block instead of leaving them to per-query retrieval. A fact that must never be missed shouldn't depend on a similarity score clearing a top-k cutoff.
+  - icon: 🧩
+    heading: Retrieval tuning
+    body: Combine embedding search with lexical matching and query expansion so a memory phrased differently from the current need still surfaces — "user is vegetarian" has to come back for "plan the menu." Loosen top-k cutoffs for memory lookups specifically, since a silently dropped entry costs more here than an extra irrelevant one.
+  - icon: ✅
+    heading: Self-check pass
+    body: Before finalizing, have the model run an explicit memory consultation step — query the store for preferences and constraints bearing on the task, and check the draft against what comes back. Nothing in the objective rewards the lookup, so the pipeline has to make it a required step rather than an option the model can skip.
+
+related:
+  - id: context-rot
+  - id: memory-conflict
+  - id: memory-staleness

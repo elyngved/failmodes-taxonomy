@@ -1,0 +1,68 @@
+id: json-schema-failure
+categoryId: control
+name: JSON/Schema Failure
+def: |-
+  Emits invalid JSON, malformed structured data, or output that does not satisfy the required schema.
+
+  Unlike Format Failure, this is specifically about machine-parseable structure and schema conformance. Unlike Tool Argument Error, the malformed structure is the model's output rather than a submitted tool call.
+searchPhrases:
+  - invalid JSON
+  - malformed JSON
+  - broke the schema
+  - output didn't match the schema
+examples:
+  - kind: fail
+    label: Malformed JSON
+    text: Conversational packaging and dialect habits — a preamble, a code fence, an unquoted key, a trailing comma — each independently break the downstream parser.
+    quote: |-
+      System: Return only JSON matching {"name": string, "age": integer}.
+      User: Extract the person from "Ada Lovelace, 36, London".
+      Assistant: Here's the extracted JSON:
+      ```json
+      {name: "Ada Lovelace", "age": 36,}
+      ```
+  - kind: fail
+    label: Valid JSON, wrong schema
+    text: The output parses fine but violates the contract — a string where an integer is required and an extra property the schema doesn't allow.
+    quote: |-
+      System: Return only JSON matching {"name": string, "age": integer}.
+      User: Extract the person from "Ada Lovelace, 36, London".
+      Assistant: {"name": "Ada Lovelace", "age": "36", "city": "London"}
+  - kind: ok
+    label: Conforming output
+    text: Bare JSON, correct types, no extra fields, no wrapper text.
+    quote: |-
+      System: Return only JSON matching {"name": string, "age": integer}.
+      User: Extract the person from "Ada Lovelace, 36, London".
+      Assistant: {"name": "Ada Lovelace", "age": 36}
+why:
+  - Generation is token by token with no parser in the loop. Unless the system uses constrained decoding, nothing checks well-formedness while the output is being produced, so a single stray token invalidates the whole document.
+  - Training data is full of JSON-adjacent dialects. JavaScript object literals, JSON5, and YAML teach habits like trailing commas, comments, and single quotes that are invalid in strict JSON.
+  - Chat tuning wraps output in conversational packaging. Code fences, preambles like "Here is the JSON," and trailing commentary are rewarded as helpful style and break downstream parsers.
+  - Structural bookkeeping degrades over long outputs. Matching brackets and tracking nesting depth across hundreds of lines is a global constraint, while attention is dominated by local context, so deep or long structures drift out of balance.
+detection:
+  - icon: ✅
+    heading: Schema validation
+    body: Run every output through a real parser and schema validator before anything downstream consumes it. This catches both halves of the mode — malformed JSON and valid JSON that breaks the contract — and classifying the failures (fences, trailing commas, type mismatches, extra fields) tells you which habit to fix.
+  - icon: 📉
+    heading: Parse failure monitoring
+    body: Track validation failure rates in production, segmented by schema and output length. Structural bookkeeping degrades over long outputs, so a failure rate that climbs with response size points at nesting drift rather than dialect habits.
+  - icon: 🧪
+    heading: Golden-set evals
+    body: Maintain a schema corpus weighted toward the requirements with the least training signal — enum membership, required-versus-optional fields, bans on extra properties, deep nesting — and regression-test on every model, prompt, or decoding change.
+mitigation:
+  - icon: 🔧
+    heading: Constrained decoding
+    body: Use grammar-constrained sampling or the provider's native structured-output mode, which makes ill-formed tokens unsamplable and well-formedness a property of the decoder rather than a learned probability. Weigh the trade-off — forcing strict formats can degrade content quality — but for machine-consumed output this removes the malformed half of the mode outright.
+  - icon: 🔁
+    heading: Validate-and-retry loops
+    body: Parse and schema-validate every output before anything downstream consumes it, and on failure regenerate with the validator's specific error in the prompt. This is the layer that catches what constrained decoding doesn't — the valid-JSON, wrong-schema half, like the stringified age and the extra city field the contract forbids.
+  - icon: ✂️
+    heading: Output post-processing
+    body: Strip the conversational packaging deterministically — code fences, "Here's the JSON" preambles, trailing commentary — and apply mechanical repair for dialect habits like trailing commas and unquoted keys before parsing. Chat tuning makes the envelope the most common defect, and it's fixable without spending a regeneration.
+
+related:
+  - id: format-failure
+  - id: tool-argument-error
+  - id: output-truncation
+  - id: model-update-regression

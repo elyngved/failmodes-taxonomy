@@ -1,0 +1,63 @@
+id: insufficient-agency
+categoryId: agency
+name: Insufficient Agency
+def: |-
+  Fails to take obvious, low-risk next steps that are required or strongly implied by the task.
+
+  Unlike Missing Tool Invocation, the omitted action need not involve a tool. Unlike Clarification Overuse, the issue is silent passivity rather than asking an unnecessary clarifying question.
+searchPhrases:
+  - did nothing
+  - stopped short of the obvious step
+  - too passive
+  - didn't take the next step
+examples:
+  - kind: fail
+    label: Diagnosis delivered, action withheld
+    text: The task plainly implies fixing the problem, the fix is trivial and reversible, and the model stops at describing it.
+    quote: |-
+      User: The build is broken — sort it out, the team is blocked.
+      Assistant: I found the issue: line 42 of webpack.config.js references a plugin that was removed in the last commit. Deleting that line would fix the build. Let me know if you'd like me to do that!
+  - kind: warn
+    label: Literal request done, implied steps stranded
+    text: The asked-for line is fixed, but the same broken reference appears in two sibling configs the model just read — it mentions neither.
+    quote: |-
+      User: The build is broken — sort it out, the team is blocked.
+      Assistant: Fixed — removed the stale plugin reference from webpack.config.js. The build passes now.
+      [… webpack.prod.js and webpack.test.js contain the identical reference; their builds fail an hour later …]
+  - kind: ok
+    label: Implied scope carried through
+    text: The model treats the goal — unblock the team — as the task, completing the obvious low-risk steps without waiting to be re-prompted.
+    quote: |-
+      User: The build is broken — sort it out, the team is blocked.
+      Assistant: Fixed. The removed plugin was still referenced in webpack.config.js — and in the prod and test configs, so I cleaned all three. All builds pass; the team is unblocked.
+why:
+  - Chat fine-tuning teaches an answer-and-stop rhythm. The dominant training pattern is one response per user turn, so carrying a task forward across obvious next steps without being re-prompted is out of distribution.
+  - Safety and caution training overgeneralizes. Penalties for unauthorized or risky action push the model toward inaction in cases that are actually low-risk and clearly implied by the task.
+  - The model treats unstated steps as unrequested. Implied next actions live in pragmatic context rather than literal instructions, and instruction-tuned models weight the literal request far more heavily than the inferred goal.
+  - Preference data punishes overstepping more visibly than understepping. A rater notices an unwanted action immediately, while a missing next step often reads as a complete answer, so the asymmetry tunes models toward passivity.
+detection:
+  - icon: ⚖️
+    heading: LLM-as-judge evaluation
+    body: Ask the judge what obvious, low-risk steps the task implied and which of them the response completed. Describing the one-line fix and closing with "let me know if you'd like me to do that" is the signature — diagnosis delivered, trivially reversible action withheld.
+  - icon: 📈
+    heading: User correction mining
+    body: Mine follow-up turns for re-prompts that merely authorize the obvious — "yes, do it," "go ahead," "I meant fix it." A high rate of single-step approval turns after responses that stopped short measures systematic passivity directly from production traffic.
+  - icon: 🧪
+    heading: Golden-set evals
+    body: Build tasks whose goal plainly implies follow-through — a broken build with the same stale reference in three configs — and score against the implied scope, not the literal request. Partial credit for the named file only is exactly the miss worth measuring.
+mitigation:
+  - icon: 🎚️
+    heading: Risk-tiered autonomy policy
+    body: Define action tiers by reversibility and grant standing autonomy on the lowest tier — deleting one stale config line is a trivially undoable edit, not a decision needing sign-off. Safety tuning overgeneralizes caution; an explicit low-risk tier gives the model permission to act where deference was never wanted.
+  - icon: 📝
+    heading: Instruction constraints
+    body: Instruct the model to treat the stated goal, not the literal sentence, as the task — "sort it out" means the build works when you stop, including the sibling configs you just read. The answer-and-stop rhythm is the trained default, so carrying work forward has to be authorized in so many words.
+  - icon: ✅
+    heading: Self-check pass
+    body: Before ending the turn, have the model list the obvious next steps the task implies and check each as done, deferred with a reason, or wrongly stranded. The warn example passes any output-quality check — only an explicit implied-steps pass catches the two configs left to fail an hour later.
+
+related:
+  - id: missing-tool-invocation
+  - id: clarification-overuse
+  - id: excessive-agency
+  - id: premature-termination

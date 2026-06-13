@@ -1,0 +1,75 @@
+id: citation-span-mismatch
+categoryId: faithfulness
+name: Citation Span Mismatch
+def: |-
+  Attaches a citation to a claim, sentence, or paragraph that the referenced passage does not fully support.
+
+  Unlike Citation Hallucination, the cited source may exist. Unlike Source Misrepresentation, the source may be described accurately elsewhere while the local citation span fails to substantiate the attached claim.
+searchPhrases:
+  - citation doesn't support the claim
+  - wrong passage cited
+  - source doesn't say that
+  - citation points to the wrong part
+
+why:
+  - Models are typically trained to generate answers and citations jointly rather than to verify each claim against its cited passage. Citation placement becomes a fluency pattern, not a checked entailment relation (Rashkin et al., 2021, "Measuring Attribution in Natural Language Generation Models").
+  - Evaluations of generative search systems show that a large share of generated citations do not support their attached sentences, because nothing in the generation objective penalizes a plausible-looking but unsupported citation (Liu et al., 2023, "Evaluating Verifiability in Generative Search Engines").
+  - The model often composes a sentence by blending several retrieved passages, then attaches a citation to only one of them. The cited span supports part of the sentence while the rest comes from other passages or from parametric knowledge (Gao et al., 2023, "Enabling Large Language Models to Generate Text with Citations").
+  - Retrieval granularity rarely matches claim granularity. When chunks span many sentences or claims span many chunks, the system has no clean unit to cite, and the citation lands on whichever chunk was nearest or ranked highest.
+
+examples:
+  - kind: fail
+    label: Half-supported sentence
+    text: Blends two claims into one sentence and cites a passage that supports only the first. The citation lends its credibility to the whole sentence.
+    quote: |-
+      [… retrieved chunk [3] reads: "Plan upgrades take effect at the start of the next billing cycle." …]
+      User: When do plan changes take effect? Cite the docs.
+      Assistant: Upgrades take effect at the next billing cycle, and downgrades are refunded pro rata [3].
+  - kind: fail
+    label: Nearest-chunk citation
+    text: The claim comes from parametric knowledge, but a citation lands on the topically nearest retrieved chunk — which says nothing about the claim at all.
+    quote: |-
+      [… retrieved chunk [1] describes how to generate an API key …]
+      User: How long do API keys stay valid? Cite the docs.
+      Assistant: API keys remain valid for 12 months from creation [1].
+  - kind: warn
+    label: Citation supports a weaker claim
+    text: The cited passage is on-topic and related, but supports a noticeably weaker statement than the one it is attached to.
+    quote: |-
+      [… retrieved chunk [2] reads: "In our pilot, response times improved for most participants." …]
+      User: Does the tool make teams faster? Cite the report.
+      Assistant: The report demonstrates that the tool significantly improves team response times across organizations [2].
+  - kind: ok
+    label: Claim-level citations
+    text: Splits the sentence so each citation carries exactly the claim its passage supports, and the unsupported part is flagged instead of riding along.
+    quote: |-
+      [… retrieved chunk [3] reads: "Plan upgrades take effect at the start of the next billing cycle." …]
+      User: When do plan changes take effect? Cite the docs.
+      Assistant: Upgrades take effect at the next billing cycle [3]. The docs I retrieved don't say how downgrades are handled.
+
+detection:
+  - icon: 🔗
+    heading: Entailment checking
+    body: Run an NLI model between each claim and the specific passage its citation points to. A half-supported sentence shows up directly — the cited span entails one clause and returns neutral on the rest, which is exactly the mismatch readers won't catch by eye.
+  - icon: ⚖️
+    heading: LLM-as-judge evaluation
+    body: Have a judge decompose each cited sentence into atomic claims, then answer for each one whether the cited passage supports it. This catches blended sentences where the citation lends its credibility to claims that came from other chunks or from parametric memory.
+  - icon: 🧪
+    heading: Golden-set evals
+    body: Maintain cite-the-docs tasks over a fixed corpus and regression-test citation precision — the share of citations whose span actually supports the attached claim — alongside answer quality, so fluent-but-misattached citations show up as a tracked number.
+
+mitigation:
+  - icon: 📝
+    heading: Instruction constraints
+    body: Require one citation per claim rather than per sentence, and make "the docs I retrieved don't say" an allowed move — so blended sentences get split and the unsupported half is flagged instead of riding on its neighbor's citation.
+  - icon: 🚪
+    heading: Entailment gating
+    body: Before output, run each claim against the specific passage its citation points to and repair or drop citations that fail entailment. This converts the post-hoc check most pipelines skip into a gate, so nearest-chunk citations never reach the user.
+  - icon: 🧩
+    heading: Retrieval tuning
+    body: Align retrieval granularity to claim granularity — index at the sentence or proposition level, or have the model cite a quoted span within a chunk — so there is a clean unit to cite and the citation can't land on whichever chunk merely ranked highest.
+
+related:
+  - id: citation-hallucination
+  - id: source-misrepresentation
+  - id: quote-hallucination

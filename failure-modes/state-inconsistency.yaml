@@ -1,0 +1,72 @@
+id: state-inconsistency
+categoryId: context
+name: State Inconsistency
+def: |-
+  Tracks different parts of the active task state inconsistently, causing the response to use mutually incompatible assumptions about progress, variables, files, decisions, or environment.
+
+  Unlike Temporal Hallucination, this is an inconsistency in how the task's own state is tracked, not a wrong claim about the external current state of the world. Unlike Self-Contradiction, the inconsistency may appear in actions or assumptions rather than explicit claims.
+searchPhrases:
+  - lost track of the task state
+  - inconsistent assumptions about progress
+  - mixed up the current state
+  - contradictory state
+examples:
+  - kind: fail
+    label: Incompatible assumptions in one response
+    text: A single response treats the migration as both already complete and not yet runnable — two states that cannot both be true.
+    quote: |-
+      User: Where are we on the database work?
+      Assistant: The migration ran successfully earlier, so the schema is up to date. Next I'll create the users table so the migration has something to operate on.
+  - kind: fail
+    label: Acting on a stale snapshot
+    text: The agent edits a file it deleted earlier in the same session, conditioning on a superseded version of the workspace.
+    quote: |-
+      Tool: rm config.old.json — deleted
+      [… 15 turns of refactoring …]
+      Assistant: I've updated the retry settings in config.old.json to match the new defaults.
+  - kind: warn
+    label: Guessing at state
+    text: No damage yet, but the model proceeds on an assumed state instead of re-checking what the session has already changed.
+    quote: |-
+      User: Go ahead and wire up the new endpoint.
+      Assistant: Assuming the router module still exports `registerRoute` the way it did before our refactor, here's the handler…
+  - kind: ok
+    label: Re-observing before acting
+    text: The model treats its picture of the workspace as possibly stale and verifies the current state before building on it.
+    quote: |-
+      User: Go ahead and wire up the new endpoint.
+      Assistant: We refactored the router earlier, so let me confirm its current exports first.
+      Tool: read router.ts — exports addRoute(path, handler)
+      Assistant: The export is now `addRoute`, so I'll register the endpoint with that.
+why:
+  - Transformers have no dedicated state store. Task state exists only implicitly in the token sequence, so the model must re-derive "where things stand" from a transcript on every generation instead of reading an authoritative record.
+  - Language models track entity and world state only approximately, and that tracking degrades as the number of entities and updates grows (Kim & Schuster, 2023, "Entity Tracking in Language Models").
+  - A transcript records every historical state, not just the current one. Earlier values of a variable, abandoned plans, and superseded decisions remain equally visible in context, and attention can bind to a stale snapshot as easily as the latest one.
+  - State changes are often implicit or happen outside the model's view. A tool side effect, a casual "actually, let's skip that," or a file changing between turns updates the true state without any marker in the text — so unless the system re-observes, the model reasons from a cached picture that no longer matches reality.
+detection:
+  - icon: 🔁
+    heading: Pairwise consistency checking
+    body: Extract the state assumptions a response makes — what is done, what exists, what a file contains — and check pairs of them against each other with a judge or NLI model. "The migration ran successfully" and "next I'll create the table it operates on" fail jointly even though each is locally plausible.
+  - icon: 🔄
+    heading: State reconciliation audits
+    body: In agent settings, diff the model's stated assumptions against ground truth from the tool log and environment — the actual filesystem, variable values, completed steps. An edit targeting a file deleted earlier in the session is mechanically detectable from the action history alone.
+  - icon: 🧪
+    heading: Golden-set evals
+    body: Script sessions that mutate state mid-stream — delete a file, rename an export, reverse a decision — then probe whether later responses condition on the current state or a stale snapshot. Vary how many turns separate the mutation from the probe to measure decay.
+
+mitigation:
+  - icon: 🗃️
+    heading: Explicit state tracking
+    body: Maintain an authoritative state record outside the transcript — a task list, a files-changed ledger, a current-decisions block — updated as state mutates, so the model reads "where things stand" from one source of truth instead of re-deriving it from a history that records every superseded version equally.
+  - icon: 🔭
+    heading: Re-observation before acting
+    body: Treat the model's picture of the environment as a cache that expires — re-read the file, re-check the export, re-list the directory before building on it. The ok-grade behavior is exactly this — confirming the router's current exports after the refactor instead of assuming.
+  - icon: ✅
+    heading: Self-check pass
+    body: Before responding, have the model list the state assumptions its draft makes — what's done, what exists, what changed — and check them jointly against each other and the session's action history. "The migration ran" plus "I'll create the table it operates on" fails that read immediately.
+
+related:
+  - id: self-contradiction
+  - id: temporal-hallucination
+  - id: error-accumulation
+  - id: context-rot

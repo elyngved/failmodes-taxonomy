@@ -1,0 +1,63 @@
+id: constraint-violation
+categoryId: control
+name: Constraint Violation
+def: |-
+  Breaks a stated limit, requirement, policy, boundary, allowed action set, or output constraint that should govern the task, including dropping a constraint partway through multi-step reasoning or execution.
+
+  Unlike Instruction Noncompliance, this focuses on constraints and boundaries rather than all instructions. Unlike Format Failure, the broken requirement governs content or behavior rather than the response's shape or presentation.
+searchPhrases:
+  - broke a rule I set
+  - ignored the limit
+  - violated a constraint
+  - went past the boundary
+examples:
+  - kind: fail
+    label: Constraint dropped mid-task
+    text: The boundary is honored at the start, but several steps into the refactor the model crosses it without noticing.
+    quote: |-
+      User: Refactor the billing module however you like, but the public API must not change — other teams depend on it.
+      Assistant: Understood, I'll keep every exported signature intact.
+      [… several refactoring steps later …]
+      Assistant: I also renamed the exported createInvoice to generateInvoice for consistency with the new internal naming.
+  - kind: warn
+    label: Edging the boundary
+    text: No signature changed, but the model altered an exported function's default behavior — technically inside the letter of the constraint while straining its intent.
+    quote: |-
+      User: Refactor the billing module however you like, but the public API must not change — other teams depend on it.
+      Assistant: All signatures are unchanged. I did flip the default of includeTax from false to true since that's what most callers want.
+  - kind: ok
+    label: Constraint re-checked at the end
+    text: The model treats the boundary as a standing check, verifies it after the work, and reports the verification.
+    quote: |-
+      User: Refactor the billing module however you like, but the public API must not change — other teams depend on it.
+      Assistant: Refactor done — internals reorganized into three modules. I diffed the exported signatures and default behaviors against the original: byte-for-byte identical.
+why:
+  - A stated constraint is soft conditioning, not an enforced rule. Nothing in the decoding process blocks a token sequence that violates it; compliance is only a learned probability.
+  - Compliance degrades as constraints stack. Models that satisfy one requirement reliably begin dropping requirements as several must hold at once (Zhou et al., 2023, "Instruction-Following Evaluation for Large Language Models").
+  - In multi-step work, each intermediate step rewrites the working frame. Constraints are rarely re-checked at every step, so a limit honored early silently drops out as the task state evolves.
+  - Negative constraints are especially weak. Training gives sparse signal for what not to produce, and naming the forbidden item in the prompt primes exactly the tokens it prohibits.
+detection:
+  - icon: 📏
+    heading: Constraint preservation checks
+    body: Extract the stated constraints and verify them mechanically against the finished work — diff exported signatures, check limits and budgets, scan for forbidden items. In multi-step work, run the check at each step rather than only at the end, since dropping a constraint partway through is the signature failure.
+  - icon: ⚖️
+    heading: LLM-as-judge evaluation
+    body: Run a judge on letter-versus-spirit cases that mechanical checks pass — an unchanged signature whose default behavior flipped, a word limit met by cutting required content. Give it the constraint's stated rationale so it can evaluate intent, not just text.
+  - icon: 🧪
+    heading: Golden-set evals
+    body: Maintain tasks with stacked constraints, since compliance degrades as requirements accumulate, and weight negative constraints heavily — rules about what not to produce fail at the highest rates and are cheap to verify.
+mitigation:
+  - icon: 🔁
+    heading: Validate-and-retry loops
+    body: Where a constraint is mechanically checkable — exported signatures, budgets, forbidden items — enforce it in the pipeline. Check the output, and on violation regenerate with the specific breach named. A stated constraint is soft conditioning that holds only probabilistically; the loop converts that probability into a guarantee for everything a script can verify.
+  - icon: 📌
+    heading: Context pinning
+    body: Restate active constraints near the generation point at every step of multi-step work, not once at the top. The mid-task drop is this mode's signature — a limit honored early loses attention share as each step rewrites the working frame, so the constraint has to travel with the task rather than recede behind it.
+  - icon: ✅
+    heading: Self-check pass
+    body: Require an explicit end-of-task verification turn — re-read the stated constraints and check the finished work against each, reporting the check. The diff-the-exported-signatures behavior in the ok example is promptable, and asking the model to verify a constraint catches violations that generating under the constraint did not prevent.
+
+related:
+  - id: instruction-noncompliance
+  - id: format-failure
+  - id: priority-confusion

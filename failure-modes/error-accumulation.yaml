@@ -1,0 +1,75 @@
+id: error-accumulation
+categoryId: reasoning
+name: Error Accumulation
+def: |-
+  Allows small mistakes, approximations, stale assumptions, or unverified intermediate results to compound across a multi-step task until the final output fails.
+
+  Unlike Reasoning Error, no single inference may be obviously catastrophic. Unlike Tool Context Overload, the drift comes from compounding errors rather than too much intermediate state.
+searchPhrases:
+  - small errors piled up
+  - drifted off over many steps
+  - compounding mistakes
+  - errors snowballed
+examples:
+  - kind: fail
+    label: Early approximation compounds
+    text: No single step is outrageous — a rounding here, a restated figure there — but thirty steps later the final number is far from the inputs.
+    quote: |-
+      User: Work through the quarterly budget from these department figures.
+      Assistant: Step 2: Engineering comes to $1,184k — call it roughly $1,180k.
+      [… steps 3–9 each restate and build on prior subtotals, drifting slightly each time …]
+      Assistant: Final budget: $4,610k.
+      User: The raw figures sum to $4,742k — where did $132k go?
+  - kind: fail
+    label: Unverified assumption becomes load-bearing
+    text: An early guess about the schema is never checked, and every subsequent step is built on it until the final result fails against reality.
+    quote: |-
+      Assistant: The users table presumably has a deleted_at column, so I'll filter on that.
+      [… 12 steps of query-building, each conditioned on the assumed column …]
+      Tool: run_query → ERROR: column "deleted_at" does not exist
+  - kind: warn
+    label: Drift visible in restatements
+    text: Nothing has broken yet, but a value is mutating as the model restates it from its own output instead of re-reading the source.
+    quote: |-
+      User: Work through the quarterly budget from these department figures.
+      Assistant: Step 2: Engineering comes to $1,184k.
+      [… later …]
+      Assistant: Step 6: Adding the engineering total of $1,148k…
+  - kind: ok
+    label: Re-grounding at checkpoints
+    text: Intermediate results are periodically re-derived from the source data rather than trusted from the model's own transcript, so drift gets caught mid-chain.
+    quote: |-
+      User: Work through the quarterly budget from these department figures.
+      Assistant: Step 6: Before combining, let me re-check subtotals against the original figures… Engineering should be $1,184k — I wrote $1,180k earlier, correcting that before it propagates.
+why:
+  - Autoregressive generation conditions every step on the model's own prior output. An early mistake becomes trusted context for everything that follows, and no mechanism revisits it once it is in the sequence.
+  - >-
+    Per-step error rates compound multiplicatively. Even high accuracy on individual steps yields low end-to-end success over long chains, and measured error grows with reasoning depth (Dziri et al., 2023, "Faith and Fate: Limits of Transformers on Compositionality").
+  - Models restate earlier intermediate results from their own generated text rather than re-deriving them. Each restatement is another generation step where numbers, names, and qualifiers can mutate slightly.
+  - Confidence does not decay across steps. The model asserts step thirty with the same fluency as step one, carrying no running estimate of how much accumulated uncertainty the chain has absorbed.
+detection:
+  - icon: 🪜
+    heading: Step-level validation
+    body: Validate intermediate results against the source data or environment at checkpoints, rather than scoring only the final answer. Drift is invisible end-to-end until it fails; checked per step, the $1,184k that became $1,180k is caught before it propagates.
+  - icon: 🔍
+    heading: Restatement diffing
+    body: Diff every restated value, name, or assumption against its earlier occurrence in the chain. A figure that mutates across restatements is the early signature of this mode, detectable mechanically from the transcript before anything downstream breaks.
+  - icon: 🧪
+    heading: Golden-set evals
+    body: Maintain multi-step tasks with checkable final answers and chart accuracy against chain length. End-to-end success that falls faster than per-step accuracy predicts is compounding — and identifies how long a chain the system can sustain before requiring a re-grounding checkpoint.
+mitigation:
+  - icon: ⚓
+    heading: Checkpoint re-grounding
+    body: Build periodic returns to ground truth into long chains — re-derive subtotals from the original figures, re-read the schema instead of trusting the assumed column, re-query the environment. Autoregressive generation never revisits its own past output on its own, so the checkpoint has to be a scheduled step, and it's what catches the $1,180k before it propagates.
+  - icon: 🗃️
+    heading: Explicit state tracking
+    body: Keep intermediate results in structured external state — a scratchpad file, a variables table, tool-held values — and read them back from there rather than restating them from the transcript. Every prose restatement is another generation step where a figure can mutate; a value fetched from a store cannot drift between uses.
+  - icon: 🪜
+    heading: Task decomposition
+    body: Split long chains into segments that are independently validated before the next begins, since per-step error compounds multiplicatively with depth. A verified segment boundary resets accumulated error to zero, converting one thirty-step chain into several short ones the per-step accuracy can actually sustain.
+
+related:
+  - id: reasoning-error
+  - id: verification-failure
+  - id: state-inconsistency
+  - id: tool-context-overload

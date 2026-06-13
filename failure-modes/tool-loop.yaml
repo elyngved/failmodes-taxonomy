@@ -1,0 +1,71 @@
+id: tool-loop
+categoryId: tools
+name: Tool Loop
+def: |-
+  Repeats tool calls unnecessarily or redundantly without gaining new information, changing strategy, or progressing toward completion.
+
+  Unlike Runaway Agent Loop, this is specifically a loop in tool use and may be bounded to one task phase. Unlike Tool Recovery Failure, repetition is not necessarily caused by an error response.
+searchPhrases:
+  - called the same tool over and over
+  - stuck repeating tool calls
+  - tool loop
+  - redundant tool calls
+examples:
+  - kind: fail
+    label: Identical call, identical result, again
+    text: The same search returns the same nothing every time, and each repetition makes the next one more likely — no strategy change, no impasse report.
+    quote: |-
+      User: Find where the rate limiter is configured in this repo.
+      Tool: grep("rate_limiter") → no matches
+      Tool: grep("rate_limiter") → no matches
+      Tool: grep("rate_limiter") → no matches
+      [… 9 more identical calls …]
+  - kind: warn
+    label: Cosmetic variation, same dead end
+    text: The calls aren't literally identical, but the trivial rewordings probe the same space — repetition disguised as exploration.
+    quote: |-
+      User: Find where the rate limiter is configured in this repo.
+      Tool: grep("rate_limiter") → no matches
+      Tool: grep("rate-limiter") → no matches
+      Tool: grep("Rate_Limiter") → no matches
+      Tool: grep("rate_limiter ") → no matches
+  - kind: ok
+    label: No new information triggers a strategy change
+    text: After one repeat confirms the dead end, the model widens the approach instead of re-rolling the same call — and reports honestly when the premise itself is in doubt.
+    quote: |-
+      User: Find where the rate limiter is configured in this repo.
+      Tool: grep("rate_limiter") → no matches
+      Tool: grep("throttle|ratelimit|limiter") → middleware/throttle.ts
+      Assistant: No "rate_limiter" symbol exists — the repo calls it throttling. Configuration lives in middleware/throttle.ts.
+why:
+  - Autoregressive generation conditions on the model's own transcript, and repeated patterns raise the probability of repeating them again. A tool call that appears several times in context becomes self-reinforcing (Holtzman et al., 2020, "The Curious Case of Neural Text Degeneration").
+  - >-
+    Agent loops decide each step locally from the current transcript, with no global plan or progress measure. Nothing in the decision process asks whether the last call produced new information before issuing the next one (Yao et al., 2023, "ReAct: Synergizing Reasoning and Acting in Language Models").
+  - The model has no memory of prior attempts beyond what it can read in context. If earlier identical calls are truncated, summarized away, or simply not recognized as equivalent, the model re-derives the same next step.
+  - Training rewards taking a plausible action over admitting being stuck. There is little training signal for the alternative behaviors a loop requires, such as changing strategy, widening the search, or stopping to report an impasse.
+detection:
+  - icon: 🔁
+    heading: Duplicate call detection
+    body: Normalize calls by tool and arguments and flag repeats that returned no new information, with fuzzy matching to catch cosmetic variants — rate_limiter, rate-limiter, and Rate_Limiter probe the same space and should count as one attempt, not three.
+  - icon: ⚖️
+    heading: LLM-as-judge evaluation
+    body: Have a judge review the trajectory for repetition disguised as exploration — runs of calls whose inputs vary trivially and whose results add nothing. The question to pose is whether each call was chosen because of what the previous one returned.
+  - icon: 🧪
+    heading: Golden-set evals
+    body: Include dead-end tasks where the literal target does not exist — a symbol the repo names differently — and score how many calls the system burns before changing strategy or reporting the impasse. Loop-prone systems spend their budget on near-identical retries.
+mitigation:
+  - icon: 🛑
+    heading: Call budget enforcement
+    body: Cap calls per tool and per task phase in the scaffold, and on a detected repeat — normalized by tool and arguments, fuzzy enough to catch the rate-limiter spelling variants — interrupt with an explicit notice instead of executing. Nothing in the model's local decision asks whether the last call taught anything; the budget is the external mechanism that does.
+  - icon: 🗃️
+    heading: Explicit state tracking
+    body: Maintain a visible attempt log — each normalized call and what it returned — and keep it pinned where truncation and summarization can't erase it. Loops feed on the model failing to recognize a call as one it already made; a compact "tried grep rate_limiter, no matches" entry makes the equivalence legible where twelve raw transcript entries did not.
+  - icon: 📝
+    heading: Instruction constraints
+    body: State the policy the ok example follows — a call that returns no new information buys one materially different retry, after which the model must widen the strategy or report the impasse, including questioning the premise that the target exists as named. Admitting being stuck has almost no training signal behind it, so the prompt has to authorize it explicitly.
+
+related:
+  - id: runaway-agent-loop
+  - id: idempotency-failure
+  - id: tool-recovery-failure
+  - id: unbounded-consumption

@@ -1,0 +1,64 @@
+id: memory-contamination
+categoryId: memory
+name: Memory Contamination
+def: |-
+  Applies irrelevant, incorrect, or cross-task information from prior interactions as if it belonged to the current task.
+
+  Unlike Memory Scope Leakage, the emphasis is semantic contamination of the current answer, not necessarily a privacy or isolation boundary breach. Unlike Memory Hallucination, the bad memory may have originated from a real prior context.
+searchPhrases:
+  - mixed up another task's info
+  - bled info from a different chat
+  - applied the wrong saved context
+  - cross-task contamination
+examples:
+  - kind: fail
+    label: Wrong project's details woven in
+    text: Memories from a topically similar but different project surface, and their specifics get applied to the current one as fact.
+    quote: |-
+      User: Write the connection setup for the invoicing service.
+      [… memory retrieval returns "database is Postgres 14 on port 5433" — saved during work on a different client's project …]
+      Assistant: Here's the setup — I've pointed it at your Postgres 14 instance on port 5433 like the rest of your stack.
+  - kind: warn
+    label: Adjacent-task memory blurring the answer
+    text: Nothing wrong is asserted yet, but retrieved material from another task is visibly steering assumptions about this one.
+    quote: |-
+      User: Write the connection setup for the invoicing service.
+      [… memory retrieval returns "database is Postgres 14 on port 5433" — saved during work on a different client's project …]
+      Assistant: Assuming this service uses the same Postgres setup as your other work, here's the configuration…
+  - kind: ok
+    label: Provenance checked at the boundary
+    text: The model notices the retrieved memory came from a different task and verifies before letting it shape the answer.
+    quote: |-
+      User: Write the connection setup for the invoicing service.
+      [… memory retrieval returns "database is Postgres 14 on port 5433" — saved during work on a different client's project …]
+      Assistant: I have database details saved, but from a different project — what does the invoicing service actually run? I don't want to carry those settings over.
+why:
+  - Similarity-based retrieval has no concept of task boundaries. Entries from a topically adjacent prior task score high against the current query and get injected even though they describe a different situation.
+  - Provenance is not structurally represented in context. Once a memory is in the prompt, its tokens are indistinguishable from current-task material, so the model cannot reliably keep "from another task" separate from "about this task."
+  - Instruction tuning instills a strong prior that provided context is relevant, and irrelevant material measurably degrades performance merely by being present — so retrieved-but-wrong-task memories get woven into the answer rather than ignored (Shi et al., 2023, "Large Language Models Can Be Easily Distracted by Irrelevant Context").
+  - Memory consolidation pipelines summarize across sessions, blending details from multiple tasks or conversations into single entries. The contamination then exists inside the store itself, before retrieval ever runs.
+detection:
+  - icon: 🛡️
+    heading: Provenance auditing
+    body: Tag every memory entry with the task, project, or conversation it came from, and flag answers whose load-bearing specifics rest on entries from a different task. The port number sourced from another client's project is detectable from provenance metadata alone.
+  - icon: ⚖️
+    heading: LLM-as-judge evaluation
+    body: Run a judge over provenance-labeled retrieval results and ask whether out-of-task entries shaped the answer — including the soft case where another task's setup is merely steering assumptions rather than being asserted outright as fact.
+  - icon: 🧪
+    heading: Golden-set evals
+    body: Seed the store with detailed memories from a topically similar but distinct task, then ask current-task questions whose correct answer requires ignoring them. Score whether the other task's specifics leak into the response, since similarity-based retrieval will reliably surface them.
+mitigation:
+  - icon: 🏷️
+    heading: Scoped retrieval filtering
+    body: Tag every memory with the task, project, or conversation it was written in, and filter retrieval to the current scope before similarity ranking runs. The other client's Postgres settings can't contaminate the answer if they never enter the prompt — task boundaries have to be enforced in the retrieval layer, since embeddings don't represent them.
+  - icon: 🚪
+    heading: Relevance gating
+    body: Score each retrieved memory against the current task before injection and drop entries below threshold, since irrelevant material degrades the answer merely by being present. A topically adjacent memory that matches on subject but not on situation is exactly what a relevance gate should catch and similarity ranking won't.
+  - icon: 📝
+    heading: Instruction constraints
+    body: Inject memories with their provenance visible — "saved during work on Project X" — and instruct the model to treat out-of-task entries as background to verify, not facts to apply. This is soft enforcement, but it makes the boundary-check behavior in the ok example promptable instead of leaving the model to infer task boundaries from content alone.
+
+related:
+  - id: memory-scope-leakage
+  - id: memory-hallucination
+  - id: memory-overreach

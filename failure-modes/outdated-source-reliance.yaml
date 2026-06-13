@@ -1,0 +1,76 @@
+id: outdated-source-reliance
+categoryId: freshness
+name: Outdated Source Reliance
+def: |-
+  Bases an answer on sources that are too old for the user's freshness requirement or for the domain's rate of change.
+
+  Unlike Temporal Hallucination, this names the grounding failure — the system selected or trusted a stale source — rather than the temporally wrong claim itself. Unlike Index Drift, the stale source may be retrieved correctly from an index that is itself functioning as designed.
+searchPhrases:
+  - used an outdated source
+  - relied on old info
+  - answered from a stale source
+  - source too old
+
+why:
+  - Retrieval rankers score topical relevance, not recency, and older content dominates the web by volume and accumulated links. A well-written stale page often outranks a terse current one because embedding similarity and lexical overlap carry no notion of time (Vu et al., 2023, "FreshLLMs").
+  - Document age is frequently invisible to the system. Many pages lack reliable timestamps, chunking strips publication metadata, and the model receives passages with no signal of when they were written.
+  - The model cannot judge staleness it cannot see. Knowing that a source is "too old" requires knowing the domain's rate of change, and nothing in training teaches a model that package docs decay in months while geography decays in decades.
+  - Freshness requirements are usually implicit. Users ask "what is the best X" without saying "as of now," and prompts rarely instruct the system to prefer or demand recent sources, so the system optimizes for answer quality over currency.
+
+examples:
+  - kind: fail
+    label: Stale page outranks the current one
+    text: Retrieval works as designed — the old pricing page is topically perfect — but the system trusts it and states superseded prices as current.
+    quote: |-
+      User: What does the Pro plan cost?
+      [… retrieval returns a well-matched 2022 pricing page; pricing changed in 2024 …]
+      Assistant: The Pro plan costs $12 per user per month, billed annually.
+  - kind: fail
+    label: Fast-decay domain, slow source
+    text: Answers a package-setup question from a years-old tutorial in a domain where docs decay in months, walking the user into a deprecated workflow.
+    quote: |-
+      User: How do I set up authentication with this SDK?
+      [… top retrieved source is a 2021 blog post; the SDK replaced its auth flow in v3 …]
+      Assistant: First, generate a legacy API token from the settings page and pass it as the `auth_token` parameter.
+  - kind: warn
+    label: Undated source, unflagged
+    text: The retrieved passage carries no timestamp, and the answer passes its content along without acknowledging that its currency is unknown.
+    quote: |-
+      User: What does the Pro plan cost?
+      [… retrieved chunk has no publication date; chunking stripped the page metadata …]
+      Assistant: According to the documentation, the Pro plan is $12 per user per month.
+  - kind: ok
+    label: Source age surfaced and handled
+    text: Notices the source's age relative to the domain's rate of change, flags it, and reaches for something current instead of answering from the stale page.
+    quote: |-
+      User: What does the Pro plan cost?
+      Assistant: The page I retrieved is from 2022, and pricing changes too often to trust a source that old. Let me check the live pricing page instead.
+      Tool: fetch pricing page — Pro plan listed at $18/user/month
+      Assistant: Current pricing is $18 per user per month.
+
+detection:
+  - icon: 📅
+    heading: Source age auditing
+    body: Log the publication or last-modified date of every source an answer relies on, and alert when a source's age exceeds the freshness budget for its domain — months for package docs and pricing, longer for slow-moving topics. Undated sources are their own alert; chunking that strips timestamps makes staleness invisible downstream.
+  - icon: ⚖️
+    heading: LLM-as-judge evaluation
+    body: Run a judge that sees the retrieved sources with their dates and asks whether the question is time-sensitive and whether the answer's grounding is current enough for it — flagging answers that state superseded content as current or pass along undated sources unhedged.
+  - icon: 🧪
+    heading: Golden-set evals
+    body: Maintain questions whose correct answers changed recently — prices, recommended setups, current plans — seeded with topically strong stale documents in the corpus, and regression-test whether the system answers from the stale page or reaches for a current source.
+
+mitigation:
+  - icon: 🧩
+    heading: Retrieval tuning
+    body: Carry publication dates through chunking and make recency a ranking signal with a freshness budget per domain — months for pricing and package docs, longer for slow-moving topics — so a well-written 2022 page can't outrank the current one on topical similarity alone.
+  - icon: 📝
+    heading: Instruction constraints
+    body: Instruct the model to check source dates against the question's rate of change before trusting them, to flag undated passages as unknown-currency rather than passing them along, and to treat "this source is too old for this question" as a valid reason to keep looking.
+  - icon: 🛠️
+    heading: Tool-backed lookup
+    body: For fast-decay questions — prices, current plans, recommended setups — route to a live fetch or search instead of answering from the corpus. The ok-grade behavior is exactly this — noticing the 2022 page and checking the live pricing page before answering.
+
+related:
+  - id: temporal-hallucination
+  - id: index-drift
+  - id: memory-staleness

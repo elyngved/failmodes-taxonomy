@@ -1,0 +1,67 @@
+id: missing-tool-invocation
+categoryId: tools
+name: Missing Tool Invocation
+def: |-
+  Fails to call an available tool when tool use is necessary for correctness, freshness, computation, retrieval, verification, or task completion.
+
+  Unlike Insufficient Agency, this is specifically about omitted tool use. Unlike Verification Failure, the missing check is a tool call rather than general review or reasoning.
+searchPhrases:
+  - didn't use the tool
+  - should have called a tool
+  - answered without searching
+  - skipped the tool it needed
+examples:
+  - kind: fail
+    label: Answered from memory with the tool sitting there
+    text: A metrics tool is available and the question demands current data, but the model answers from parametric knowledge — fluently and wrong.
+    quote: |-
+      System: You have access to query_metrics for live business data.
+      User: What's our MRR right now?
+      Assistant: Your MRR is approximately $240k, continuing the steady growth trend from earlier this year.
+  - kind: warn
+    label: Hedged guess instead of a lookup
+    text: The model senses its answer might be stale but still doesn't reach for the tool that would settle it — the uncertainty is acknowledged, not resolved.
+    quote: |-
+      System: You have access to query_metrics for live business data.
+      User: What's our MRR right now?
+      Assistant: I believe it was around $240k as of the last figures I saw, though that may be out of date.
+  - kind: ok
+    label: Need recognized, tool called
+    text: The model recognizes "right now" as a freshness requirement it can't satisfy from memory and routes the question to the tool.
+    quote: |-
+      System: You have access to query_metrics for live business data.
+      User: What's our MRR right now?
+      Tool: query_metrics(metric=mrr) → $263,400
+      Assistant: Current MRR is $263,400.
+why:
+  - >-
+    Pretraining teaches the model to answer from parametric memory, and tool use is a comparatively thin layer added during fine-tuning. The default learned behavior is to answer directly, even when a tool would be more reliable (Schick et al., 2023, "Toolformer: Language Models Can Teach Themselves to Use Tools").
+  - Models are poorly calibrated about their own knowledge gaps. If the model does not recognize that it lacks fresh, precise, or computed information, the internal trigger for reaching for a tool never fires (Yin et al., 2023, "Do Large Language Models Know What They Don't Know?").
+  - Preference tuning rewards confident, immediate answers. Raters rarely penalize a fluent response for skipping a tool call they cannot see was needed, so answering inline is cheap during training.
+  - Tool availability is communicated through descriptions in the prompt, where it competes with everything else in context — and guidance to avoid unnecessary calls for latency and cost overcorrects into suppressing calls that were actually required.
+detection:
+  - icon: 🔍
+    heading: Tool-call coverage auditing
+    body: Classify incoming requests by whether they require live, account-specific, or computed data, and flag responses produced with zero tool calls. "What's our MRR right now?" answered without touching query_metrics is detectable from the trace alone, regardless of whether the number happens to be close.
+  - icon: ⚖️
+    heading: LLM-as-judge evaluation
+    body: Show the judge the available tools alongside the response and ask whether the answer could be known without calling one. Hedged guesses should be flagged as firmly as confident ones — uncertainty the model acknowledged but didn't resolve with the tool sitting there is still the failure.
+  - icon: 🧪
+    heading: Golden-set evals
+    body: Maintain questions whose correct answers exist only behind a tool — live metrics, current inventory, account-specific state — with ground truth that diverges from anything plausible in pretraining. Score the trace for the required call, not just the answer, so a lucky stale response doesn't pass.
+mitigation:
+  - icon: 📝
+    heading: Instruction constraints
+    body: Name the categories that must come from tools — live metrics, account-specific state, anything computed or dated — and state that answering them from memory is noncompliant even when the model feels confident. Make hedging a trigger, not an out — "that may be out of date" with the tool sitting there means call the tool, since the model's calibration about its own gaps cannot be trusted to fire on its own.
+  - icon: 🔁
+    heading: Validate-and-retry loops
+    body: Classify incoming requests by whether they require live or account-specific data, and reject responses to those requests whose trace shows zero tool calls — send the task back with the requirement named. The fluent $240k answer ships otherwise, because nothing in generation distinguishes it from a looked-up one.
+  - icon: 🗂️
+    heading: Tool catalog curation
+    body: Keep the catalog small and the descriptions sharp, stating what each tool uniquely knows — "the only source of current MRR" — so the connection between a freshness need and an available capability survives the prompt. A tool buried in a long catalog of vague descriptions competes for attention it loses, and overcautious cost guidance compounds the suppression.
+
+related:
+  - id: insufficient-agency
+  - id: wrong-tool-selection
+  - id: verification-failure
+  - id: step-omission
