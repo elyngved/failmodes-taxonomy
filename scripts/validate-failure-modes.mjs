@@ -162,36 +162,12 @@ if (Array.isArray(categories)) {
   }
 }
 
-// Build the full edge set once (only valid edges where both ends exist).
-const relatedEdges = new Set();
-for (const { id, mode } of modes) {
-  for (const item of mode.related ?? []) {
-    if (item?.id && ids.has(item.id)) {
-      relatedEdges.add(`${id}→${item.id}`);
-    }
-  }
-}
-
-// Report non-reciprocal edges for manual review. This does not fail the build.
-const nonReciprocal = [];
-for (const edge of relatedEdges) {
-  const [from, to] = edge.split("→");
-  if (!relatedEdges.has(`${to}→${from}`)) {
-    nonReciprocal.push(`  ${from} → ${to} (${to} does not link back)`);
-  }
-}
-
 if (errors.length) {
   console.error(errors.map((error) => `- ${error}`).join("\n"));
   process.exit(1);
 }
 
 console.log(`Validated ${modes.length} failure modes across ${categoryIds.size} categories.`);
-
-if (nonReciprocal.length) {
-  console.warn(`\nNon-reciprocal related links (${nonReciprocal.length}) — review manually:`);
-  console.warn(nonReciprocal.join("\n"));
-}
 
 function readYaml(filePath) {
   try {
