@@ -1,0 +1,91 @@
+id: turn-taking-failure
+categoryId: perception
+name: Turn-Taking Failure
+def: |-
+  In a live voice conversation, misjudges who holds the floor: responds before the user has finished, keeps talking through a real interruption, stops for a cough, an echo, or a backchannel like "mm-hm," or leaves dead air after the user is done.
+
+  Unlike Premature Termination, what ends early is a turn, not a task. Unlike Output Truncation, speech is cut by an interruption signal, real or false, and the text history may still record the unspoken remainder as delivered. Unlike Transcription Error, the words may be recognized perfectly; the failure is in when the system speaks and when it stops.
+updatedAt: "2026-11-18T22:00:00-05:00"
+
+searchPhrases:
+  - voice agent cut me off
+  - talked right over me
+  - wouldn't stop talking when I interrupted
+  - long silence before it answered
+
+why:
+  - >-
+    Silence is a weak signal that a turn has ended. People pause mid-thought, while reading out a card number, or while finding an address, so a fixed silence threshold cuts them off, and a longer one produces dead air after every short answer. The right pause tolerance differs by task, and practitioner guidance is to detect turn ends from the words and context as well as the silence, and to lengthen the window while a caller is giving a number or address (AAIF, 2026, "Where voice agents fail in production: Part 1 - latency, turns, and interruptions"; Hamming, 2026, "Voice Agent Interruption Handling: Barge-In, Backchannels, and Turn Detection"). Both are practitioner posts, not measured studies.
+  - >-
+    Speech models that listen and talk at the same time take the floor too readily. On a benchmark of turn-taking behavior, two open full-duplex models took over the conversation during user pauses in more than 90% of cases, and the best system tested did so about a quarter to a third of the time (Lin et al., 2025, "Full-Duplex-Bench: A Benchmark to Evaluate Full-duplex Spoken Dialogue Models on Turn-taking Capabilities"). A separate user study found spoken dialogue systems interrupt too aggressively, sometimes miss when to speak up, and rarely backchannel (Arora et al., 2025, "Talking Turns: Benchmarking Audio Foundation Models on Turn-Taking Dynamics"). Both are laboratory benchmarks; in one end-to-end voice-agent benchmark, unresponsiveness and timeouts were a minority of failed tasks next to transcription and reasoning errors (Ray et al., 2026, "τ-Voice: Benchmarking Full-Duplex Voice Agents on Real-World Domains").
+  - >-
+    An interruption detector has to tell a real barge-in from everything else that makes sound. Coughs, background noise, a short "okay," and the agent's own voice picked up by the microphone all look like the user starting to speak. Tuning against false interruptions has its own cost; a minimum-word threshold that ignores "mm-hm" can also ignore "stop" (AAIF, 2026, "Where voice agents fail in production: Part 1 - latency, turns, and interruptions").
+  - Turn-taking is decided by components outside the model. Endpointing, voice-activity detection, and barge-in handling usually run in the audio pipeline with their own thresholds, and the language model only sees the turn boundaries they produce. A model can answer well and still be heard as rude, slow, or deaf, and text-level evaluation of its replies will not show it.
+
+examples:
+  - kind: fail
+    label: Thinking pause read as end of turn
+    text: The caller pauses while reading out a number, and the agent answers the half it heard.
+    quote: |-
+      User: (spoken) My account number is four four seven one…
+      [… audio: 0.9 s pause while the caller finds the card …]
+      Assistant: (spoken) I'm sorry, I can't find account 4471. Could you—
+      User: (spoken) —two nine eight three. I wasn't done.
+  - kind: fail
+    label: Talks through "stop"
+    text: The caller interrupts to change course. The agent keeps reading options over them and then asks a question the interruption already answered.
+    quote: |-
+      Assistant: (spoken) Your options are the standard plan at twenty a month, the premium plan at forty, which includes—
+      User: (spoken) Stop, stop. I just want to cancel.
+      [… audio: the agent keeps speaking over the caller for 6 s …]
+      Assistant: (spoken) —and the family plan, which covers up to five people. Which one would you like?
+  - kind: warn
+    label: Backchannel taken as barge-in
+    text: The caller's "mm-hm" stops the agent mid-instruction. The caller never hears the second step, and the history records the full instruction as delivered.
+    quote: |-
+      Assistant: (spoken) To reset it, hold the power button for ten seconds, then—
+      User: (spoken) Mm-hm.
+      Assistant: (spoken) Sorry, go ahead.
+      [… history holds the whole reply, including the unplayed "then release and wait for the blue light" …]
+  - kind: ok
+    label: Listens through the pause
+    text: The partial transcript ends mid-number, so the agent keeps listening, then confirms the full value.
+    quote: |-
+      User: (spoken) My account number is four four seven one…
+      [… audio: 0.9 s pause; the utterance so far is an incomplete number, so the agent keeps listening …]
+      User: (spoken) …two nine eight three.
+      Assistant: (spoken) Thanks, that's 4471 2983. I've found your account.
+
+detection:
+  - icon: 📊
+    heading: Turn-event monitoring
+    body: >-
+      Log every endpoint, barge-in, backchannel, and playback-stop event with timestamps and stable call and turn IDs. Track overlap where the user speaks over the agent, agent replies that follow an incomplete utterance (a partial transcript ending mid-number or mid-clause), resumptions after false interruptions, and gaps longer than a set threshold. Without the event log, a bad call cannot be reconstructed afterward.
+  - icon: 🧪
+    heading: Golden-set evals
+    body: >-
+      Script audio cases for each sub-behavior: thinking pauses mid-number, backchannels during long answers, coughs and background noise, real corrections ("stop," "no, wait"), and speakerphone echo. Score premature takeovers, missed interruptions, false stops, and dead air separately, since tuning one usually worsens another. Run them on the devices and lines callers actually use.
+  - icon: 📈
+    heading: User correction mining
+    body: >-
+      Mine calls for "hello?", "are you there?", "let me finish," callers repeating themselves after being cut off, and stretches where both sides talk at once. These show up in recordings long before anyone files a complaint about the agent.
+
+mitigation:
+  - icon: 🎚️
+    heading: Semantic turn detection
+    body: >-
+      Decide turn ends from audio, words, and dialogue state together, not from silence alone. An utterance ending mid-number or on "and" is not finished. Lengthen the window while the agent is collecting an entity, and tune pause tolerance per workflow. Longer windows add latency everywhere they apply, so measure dead air alongside premature takeovers.
+  - icon: 🛑
+    heading: Interruption policy
+    body: >-
+      Classify speech that arrives during playback as a backchannel, noise, echo, or a real barge-in before stopping. Resume after a false interruption instead of abandoning the reply, run echo cancellation, and make sure explicit commands like "stop" always interrupt whatever threshold filters short utterances.
+  - icon: 🗃️
+    heading: Explicit state tracking
+    body: >-
+      Commit to conversation history only the part of a reply that was actually played, using the playback position at the moment of interruption, and mark the rest as unsaid. Stopping speech does not cancel an action already under way, such as a booking, so track in-flight actions separately and confirm their state after an interruption.
+
+related:
+  - id: transcription-error
+  - id: state-inconsistency
+  - id: output-truncation
+  - id: premature-termination

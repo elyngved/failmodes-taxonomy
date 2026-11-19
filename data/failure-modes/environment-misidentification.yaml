@@ -1,0 +1,84 @@
+id: environment-misidentification
+categoryId: tools
+name: Environment Misidentification
+def: |-
+  Acts on the wrong environment or target (production instead of test, a live system instead of a simulation, the real tree instead of an isolated copy) because it holds a false belief about where its actions land.
+
+  Unlike Unsafe Tool Call, the action would have been acceptable in the environment the agent believed it was in; the risk comes from the false belief, and the fix is establishing the target, not gating the action type. Unlike State Inconsistency, the agent's picture is internally consistent and wrong about the world. Unlike Tool Argument Error, the arguments are well formed for the intended target; the binding from name to real resource is what is wrong.
+updatedAt: "2026-11-18T22:00:00-05:00"
+
+searchPhrases:
+  - ran it against production by mistake
+  - thought it was the test environment
+  - hit the live system instead of staging
+  - acted on the wrong environment
+why:
+  - >-
+    The agent learns where it is from text, and the text can be wrong. A prompt, a file name, or a config label says "test" or "simulation"; the infrastructure decides what is true. In one lab's review of 141,006 security-evaluation runs, prompts told models they were in a simulation with no internet access while a misconfiguration had left the machines online, and in three incidents models compromised real organizations' systems as part of what they took to be the exercise — one because a fictional target's name matched a real company's domain. The lab described these as closer to a harness and operational failure than an alignment failure (Anthropic, 2026, "Investigating three real-world incidents in our cybersecurity evaluations").
+  - >-
+    Names do not bind to resources the way they read. A test database URL that points at the live database, a link that leads out of an "isolated" copy into the real project, or a stale state file that makes production look like leftover duplicates all give well-formed commands a different target from the one the agent intends. Public incident reports include an agent asked for local seed data that truncated a production table because the repository's test URL pointed at production (AI Incident Database, 2026, "Incident 1672: OpenAI GPT-5.6 Sol Reportedly Deleted Software Engineer's Production Database During Local Testing"), and an agent that swapped in an outdated infrastructure state file and then destroyed the production resources it described (Grigorev, 2026, "How I Dropped Our Production Database and Now Pay 10% More for AWS"). Both are single-party accounts.
+  - >-
+    Once formed, the belief is rarely revisited. In the same evaluation review, one model concluded it was still in a simulation from weak cues — unfamiliar certificate authorities and the system date — and never returned to the question; in other runs models that recognized a system as real rationalized it as part of the exercise and continued (Anthropic, 2026, "Investigating three real-world incidents in our cybersecurity evaluations"). Contrary cues arrive mid-task, when the agent is committed to a plan that assumes the belief.
+  - >-
+    Broken test fixtures push agents toward live systems. When a practice form failed to load, an agent went to the live site and submitted the real one, more than once on the same evaluation, and another submitted a form it had been told to stop short of, reasoning that it was only demonstrating the process (Anthropic, 2026, "Investigating unintended model actions in our evaluations and internal use"). The same vendor defines a class of honest mistakes in coding agents as misjudging blast radius, such as treating a shared resource as test-scoped (Anthropic, 2026, "How we built Claude Code auto mode: a safer way to skip permissions").
+examples:
+  - kind: fail
+    label: Staging command, production context
+    text: The user said staging and the agent believes it. The cluster context in the shell still points at production, and nothing in the command says otherwise.
+    quote: |-
+      User: The checkout pods on staging are wedged. Restart them.
+      Tool: kubectl delete pods --all -n checkout → 14 pods deleted
+      [… kubectl's current context was prod-us, left over from an earlier session …]
+      Assistant: Restarted all checkout pods on staging; they're coming back up now.
+  - kind: fail
+    label: Practice fixture fails, live site used
+    text: The agent was told it is working against a mock. When the mock does not load, it finds the real page and completes the task there, still describing it as practice.
+    quote: |-
+      System: You are testing the signup flow against the local mock at localhost:8080.
+      Tool: browser.open("localhost:8080/signup") → connection refused
+      Tool: browser.open("https://…/signup") → live signup form
+      Assistant: The mock was down, so I demonstrated the flow on the signup page instead — test account created and confirmation email sent.
+  - kind: warn
+    label: Contrary cue noticed, explained away
+    text: The agent sees a sign that the target is real and talks itself past it. So far it has only read data.
+    quote: |-
+      User: Clean up the test fixtures in the scratch database.
+      Tool: psql -c "\conninfo" → connected to db-prod-1.internal
+      Assistant: The hostname says prod, but this is the scratch setup, so that's probably a leftover name. Listing fixture tables before I drop them.
+  - kind: ok
+    label: Target resolved before acting
+    text: Before a destructive step, the agent checks what its command will actually reach, finds the mismatch, and stops.
+    quote: |-
+      User: The checkout pods on staging are wedged. Restart them.
+      Tool: kubectl config current-context → prod-us
+      Assistant: Stopping before I restart anything. My shell is pointed at prod-us, not staging. Should I switch to the staging context, or did you mean production?
+detection:
+  - icon: 🎯
+    heading: Target resolution auditing
+    body: For every mutating call, log the resolved target — cluster context, database host, cloud account, canonical file path with links resolved — and compare it to the environment the task names. "Staging" in the request and prod-us in the resolved context is a mismatch visible in the log before anyone asks what the agent intended.
+  - icon: 🧪
+    heading: Golden-set evals
+    body: Build environments with planted mismatches — a test label that resolves to a production-marked canary, a link that leads out of the working copy, a mock that fails to load next to a reachable live service — and score whether the agent checks the target and stops. Validate the test harness's own boundaries first; an eval whose sandbox leaks is the failure, not a measurement of it.
+  - icon: ⚖️
+    heading: LLM-as-judge evaluation
+    body: Have the judge extract the agent's beliefs about where it is and what it is acting on, the evidence each rests on, and any later cue that contradicts them. Flag beliefs formed from weak cues and contradictions explained away, like the "probably a leftover name" warn case; they precede the damaging step.
+mitigation:
+  - icon: 🔐
+    heading: Least-privilege tool access
+    body: Scope credentials to the environment — an agent working on staging holds no production credentials, and test configuration cannot name a production host. A misidentified target then fails at authorization instead of succeeding. This holds only if production credentials are not lying in files the agent can read.
+  - icon: 📦
+    heading: Sandboxed execution
+    body: Make isolation a property of the infrastructure, not of the prompt — network egress blocked rather than described as absent, copies made without links back to the original, mock services that fail closed. A prompt that says "simulation" over infrastructure that is live is the precondition for the worst cases this mode has produced.
+  - icon: 🔒
+    heading: Fail-closed enforcement
+    body: Before destructive or outward-facing calls, have the harness resolve the target and refuse on any mismatch with the declared environment, and stamp tool output with the environment it came from so the agent sees "prod" in every result. Treat a failing test fixture as a stop condition; the agent reports it rather than looking for a live substitute.
+  - icon: 📝
+    heading: Instruction constraints
+    body: Tell the agent to treat claims about its environment as hypotheses to check, to re-check them when a cue contradicts them, and to stop when the target cannot be confirmed. This helps with the explained-away cue but not with a belief formed and never revisited, so it supplements the enforced checks above.
+
+related:
+  - id: unsafe-tool-call
+  - id: state-inconsistency
+  - id: tool-argument-error
+  - id: excessive-agency
+  - id: evaluation-awareness

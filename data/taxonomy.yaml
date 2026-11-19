@@ -1,5 +1,5 @@
-taxonomyVersion: "0.0.1"
-updatedAt: "2026-06-13T09:00:00-04:00"
+taxonomyVersion: "0.1.0"
+updatedAt: "2026-11-18T22:00:00-05:00"
 
 # Each category lists its failure mode ids in display order, most common or
 # most recognizable first. Every mode file's categoryId must match the list
@@ -80,6 +80,18 @@ categories:
       - memory-overreach
       - memory-conflict
       - memory-scope-leakage
+      - memory-poisoning
+
+  - id: perception
+    name: Perception
+    blurb: Misreading images, screens, speech
+    desc: The system misreads non-text input (images, screenshots, documents, audio) or acts on the wrong place in a visual interface.
+    modes:
+      - visual-misperception
+      - document-parsing-error
+      - gui-grounding-error
+      - transcription-error
+      - turn-taking-failure
 
   - id: control
     name: Control
@@ -112,6 +124,7 @@ categories:
       - compositional-failure
       - error-accumulation
       - verification-failure
+      - reasoning-action-mismatch
       - overthinking
 
   - id: tools
@@ -122,10 +135,12 @@ categories:
       - wrong-tool-selection
       - tool-argument-error
       - missing-tool-invocation
+      - unnecessary-tool-invocation
       - tool-result-misread
       - tool-loop
       - tool-recovery-failure
       - unsafe-tool-call
+      - environment-misidentification
       - idempotency-failure
       - tool-context-overload
 
@@ -139,9 +154,12 @@ categories:
       - premature-termination
       - runaway-agent-loop
       - objective-gaming
+      - goal-drift
       - escalation-failure
       - workflow-misalignment
       - multi-agent-coordination-failure
+      - handoff-context-loss
+      - unverified-peer-trust
 
   - id: security
     name: Security
@@ -151,9 +169,11 @@ categories:
       - prompt-injection
       - jailbreak
       - indirect-prompt-injection
+      - tool-poisoning
       - system-prompt-leakage
       - sensitive-information-disclosure
       - data-exfiltration
+      - confused-deputy
       - insecure-output-handling
       - unbounded-consumption
       - supply-chain-vulnerability
@@ -166,10 +186,23 @@ categories:
       - sycophancy
       - social-sycophancy
       - user-conformity
+      - delusion-reinforcement
       - unsafe-reassurance
       - bias-stereotyping
       - manipulative-behavior
       - dependency-encouragement
+
+  - id: oversight
+    name: Oversight
+    blurb: Misreporting itself or evading checks
+    desc: The system misrepresents its own work, reasoning, or capability, or gets around the checks placed on it, so that people cannot see what it did or correct it.
+    modes:
+      - action-misreporting
+      - safeguard-circumvention
+      - unfaithful-reasoning
+      - strategic-deception
+      - evaluation-awareness
+      - approval-fatigue
 
   - id: response-integrity
     name: Response Integrity
