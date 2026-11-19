@@ -18,58 +18,58 @@ why:
   - The model generates text without a model of the execution sink. Whether output lands in a terminal, an HTML page, a SQL query, or a log file is invisible at generation time, so it cannot apply the escaping discipline each sink requires.
   - >-
     Model output inherits unearned trust downstream. Because it comes from inside the application rather than from a user, developers pipe it into renderers, shells, and interpreters without the sanitization they would apply to user input (OWASP, 2026, "LLM10: Improper Output Handling").
-  - Untrusted input flows through generation. Injection payloads in user input or retrieved content can be echoed into the output, turning the model into a laundering step that delivers attacker content past filters aimed only at direct input. Agent scaffolds multiply the sinks — output becomes shell commands, file paths, configuration writes, terminal text carrying control sequences, and Markdown that a client renders and fetches — so one echoed payload can execute, persist, or carry data out.
+  - Untrusted input flows through generation. Injection payloads in user input or retrieved content can be echoed into the output, turning the model into a laundering step that delivers attacker content past filters aimed only at direct input. Agent scaffolds multiply the sinks output reaches (shell commands, file paths, configuration writes, terminal text carrying control sequences, and Markdown that a client renders and fetches), so one echoed payload can execute, persist, or carry data out.
 
 examples:
   - kind: fail
     label: Unescaped user input in HTML
-    text: The model interpolates user-controlled data straight into markup, producing a cross-site scripting sink.
+    text: Interpolates user-controlled data straight into markup, producing a cross-site scripting sink.
     quote: |-
       User: Write a Flask route that greets the user by the name query param.
       Assistant: return f"<h1>Hello {request.args['name']}</h1>"
   - kind: fail
     label: String-built SQL query
-    text: The generated query concatenates input instead of parameterizing it, creating an injection path downstream.
+    text: Generates a query that concatenates input instead of parameterizing it, creating an injection path downstream.
     quote: |-
       User: Look up a user by email in our SQLite db.
       Assistant: cur.execute("SELECT * FROM users WHERE email = '" + email + "'")
   - kind: fail
     label: Tool-derived text reaches a shell
-    text: The scaffold runs the model's command as a shell string, so a document title the model copied from tool output is executed instead of being treated as an argument.
+    text: Copies a document title from tool output into a command that the scaffold runs as a shell string, so the title is executed instead of being treated as an argument.
     quote: |-
       User: Rename each upload to match its document title.
       Tool: [read title] "Q3 report; <injected command>"
       Assistant: [scaffold runs] sh -c "mv upload_2.pdf Q3 report; <injected command>.pdf"
   - kind: ok
     label: Escapes and parameterizes
-    text: The output is shaped for its sink, with templating that escapes by default and a bound query parameter.
+    text: Shapes the output for its sink, with templating that escapes by default and a bound query parameter.
     quote: |-
       User: Write a Flask route that greets the user by the name query param.
       Assistant: return render_template("hello.html", name=request.args.get("name", ""))
 detection:
   - icon: 🔎
     heading: Static analysis scanning
-    body: Run generated code through SAST rules and security linters before it ships. String-concatenated SQL, unescaped interpolation into markup, and unsafe deserialization are exactly the patterns these tools were built to flag — model output just needs to be routed through them like any other untrusted code.
+    body: Run generated code through SAST rules and security linters before it ships. String-concatenated SQL, unescaped interpolation into markup, and unsafe deserialization are exactly the patterns these tools were built to flag, so model output only needs to be routed through them like any other untrusted code.
   - icon: 🔬
     heading: Sandboxed execution
-    body: Execute or render the generated code against canonical attack inputs — a name parameter of <script>alert(1)</script>, an email of ' OR 1=1 --. The f-string greeting either escapes the payload or executes it; the sandbox turns the vulnerability from a code-review judgment into an observed behavior.
+    body: Execute or render the generated code against canonical attack inputs, such as a name parameter of <script>alert(1)</script> or an email of ' OR 1=1 --. A greeting built with an f-string either escapes the payload or executes it, and the sandbox turns the vulnerability from a code-review judgment into an observed behavior.
   - icon: ⚖️
     heading: LLM-as-judge evaluation
-    body: Ask the judge to identify the sink each output feeds — HTML, SQL, shell, terminal, Markdown renderer, logs — and whether the escaping discipline matches it. Also have it trace untrusted input through the output, since a payload echoed from the prompt into generated markup is laundered injection the sink-level check alone can miss.
+    body: Ask the judge to identify the sink each output feeds (HTML, SQL, shell, terminal, Markdown renderer, logs) and whether the escaping discipline matches it. Also have it trace untrusted input through the output, since a payload echoed from the prompt into generated markup is laundered injection the sink-level check alone can miss.
   - icon: 🧪
     heading: Golden-set evals
-    body: Maintain prompts known to elicit insecure patterns, organized by CWE, and score the incidence of each vulnerability class — never whether the code runs. Functional tests pass injectable code by design, which is exactly how these outputs survive every other check.
+    body: Maintain prompts known to elicit insecure patterns, organized by CWE, and score the incidence of each vulnerability class, never whether the code runs. Functional tests pass injectable code by design, which is exactly how these outputs survive every other check.
 mitigation:
   - icon: 🧯
     heading: Sink-aware sanitization
-    body: Treat model output as untrusted input at every boundary it crosses — escape before rendering, parameterize before querying, validate before parsing or executing. The unearned trust is the vulnerability's enabler; applying the same discipline used for user input means the f-string greeting's payload is neutralized even when generation got it wrong. In an agent scaffold that means passing arguments as an array to an exec call instead of building shell strings, stripping control sequences before terminal display, and rendering model Markdown without auto-fetching remote images.
+    body: Treat model output as untrusted input at every boundary it crosses, so escape before rendering, parameterize before querying, and validate before parsing or executing. Unearned trust is what enables the vulnerability, and applying the discipline used for user input neutralizes a payload in an f-string greeting even when generation got it wrong. In an agent scaffold that means passing arguments as an array to an exec call instead of building shell strings, stripping control sequences before terminal display, and rendering model Markdown without auto-fetching remote images.
   - icon: 📝
     heading: Instruction constraints
     body: >-
-      Tell the model the sink — "this lands in HTML," "this builds a SQL query" — and require the matching discipline by default: templating that escapes, bound parameters, no string-built queries even in examples. Quick-start brevity trained the defensive code out; the prompt has to put it back in as non-optional.
+      Tell the model the sink ("this lands in HTML," "this builds a SQL query") and require the matching discipline by default: templating that escapes, bound parameters, no string-built queries even in examples. Quick-start brevity trained the defensive code out, so the prompt has to put it back in as non-optional.
   - icon: 🔁
     heading: Validate-and-retry loops
-    body: Run generated code through SAST rules and security linters in the scaffold and bounce flagged output back with the finding named — "string-concatenated SQL at line 3, parameterize it." Functional checks pass injectable code by design, so the security gate has to be a separate, blocking pass.
+    body: Run generated code through SAST rules and security linters in the scaffold and bounce flagged output back with the finding named, for example "string-concatenated SQL at line 3, parameterize it." Functional checks pass injectable code by design, so the security gate has to be a separate, blocking pass.
 
 related:
   - id: unsafe-tool-call

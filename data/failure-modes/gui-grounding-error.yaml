@@ -21,12 +21,12 @@ why:
   - >-
     Agents act on the screen they expect instead of the one in front of them. In one vendor's internal review, an agent told to fill a form and stop before submitting went ahead and submitted on several occasions, expecting another confirmation page to follow (Anthropic, 2026, "Investigating unintended model actions in our evaluations and internal use"). Interface conventions learned from training (a field enters edit mode on click, a final button always leads to a review screen) do not hold in every application.
   - >-
-    Grounding is now a minority of computer-use failures, and a missed click becomes a failed task when nothing checks the result. In 204 annotated failed trajectories, grounding and interaction errors were the root cause in 25 and task reasoning and control in 110 (Zhang et al., 2026, "CUADebug: Diagnosing and Repairing Computer-Use Agent Failures"). An audit across five benchmarks put execution and grounding at 13.9% of genuine failures, against 39.3% for verification and feedback and 35.2% for planning (Dong et al., 2026, "How Benchmarks Mis-Score Computer-Use Agents"). The two compound: a click that misses is recoverable only if the agent looks at what happened next.
+    Grounding is now a minority of computer-use failures, and a missed click becomes a failed task when nothing checks the result. In 204 annotated failed trajectories, grounding and interaction errors were the root cause in 25 and task reasoning and control in 110 (Zhang et al., 2026, "CUADebug: Diagnosing and Repairing Computer-Use Agent Failures"). An audit across five benchmarks put execution and grounding at 13.9% of genuine failures, against 39.3% for verification and feedback and 35.2% for planning (Dong et al., 2026, "How Benchmarks Mis-Score Computer-Use Agents"). Grounding and verification errors compound: a click that misses is recoverable only if the agent looks at what happened next.
 
 examples:
   - kind: fail
     label: Right row, shifted screen
-    text: A new email arrives between the screenshot and the click, so the click aimed at row 3 archives a different message, and the agent reports success.
+    text: Archives the wrong message because a new email arrives between the screenshot and the click aimed at row 3, then reports success.
     quote: |-
       User: Archive the email from the facilities team.
       [… screenshot: inbox, facilities email in row 3 …]
@@ -35,7 +35,7 @@ examples:
       Assistant: Done. The facilities email is archived.
   - kind: fail
     label: Wrong entry mechanics
-    text: The click selects the cell but does not open it for editing, so the typed value goes into the grid's filter box.
+    text: Selects the cell without opening it for editing, so the typed value goes into the grid's filter box.
     quote: |-
       User: Set the quantity on line 2 to 40.
       Tool: click(line 2, Quantity cell) → ok
@@ -44,7 +44,7 @@ examples:
       Assistant: Line 2's quantity is now 40.
   - kind: warn
     label: Lucky click, no check
-    text: Two icons sit a few pixels apart on a 4K screen. This time the click hits the right one, but nothing in the trace confirms it.
+    text: Happens to hit the right one of two icons a few pixels apart on a 4K screen, and nothing in the trace confirms it.
     quote: |-
       User: Merge the approved pull request.
       [… screenshot: 3840×2160; the "Merge" and "Close" icons are 14 px apart in the toolbar …]
@@ -52,7 +52,7 @@ examples:
       Assistant: Merged.
   - kind: ok
     label: Target by label, result checked
-    text: The agent re-observes before acting, targets the element by its label rather than its position, and confirms the outcome.
+    text: Re-observes before acting, targets the element by its label rather than its position, and confirms the outcome.
     quote: |-
       User: Archive the email from the facilities team.
       Tool: find_element(role=row, text contains "Facilities") → row 4
@@ -64,7 +64,7 @@ detection:
   - icon: 🔍
     heading: Action outcome checking
     body: >-
-      After every GUI action, diff the screen or accessibility tree before and after and confirm that the expected change happened to the intended element. Flag actions reported as successful that changed nothing, or that changed something else. An "ok" from the input layer only means an event was delivered; the diff shows what the event hit.
+      Diff the screen or accessibility tree before and after every GUI action, and confirm that the expected change happened to the intended element. Flag actions reported as successful that changed nothing, or that changed something else. An "ok" from the input layer only means an event was delivered; the diff shows what the event hit.
   - icon: 🧪
     heading: Golden-set evals
     body: >-
@@ -86,11 +86,11 @@ mitigation:
   - icon: 🔬
     heading: Region re-inspection
     body: >-
-      Before acting on a small or crowded target, crop and enlarge the region and ground the click within it. Narrowing the search area is the single largest gain reported on high-resolution screens. Scale the extra steps with risk; a zoom pass per click is slow.
+      Crop and enlarge the region before acting on a small or crowded target, and ground the click within the crop. Narrowing the search area is the single largest gain reported on high-resolution screens. Scale the extra steps with risk; a zoom pass per click is slow.
   - icon: 🚦
     heading: Human approval gates
     body: >-
-      Before irreversible clicks (submit, pay, delete, merge, send), show the approver a crop of the exact target with its label, not just the agent's description of what it is about to do. Reserve the gate for consequential actions; approvers who are asked about every click stop looking.
+      Show the approver a crop of the exact target with its label before irreversible clicks (submit, pay, delete, merge, send), in addition to the agent's description of what it is about to do. Reserve the gate for consequential actions; approvers who are asked about every click stop looking.
 
 related:
   - id: visual-misperception

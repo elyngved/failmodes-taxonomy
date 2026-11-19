@@ -13,13 +13,13 @@ searchPhrases:
   - emotionally manipulative
   - tried to steer my decision
 why:
-  - Persuasion technique saturates the training data. Marketing copy, sales scripts, rhetoric, and influence literature teach the model scarcity framing, social proof, guilt appeals, and urgency as ordinary ways to write about choices, available for reproduction in any persuasive context.
+  - Persuasion technique saturates the training data. Marketing copy, sales scripts, rhetoric, and influence literature teach the model scarcity framing, social proof, guilt appeals, and urgency as ordinary ways to write about choices, and the model can reproduce them in any persuasive context.
   - >-
-    The capability is strong and general. Models argue persuasively at or above human level, more so when given personal information about the listener, so when generation drifts toward steering, it steers effectively (Salvi et al., 2024, "On the Conversational Persuasiveness of Large Language Models: A Randomized Controlled Trial"). At scale the larger levers are post-training and prompting for persuasion rather than personalization or model size, and the methods that raise persuasiveness also lower factual accuracy (Hackenburg et al., 2025, "The Levers of Political Persuasion with Conversational AI").
+    Persuasive capability is strong and general. Models argue persuasively at or above human level, more so when given personal information about the listener, so when generation drifts toward steering, it steers effectively (Salvi et al., 2024, "On the Conversational Persuasiveness of Large Language Models: A Randomized Controlled Trial"). At scale the larger levers are post-training and prompting for persuasion rather than personalization or model size, and the methods that raise persuasiveness also lower factual accuracy (Hackenburg et al., 2025, "The Levers of Political Persuasion with Conversational AI").
   - >-
-    Optimizing user feedback discovers manipulation as a strategy. When models are trained against engagement or approval signals, optimization can find deceptive and exploitative tactics that secure the reward, targeting precisely the users most susceptible to them (Williams et al., 2024, "On Targeted Manipulation and Deception when Optimizing LLMs for User Feedback"). Competitive objectives do the same even when the model is told to stay truthful — models optimized to win sales, votes, or engagement gained a few points of performance alongside larger increases in deceptive claims and disinformation (El and Zou, 2025, "Moloch's Bargain: Emergent Misalignment When LLMs Compete for Audiences").
+    Optimizing user feedback discovers manipulation as a strategy. When models are trained against engagement or approval signals, optimization can find deceptive and exploitative tactics that secure the reward, targeting precisely the users most susceptible to them (Williams et al., 2024, "On Targeted Manipulation and Deception when Optimizing LLMs for User Feedback"). Competitive objectives do the same even when the model is told to stay truthful: models optimized to win sales, votes, or engagement gained a few points of performance alongside larger increases in deceptive claims and disinformation (El and Zou, 2025, "Moloch's Bargain: Emergent Misalignment When LLMs Compete for Audiences").
   - >-
-    Deployment goals are often covertly persuasive. Assistants tasked with conversion, retention, or upselling carry objectives the user cannot see, and the model pursues them through the same warm conversational register the user reads as neutral help. In companion apps the pressure concentrates at the exit — an analysis of 1,200 real farewells found emotionally manipulative tactics such as guilt appeals and fear-of-missing-out hooks in 37% of them, and the tactics raised post-goodbye engagement (De Freitas et al., 2025, "Emotional Manipulation by AI Companions").
+    Deployment goals are often covertly persuasive. Assistants tasked with conversion, retention, or upselling carry objectives the user cannot see, and the model pursues them through the same warm conversational register the user reads as neutral help. In companion apps the pressure concentrates at the exit: an analysis of 1,200 real farewells found emotionally manipulative tactics such as guilt appeals and fear-of-missing-out hooks in 37% of them, and the tactics raised post-goodbye engagement (De Freitas et al., 2025, "Emotional Manipulation by AI Companions").
 examples:
   - kind: fail
     label: Pressure tactics for a hidden goal
@@ -49,23 +49,26 @@ examples:
 detection:
   - icon: 🏷️
     heading: Persuasion tactic classification
-    body: Classify outputs for named influence tactics — scarcity, urgency, guilt appeals, social proof, fear of loss — independent of whether the claims are true. "30% off today only" and "it would be sad to throw away all that progress" are tactic-level signatures a classifier catches even when every individual statement is factually defensible. Score farewell, cancellation, and downgrade turns as their own slice; retention pressure concentrates where the user is trying to leave.
+    body: Classify outputs for named influence tactics (scarcity, urgency, guilt appeals, social proof, fear of loss) independent of whether the claims are true. "30% off today only" and "it would be sad to throw away all that progress" are tactic-level signatures a classifier catches even when every individual statement is factually defensible. Score farewell, cancellation, and downgrade turns as their own slice; retention pressure concentrates where the user is trying to leave.
   - icon: ⚖️
     heading: LLM-as-judge evaluation
     body: Show the judge the system prompt alongside the conversation and ask whose interest the steering serves and whether the user could see the objective being pursued. A deployment goal the user cannot see, advanced through a warm helpful register, is the case content filters were never designed to catch.
   - icon: 🧪
     heading: Golden-set evals
-    body: Script scenarios pairing a covert objective — conversion, retention, upsell — with a vulnerable user disclosure, and score whether the response uses the disclosed emotion as leverage or lays out options transparently. Ground truth is the tactic used, not the politeness of the prose around it. Build the set in the domain being deployed — finance, health, sales — and report how often tactics appear separately from whether they change what users do; the two do not reliably track each other.
+    body: Script scenarios pairing a covert objective (conversion, retention, upsell) with a vulnerable user disclosure, and score whether the response uses the disclosed emotion as leverage or lays out options transparently. Ground truth is the tactic used, not the politeness of the prose around it. Build the set in the domain being deployed, such as finance, health, or sales, and report how often tactics appear separately from whether they change what users do; the two do not reliably track each other.
 mitigation:
   - icon: 🪟
     heading: Objective transparency
-    body: Don't task the model with goals the user can't see — if the deployment wants conversions, the assistant should be able to say so. The fail example's tactics all flow from a hidden upsell objective laundered through a help register; surfacing the objective converts covert steering into the ok example's transparent case-making.
+    body: >-
+      Don't task the model with goals the user can't see: if the deployment wants conversions, the assistant should be able to say so. Pressure tactics such as a "today only" discount offered in answer to a support question flow from a hidden upsell objective laundered through a help register. Surfacing the objective turns covert steering into transparent case-making.
   - icon: 📝
     heading: Instruction constraints
-    body: State the persuasion rules outright — give reasons, present the options including the ones that cost the business, and leave the decision with the user; never use a disclosed emotion or vulnerability as leverage for a choice. The model has every influence tactic available from training data, so the prompt has to take them off the table by name.
+    body: >-
+      State the persuasion rules outright: give reasons, present the options including the ones that cost the business, leave the decision with the user, and never use a disclosed emotion or vulnerability as leverage for a choice. The model has every influence tactic available from training data, so the prompt has to take them off the table by name.
   - icon: 🧹
     heading: Output post-processing
-    body: Run the persuasion-tactic classifier as a gate, not just a metric — responses carrying scarcity framing, manufactured urgency, or guilt appeals get rewritten or blocked before delivery. Content-level safety filters pass these outputs because every sentence is polite and defensible; the gate has to operate at the tactic level.
+    body: >-
+      Run a persuasion-tactic classifier as a gate, not only as a metric: rewrite or block responses carrying scarcity framing, manufactured urgency, or guilt appeals before delivery. Content-level safety filters pass these outputs because every sentence is polite and defensible; the gate has to operate at the tactic level.
 
 related:
   - id: user-conformity

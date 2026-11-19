@@ -15,14 +15,14 @@ searchPhrases:
 examples:
   - kind: fail
     label: Plausible value invented
-    text: The model doesn't know the customer's ID, so the argument slot gets filled with a fabricated one that looks right — and silently operates on the wrong account.
+    text: Lacks the customer's ID, so fills the argument slot with a fabricated one that looks right and silently operates on the wrong account.
     quote: |-
       User: Pull up the subscription details for Meridian Labs.
       Tool: get_subscription(customer_id="cust_meridian_001") → returns a different company that happens to own that ID
       Assistant: Meridian Labs is on the Starter plan at $49/month.
   - kind: fail
     label: Stale value replayed
-    text: The deploy target was switched mid-session, but the model copies the argument from an earlier call instead of the current state.
+    text: Copies the deploy target from an earlier call after the user switched it mid-session, instead of taking it from the current state.
     quote: |-
       User: Actually, deploy to the EU cluster instead — we just discussed this.
       Assistant: Deploying now.
@@ -30,14 +30,14 @@ examples:
       [… the argument was copied from the previous deploy call, not the updated instruction …]
   - kind: warn
     label: Missing parameter guessed silently
-    text: A required scope was never specified, and instead of asking, the model picks a default that happens to be far broader than intended.
+    text: Picks a default for a required scope the user never specified instead of asking, and the default happens to be far broader than intended.
     quote: |-
       User: Grant the contractor access to the project.
       Tool: grant_access(user="contractor@ext.com", scope="org-admin")
       Assistant: Done — access granted.
   - kind: ok
     label: Unknown value looked up, not guessed
-    text: The model treats the ID as something to resolve, not generate, and confirms the ambiguous scope before the call.
+    text: Treats the ID as something to resolve, not generate, and confirms the ambiguous scope before the call.
     quote: |-
       User: Pull up the subscription details for Meridian Labs.
       Tool: search_customers("Meridian Labs") → cust_8842
@@ -55,26 +55,29 @@ why:
 detection:
   - icon: 🔗
     heading: Argument provenance checking
-    body: Trace each argument value back to its source — a user statement, a prior tool result, or the tool spec's documented default. A customer_id that appears nowhere upstream is fabricated; a cluster name that matches an early turn but not the latest correction is stale. Both are detectable from the transcript without knowing the right answer.
+    body: >-
+      Trace each argument value back to its source: a user statement, a prior tool result, or the tool spec's documented default. A customer_id that appears nowhere upstream is fabricated; a cluster name that matches an early turn but not the latest correction is stale. Both kinds of error are detectable from the transcript without knowing the right answer.
   - icon: ⚖️
     heading: LLM-as-judge evaluation
-    body: Have the judge compare each call's arguments against the current conversation state, flagging values guessed where the user never specified them — especially silently chosen defaults, like an org-admin scope where the request implied something far narrower.
+    body: Have the judge compare each call's arguments against the current conversation state, flagging values the model guessed where the user never specified them, especially silently chosen defaults such as an org-admin scope where the request implied something far narrower.
   - icon: 🧪
     heading: Golden-set evals
     body: Build tasks where required values must be resolved by lookup rather than generated, and tasks that change a parameter mid-session, then score the arguments of each call rather than the well-formedness of the JSON. Schema-valid calls carrying wrong values are exactly the cases worth counting.
 mitigation:
   - icon: 🔎
     heading: Tool-backed lookup
-    body: Make identifiers things the model resolves, never generates — provide search and resolve tools beside the operational ones, and instruct that any ID, path, or account reference must come from a lookup result or the user's own words. Arguments come from the same next-token process that hallucinates facts, and cust_meridian_001 looked exactly as plausible as the real ID.
+    body: Make identifiers something the model resolves and never generates. Provide search and resolve tools beside the operational ones, and instruct that any ID, path, or account reference must come from a lookup result or the user's own words. Arguments come from the same next-token process that hallucinates facts, so a fabricated ID such as cust_meridian_001 looks as plausible as the real one.
   - icon: 🗃️
     heading: Explicit state tracking
-    body: Hold current parameter values — the deploy target, the active customer, the working directory — in a structured state block that updates when the user changes them, and have calls draw from it rather than from transcript recall. The us-east-1 replay happened because the correction lived mid-context where retrieval is weakest; a maintained current-values table has no stale copy to grab. For large payloads, pass a handle or let code carry the value between calls rather than having the model re-emit it.
+    body: Hold current parameter values (the deploy target, the active customer, the working directory) in a structured state block that updates when the user changes them, and have calls draw from it rather than from transcript recall. A mid-session correction, such as switching the deploy target from us-east-1 to the EU cluster, sits mid-context where retrieval is weakest, while a maintained table of current values holds no stale copy. For large payloads, pass a handle or let code carry the value between calls rather than having the model re-emit it.
   - icon: 🗂️
     heading: Tool catalog curation
-    body: Close off wrong values at the definition — parameters named for what they take (user_id, not user), enums for closed sets under strict schema enforcement, and a few worked example calls showing the ID formats and optional-parameter combinations a schema cannot express. Strict mode guarantees the shape of a call; names, enums, and examples are what narrow its values.
+    body: >-
+      Rule out wrong values in the tool definition: name parameters for what they take (user_id, not user), use enums for closed sets under strict schema enforcement, and add a few worked example calls showing the ID formats and optional-parameter combinations a schema cannot express. Strict mode guarantees the shape of a call; names, enums, and examples are what narrow its values.
   - icon: 🔁
     heading: Validate-and-retry loops
-    body: Validate arguments semantically at the boundary before execution — does the ID exist, is the file present, is the scope plausible for the request — and treat missing required parameters as errors rather than slots for silent defaults. An org-admin grant where the request named one contractor should fail the width check, not succeed quietly.
+    body: >-
+      Validate arguments semantically at the boundary before execution: check that the ID exists, the file is present, and the scope is plausible for the request. Treat missing required parameters as errors rather than slots for silent defaults. An org-admin grant for a request that named one contractor should fail the scope check instead of succeeding quietly.
 
 related:
   - id: wrong-tool-selection

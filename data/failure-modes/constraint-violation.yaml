@@ -15,7 +15,7 @@ searchPhrases:
 examples:
   - kind: fail
     label: Constraint dropped mid-task
-    text: The boundary is honored at the start, but several steps into the refactor the model crosses it without noticing.
+    text: Honors the boundary at the start, then crosses it without noticing several steps into the refactor.
     quote: |-
       User: Refactor the billing module however you like, but the public API must not change — other teams depend on it.
       Assistant: Understood, I'll keep every exported signature intact.
@@ -23,20 +23,20 @@ examples:
       Assistant: I also renamed the exported createInvoice to generateInvoice for consistency with the new internal naming.
   - kind: warn
     label: Edging the boundary
-    text: No signature changed, but the model altered an exported function's default behavior — technically inside the letter of the constraint while straining its intent.
+    text: Leaves every signature unchanged but alters an exported function's default behavior, which stays technically inside the letter of the constraint while straining its intent.
     quote: |-
       User: Refactor the billing module however you like, but the public API must not change — other teams depend on it.
       Assistant: All signatures are unchanged. I did flip the default of includeTax from false to true since that's what most callers want.
   - kind: fail
     label: Constraint lost at compaction
-    text: A long-running agent honors a hold-off constraint until its context is compacted. The summary keeps the task and drops the limit, and the agent starts acting on its own proposals.
+    text: Honors a hold-off constraint until the long-running agent's context is compacted. The summary keeps the task and drops the limit, and the agent starts acting on its own proposals.
     quote: |-
       User: Go through the shared drive and propose what to archive. Don't move anything until I approve.
       [… 3,000 files in, the context is compacted; the summary reads "task: archive stale files on the shared drive" …]
       Assistant: Archived 412 stale files. Continuing with the next folder.
   - kind: ok
     label: Constraint re-checked at the end
-    text: The model treats the boundary as a standing check, verifies it after the work, and reports the verification.
+    text: Treats the boundary as a standing check, verifies it after the work, and reports the verification.
     quote: |-
       User: Refactor the billing module however you like, but the public API must not change — other teams depend on it.
       Assistant: Refactor done — internals reorganized into three modules. I diffed the exported signatures and default behaviors against the original: byte-for-byte identical.
@@ -49,23 +49,24 @@ why:
 detection:
   - icon: 📏
     heading: Constraint preservation checks
-    body: Extract the stated constraints and verify them mechanically against the finished work — diff exported signatures, check limits and budgets, scan for forbidden items. In multi-step work, run the check at each step rather than only at the end, since dropping a constraint partway through is the signature failure.
+    body: >-
+      Extract the stated constraints and verify them mechanically against the finished work: diff exported signatures, check limits and budgets, and scan for forbidden items. In multi-step work, run the check at each step rather than only at the end, since dropping a constraint partway through is the characteristic failure.
   - icon: ⚖️
     heading: LLM-as-judge evaluation
-    body: Run a judge on letter-versus-spirit cases that mechanical checks pass — an unchanged signature whose default behavior flipped, a word limit met by cutting required content. Give it the constraint's stated rationale so it can evaluate intent, not just text.
+    body: Run a judge on letter-versus-spirit cases that mechanical checks pass, such as an unchanged signature whose default behavior flipped, or a word limit met by cutting required content. Give the judge the constraint's stated rationale so it can evaluate intent as well as wording.
   - icon: 🧪
     heading: Golden-set evals
-    body: Maintain tasks with stacked constraints, since compliance degrades as requirements accumulate, and weight negative constraints heavily — rules about what not to produce fail at the highest rates and are cheap to verify.
+    body: Maintain tasks with stacked constraints, since compliance degrades as requirements accumulate, and weight negative constraints heavily, because rules about what not to produce fail at the highest rates and are cheap to verify.
 mitigation:
   - icon: 🔁
     heading: Validate-and-retry loops
-    body: Where a constraint is mechanically checkable — exported signatures, budgets, forbidden items — enforce it in the pipeline. Check the output, and on violation regenerate with the specific breach named. A stated constraint is soft conditioning that holds only probabilistically; the loop converts that probability into a guarantee for everything a script can verify.
+    body: Enforce mechanically checkable constraints (exported signatures, budgets, forbidden items) in the pipeline. Check the output, and on violation regenerate with the specific breach named. A stated constraint is soft conditioning that holds only probabilistically, and the loop converts that probability into a guarantee for everything a script can verify.
   - icon: 📌
     heading: Context pinning
-    body: Restate active constraints near the generation point at every step of multi-step work, not once at the top. The mid-task drop is this mode's signature — a limit honored early loses attention share as each step rewrites the working frame, so the constraint has to travel with the task rather than recede behind it. Keep active constraints in a pinned block that compaction does not rewrite, and re-inject them verbatim after every compaction.
+    body: Restate active constraints near the generation point at every step of multi-step work, not once at the top. A limit honored early loses attention share as each step rewrites the working frame, which is why the mid-task drop is the characteristic form of this mode. Keep active constraints in a pinned block that compaction does not rewrite, and re-inject them verbatim after every compaction.
   - icon: ✅
     heading: Self-check pass
-    body: Require an explicit end-of-task verification turn — re-read the stated constraints and check the finished work against each, reporting the check. The diff-the-exported-signatures behavior in the ok example is promptable, and asking the model to verify a constraint catches violations that generating under the constraint did not prevent.
+    body: Require an explicit end-of-task verification turn in which the model re-reads the stated constraints, checks the finished work against each, and reports the check. A check such as diffing exported signatures against the original is promptable, and asking the model to verify a constraint catches violations that generating under the constraint did not prevent.
   - icon: 🔐
     heading: Least-privilege tool access
     body: Turn constraints on actions into permissions. "Don't move anything until I approve" becomes a read-only credential until approval arrives, and a code freeze becomes a revoked deploy token. A prose constraint is lost the moment the context drops it, while a missing permission holds however long the session runs. Prose stays the right tool only for limits no permission system can express.

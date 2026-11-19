@@ -25,7 +25,7 @@ why:
 examples:
   - kind: fail
     label: Thinking pause read as end of turn
-    text: The caller pauses while reading out a number, and the agent answers the half it heard.
+    text: Answers the half of a number it heard when the caller pauses partway through reading it out.
     quote: |-
       User: (spoken) My account number is four four seven one…
       [… audio: 0.9 s pause while the caller finds the card …]
@@ -33,7 +33,7 @@ examples:
       User: (spoken) —two nine eight three. I wasn't done.
   - kind: fail
     label: Talks through "stop"
-    text: The caller interrupts to change course. The agent keeps reading options over them and then asks a question the interruption already answered.
+    text: Keeps reading options over a caller who interrupts to change course, then asks a question the interruption already answered.
     quote: |-
       Assistant: (spoken) Your options are the standard plan at twenty a month, the premium plan at forty, which includes—
       User: (spoken) Stop, stop. I just want to cancel.
@@ -41,7 +41,7 @@ examples:
       Assistant: (spoken) —and the family plan, which covers up to five people. Which one would you like?
   - kind: warn
     label: Backchannel taken as barge-in
-    text: The caller's "mm-hm" stops the agent mid-instruction. The caller never hears the second step, and the history records the full instruction as delivered.
+    text: Stops mid-instruction at the caller's "mm-hm." The caller never hears the second step, and the history records the full instruction as delivered.
     quote: |-
       Assistant: (spoken) To reset it, hold the power button for ten seconds, then—
       User: (spoken) Mm-hm.
@@ -49,7 +49,7 @@ examples:
       [… history holds the whole reply, including the unplayed "then release and wait for the blue light" …]
   - kind: ok
     label: Listens through the pause
-    text: The partial transcript ends mid-number, so the agent keeps listening, then confirms the full value.
+    text: Keeps listening because the partial transcript ends mid-number, then confirms the full value.
     quote: |-
       User: (spoken) My account number is four four seven one…
       [… audio: 0.9 s pause; the utterance so far is an incomplete number, so the agent keeps listening …]

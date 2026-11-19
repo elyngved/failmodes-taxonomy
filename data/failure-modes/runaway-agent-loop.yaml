@@ -15,7 +15,7 @@ searchPhrases:
 examples:
   - kind: fail
     label: Plan-act-replan without convergence
-    text: Each cycle reads as locally sensible — new plan, fresh attempt, thoughtful retro — but no cycle since the ninth has produced new information, and nothing stops cycle 14 from starting the same plan over.
+    text: Runs cycles that each read as locally sensible (new plan, fresh attempt, thoughtful retro), although no cycle since the ninth has produced new information and nothing stops cycle 14 from starting the same plan over.
     quote: |-
       User: Get the integration tests passing in CI.
       [… cycle 9: agent rewrites its plan, retries, fails on the same docker-network error …]
@@ -23,7 +23,7 @@ examples:
       Assistant: My revised strategy should address the root cause. Re-running the pipeline now.
   - kind: fail
     label: Two agents passing the same work back and forth
-    text: Neither agent repeats itself within its own transcript, so per-agent loop checks stay quiet. The cycle exists only in the exchange between them.
+    text: Passes the same work back and forth between two agents. Neither agent repeats itself within its own transcript, so per-agent loop checks stay quiet; the cycle exists only in the exchange between them.
     quote: |-
       [… reviewer agent → coder agent: "Tests fail on the date parser. Please fix." …]
       [… coder agent → reviewer agent: "Fixed, ready for review." The patch restores the version from round 2 …]
@@ -31,21 +31,21 @@ examples:
       Assistant (reviewer): Tests still fail on the date parser. Sending it back to the coder for another pass.
   - kind: warn
     label: Stall sensed, autonomy kept
-    text: The model notices it's circling but treats that as a reason for one more cycle rather than a reason to stop and hand back.
+    text: Notices that it is circling but treats that as a reason for one more cycle rather than a reason to stop and hand back.
     quote: |-
       User: Get the integration tests passing in CI.
       [… cycle 7, same docker-network error as cycles 4–6 …]
       Assistant: I seem to be going in circles on this network error. Let me try the whole approach once more from scratch — sometimes a clean run shakes it loose.
   - kind: ok
     label: Non-progress triggers handback
-    text: Two cycles without new information is treated as an impasse signal — the agent stops, states what it knows, and returns control with a concrete question.
+    text: Treats two cycles without new information as an impasse signal, then stops, states what it knows, and returns control with a concrete question.
     quote: |-
       User: Get the integration tests passing in CI.
       [… cycles 4 and 5 hit the identical docker-network error …]
       Assistant: Stopping here — two consecutive cycles produced the same docker-network failure with no new information. What I've established: tests pass locally, and CI's runner can't reach the database container. I suspect the CI network config, which I can't see from here. Can you share the runner's network settings, or should I open a ticket with infra?
 why:
   - >-
-    Agent loops decide each step locally from the transcript, with no global measure of progress. Nothing in the architecture asks whether the last cycle moved the task forward before starting the next one, and scaffolds ship feedback paths — retries, reflection steps, agent-to-agent handoffs — with no effective bound; a static scan of open-source agent repositories confirmed such unbounded loops in 47 projects (Hou et al., 2026, "When Agents Do Not Stop: Uncovering Infinite Agentic Loops in LLM Agents").
+    Agent loops decide each step locally from the transcript, with no global measure of progress. Nothing in the architecture asks whether the last cycle moved the task forward before starting the next one, and scaffolds ship feedback paths (retries, reflection steps, agent-to-agent handoffs) with no effective bound. A static scan of open-source agent repositories confirmed such unbounded loops in 47 projects (Hou et al., 2026, "When Agents Do Not Stop: Uncovering Infinite Agentic Loops in LLM Agents").
   - The model conditions on its own prior output, so a repeated plan-act-replan pattern in context raises the probability of producing it again. The transcript of a stall becomes the template for continuing it (Holtzman et al., 2020, "The Curious Case of Neural Text Degeneration").
   - >-
     Training rewards continued effort over surrender. There is little demonstration data for recognizing an impasse and handing control back, so the learned default when stuck is to keep generating plausible next actions. In terminal coding-agent trajectories, 82% of failed runs kept executing without progress after the failure had locked in (Zhao et al., 2026, "Failure as a Process: An Anatomy of CLI Coding Agent Trajectories"), and agents blocked by a security policy more often grind into timeouts or wrong solutions than stop early (Davidovich et al., 2026, "Permission Denied: Policy-Graded Evaluation of Coding Agents in Hardened Environments").
@@ -55,26 +55,28 @@ why:
 detection:
   - icon: 📉
     heading: Convergence monitoring
-    body: Track per-cycle progress signals — new information obtained, state actually changed, error messages differing from last cycle — and flag N consecutive cycles without movement. Near-duplicate plans caught by embedding similarity expose cycle 14 as a restatement of cycle 9, whatever its "new approach" label claims. In multi-agent systems compute the signals over the merged trace — a reviewer and a coder trading the same patch show no repetition in either transcript alone.
+    body: Track per-cycle progress signals (new information obtained, state actually changed, error messages differing from the last cycle) and flag N consecutive cycles without movement. Embedding similarity between plans catches near-duplicates, such as a cycle-14 plan labeled "new approach" that restates the cycle-9 plan. In multi-agent systems, compute the signals over the merged trace, because a reviewer and a coder trading the same patch show no repetition in either transcript alone.
   - icon: ⚖️
     heading: LLM-as-judge evaluation
-    body: Have the judge walk the trajectory cycle by cycle and answer one question per cycle — what did this attempt learn that the previous one didn't? A run of empty answers is the loop, and the warn-level case where the model notices it's circling and keeps going anyway deserves its own flag.
+    body: >-
+      Have an LLM judge walk the trajectory cycle by cycle and answer one question per cycle: what did this attempt learn that the previous one didn't? A run of empty answers marks the loop. Flag separately any cycle where the model notices it is circling and keeps going anyway.
   - icon: 🧪
     heading: Golden-set evals
-    body: Build tasks with a blocker the agent cannot resolve from inside — a CI network config it has no visibility into — where the correct behavior is stopping and handing back with findings. Score cycles burned before handback; the failing system spends its whole budget re-attempting.
+    body: Build tasks with a blocker the agent cannot resolve from inside, such as a CI network config it has no visibility into, where the correct behavior is stopping and handing back with findings. Score cycles burned before handback; the failing system spends its whole budget re-attempting.
   - icon: 🔎
     heading: Static analysis scanning
-    body: Scan the scaffold's own code for feedback paths — retry wrappers, reflection steps, handoff cycles between agents — that can reach another model or tool call without passing a counter, timeout, or budget check. An unbounded path is a loop waiting for the input that triggers it, and it can be found before any run does.
+    body: Scan the scaffold's own code for feedback paths (retry wrappers, reflection steps, handoff cycles between agents) that can reach another model or tool call without passing a counter, timeout, or budget check. An unbounded path loops as soon as some input triggers it, and a scan can find it before any run does.
 mitigation:
   - icon: 🛑
     heading: Call budget enforcement
-    body: Cap autonomous cycles in the scaffold, and on a detected stall — N cycles with unchanged errors or near-duplicate plans — interrupt and force a handback with findings rather than another attempt. Termination is the judgment the model is least able to supply, so it has to live outside the model.
+    body: Cap autonomous cycles in the scaffold, and on a detected stall (N cycles with unchanged errors or near-duplicate plans) interrupt and force a handback with findings rather than another attempt. The decision to stop is the judgment the model is least able to supply, so the scaffold has to enforce it.
   - icon: 🗃️
     heading: Explicit state tracking
-    body: Maintain a pinned per-cycle ledger — approach tried, result, what was learned — and require each new plan to say what it changes from the last entry. Cycle 14's "new approach" survives because the equivalence with cycle 9 is buried in transcript prose; a compact ledger makes the repetition legible, including to the model. Keep the ledger outside the part of the transcript that compaction rewrites, so a summary cannot drop the attempts it lists.
+    body: Maintain a pinned per-cycle ledger (approach tried, result, what was learned) and require each new plan to say what it changes from the last entry. A "new approach" that repeats an earlier plan goes unnoticed when the equivalence is buried in transcript prose; a compact ledger makes the repetition legible, including to the model. Keep the ledger outside the part of the transcript that compaction rewrites, so a summary cannot drop the attempts it lists.
   - icon: 📝
     heading: Instruction constraints
-    body: State the ok example's rule outright — two consecutive cycles with no new information is an impasse, and the required response is stopping with findings and a concrete question, not a fresh attempt. Training rewards continued effort over surrender, so handing back must be framed as the success condition, not the failure.
+    body: >-
+      State the stopping rule outright: two consecutive cycles with no new information is an impasse, and the required response is stopping with findings and a concrete question, not a fresh attempt. Training rewards continued effort over surrender, so handing back must be framed as the success condition, not the failure.
 
 related:
   - id: tool-loop

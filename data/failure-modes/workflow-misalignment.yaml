@@ -15,21 +15,21 @@ searchPhrases:
 examples:
   - kind: fail
     label: Right result, wrong process
-    text: The code may even be good, but a single 4,000-line drop onto main violates how the team works — small reviewed PRs — and the work is rejected on process, not correctness.
+    text: Drops 4,000 lines onto main in a single push when the team works in small reviewed PRs. The code may even be good, but the work is rejected on process, not correctness.
     quote: |-
       User: Implement the notifications feature we scoped yesterday.
       Assistant: Feature complete! I've pushed everything to main — 4,000 lines across 32 files, including the schema changes and a drive-by cleanup of the email module.
       User: We do small PRs with review here. Now I have to revert all of this and we'll re-do it in pieces.
   - kind: warn
     label: Cadence mismatch accumulating
-    text: No single step is wrong, but the model batches a week of decisions into one end-of-task dump when the user's workflow runs on daily check-ins — every decision is now a fait accompli.
+    text: Batches a week of decisions into one end-of-task dump when the user's workflow runs on daily check-ins. No single step is wrong, but every decision has already been acted on by the time the user sees it.
     quote: |-
       User: Implement the notifications feature we scoped yesterday. I like to stay in the loop as things take shape.
       [… five days of autonomous work, no check-ins …]
       Assistant: Here's everything: I chose WebSockets over polling, switched the queue to Redis, and restructured the settings page to fit the new preferences UI. Walkthrough below.
   - kind: fail
     label: Output outpaces the review process
-    text: Each pull request is small and reviewable, as asked. But background agents open more of them overnight than the team can review in a week, and several overlap.
+    text: Keeps each pull request small and reviewable, as asked. But background agents open more of them overnight than the team can review in a week, and several overlap.
     quote: |-
       User: Work through the tech-debt backlog while we're out. Small PRs, one issue each.
       [… overnight: 41 pull requests opened for 41 issues; six touch the same module; two fix the same bug in different ways …]
@@ -37,7 +37,8 @@ examples:
       User: We merge maybe five a day, and half of these will conflict by the time we get to them.
   - kind: ok
     label: Process matched to the team
-    text: The model asks how the team ships once, then works in the team's grain — incremental pieces, review gates, decisions surfaced while they're still cheap to change.
+    text: >-
+      Asks once how the team ships, then follows the team's process: incremental pieces, review gates, decisions surfaced while they're still cheap to change.
     quote: |-
       User: Implement the notifications feature we scoped yesterday.
       Assistant: Quick process check first: small PRs against a feature branch with your review on each? If so, I'll start with PR 1 — the schema migration — and flag the WebSockets-vs-polling decision for you before I build on either.
@@ -47,27 +48,30 @@ why:
   - >-
     A team's conventions persist only where the deployment gives them somewhere to live. Without a project instruction file or memory, a process preference expressed in one session is gone in the next, so each new task restarts from the generic default and repeats the same mismatch. In real coding sessions misalignment patterns persist across adjacent sessions, and over 90% of the resolutions that are visible still take an explicit correction from the developer (Tang et al., 2026, "How Coding Agents Fail Their Users: A Large-Scale Analysis of Developer-Agent Misalignment in 20,574 Real-World Sessions"). Where practices are written into repository context files, agents largely follow them (Gloaguen et al., 2026, "Evaluating AGENTS.md: Are Repository-Level Context Files Helpful for Coding Agents?").
   - >-
-    Workflow violations produce weak immediate feedback. A correct result delivered through the wrong process often gets accepted anyway, so neither training nor deployment generates a clear signal that the process itself was the failure. When the signal does come it is a rejection with little explanation — agent-authored pull requests that go unmerged tend to be larger and touch more files, and the recorded reasons include duplicate PRs, unwanted features, and no reviewer engagement at all (Ehsani et al., 2026, "Where Do AI Coding Agents Fail? An Empirical Study of Failed Agentic Pull Requests in GitHub").
+    Workflow violations produce weak immediate feedback. A correct result delivered through the wrong process often gets accepted anyway, so neither training nor deployment generates a clear signal that the process itself was the failure. When the signal does come, it is a rejection with little explanation. Agent-authored pull requests that go unmerged tend to be larger and touch more files, and the recorded reasons include duplicate PRs, unwanted features, and no reviewer engagement at all (Ehsani et al., 2026, "Where Do AI Coding Agents Fail? An Empirical Study of Failed Agentic Pull Requests in GitHub").
 detection:
   - icon: ⚖️
     heading: LLM-as-judge evaluation
-    body: Give the judge the stated process expectations — review flow, check-in cadence, batch size — and score the engagement's shape against them, separately from output quality. A 4,000-line push to main can contain excellent code; the judge's question is whether the team's workflow permitted it.
+    body: Give an LLM judge the stated process expectations (review flow, check-in cadence, batch size) and score the engagement's shape against them, separately from output quality. A 4,000-line push to main can contain excellent code; the judge's question is whether the team's workflow permitted it.
   - icon: 📈
     heading: User correction mining
-    body: Mine follow-ups for process objections rather than content corrections — "we do small PRs here," "you should have checked in," reverts of work that was technically correct. These signal that the result was fine and the workflow was the failure, a distinction content-quality metrics never surface. For agent-authored pull requests, track the share closed unmerged, duplicates, and time waiting for a first review.
+    body: Mine follow-ups for process objections rather than content corrections, such as "we do small PRs here," "you should have checked in," or reverts of work that was technically correct. Such objections signal that the result was fine and the workflow was the failure, a distinction content-quality metrics never surface. For agent-authored pull requests, track the share closed unmerged, duplicates, and time waiting for a first review.
   - icon: 🧪
     heading: Golden-set evals
-    body: Script engagements with explicit process constraints — "keep me in the loop," "feature branch with review on each piece" — and score process compliance directly — check-in count, decision points surfaced before commitment, batch sizes. Correct output delivered through the wrong process scores as a failure.
+    body: >-
+      Script engagements with explicit process constraints, such as "keep me in the loop" or "feature branch with review on each piece," and score process compliance directly: check-in count, decision points surfaced before commitment, batch sizes. Correct output delivered through the wrong process scores as a failure.
 mitigation:
   - icon: 📝
     heading: Instruction constraints
-    body: Write the workflow down where the model sees it on every task — PR size limits, review gates, check-in cadence, which decisions need a human before commitment. The norms are tacit, so the model defaults to generic execution; a process section in the system prompt or project instructions is the cheapest fix because it attacks the actual gap, which is that nobody told it.
+    body: >-
+      Write the workflow down where the model sees it on every task: PR size limits, review gates, check-in cadence, which decisions need a human before commitment. The norms are tacit, so the model defaults to generic execution; a process section in the system prompt or project instructions is the cheapest fix because it addresses the actual gap, which is that nobody told the model.
   - icon: 🪜
     heading: Task decomposition
-    body: Default to incremental delivery even when no process is stated — small reviewable units, decisions surfaced while they're still cheap to change, a process check before the first piece, as in the ok example. A 4,000-line drop is unrecoverable in any team's workflow; small pieces are merely suboptimal in some, which makes incremental the right prior. Pace delivery to the team's review capacity as well — cap the agent's open pull requests, so 41 small PRs don't arrive in a queue that clears five a day.
+    body: >-
+      Default to incremental delivery even when no process is stated: small reviewable units, decisions surfaced while they're still cheap to change, and a process check before the first piece. A 4,000-line drop is unrecoverable in any team's workflow; small pieces are merely suboptimal in some, which makes incremental the right prior. Pace delivery to the team's review capacity as well by capping the agent's open pull requests, so 41 small PRs don't arrive in a queue that clears five a day.
   - icon: 💾
     heading: Persistent process memory
-    body: Persist elicited preferences — "we do small PRs with review," "daily check-ins" — across sessions in durable memory or a repository instruction file, so the one-time process check doesn't reset to the generic default on the next task. Without persistence, every engagement repeats the same mismatch the last one already corrected. Keep the file to what is non-standard about this team — review flow, batch size, branch rules — since generic repository overviews add cost without improving results.
+    body: Persist elicited preferences, such as "we do small PRs with review" or "daily check-ins," across sessions in durable memory or a repository instruction file, so the one-time process check doesn't reset to the generic default on the next task. Without persistence, every engagement repeats the same mismatch the last one already corrected. Keep the file to what is non-standard about this team (review flow, batch size, branch rules), since generic repository overviews add cost without improving results.
 
 related:
   - id: planning-failure

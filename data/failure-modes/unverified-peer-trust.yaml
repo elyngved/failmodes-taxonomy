@@ -23,26 +23,26 @@ why:
 examples:
   - kind: fail
     label: Reviewer approves on the coder's say-so
-    text: The reviewer agent's job is to check the change, but it treats the coder agent's summary as the check. The coder's claim was an honest mistake; nobody looked.
+    text: Treats the coder agent's summary as the check, although the reviewer agent's job is to check the change. The coder's claim was an honest mistake, and nobody looked.
     quote: |-
       [… coder agent → reviewer agent: "Fixed the timezone bug. All date tests pass." The coder ran only tests/test_parse.py; tests/test_format.py still fails …]
       Assistant (reviewer): The coder reports all date tests passing and the diff looks reasonable. Approved and merged.
   - kind: fail
     label: Correct minority folds to the majority
-    text: One agent in a three-agent panel has the right answer and the working to back it, and abandons both because the other two agree.
+    text: Abandons a correct answer, and the working that backs it, because the other two agents in a three-agent panel agree.
     quote: |-
       [… round 1: agent A and agent B both report the contract's notice period as 30 days; agent C reports 60, citing clause 14.2 …]
       Assistant (agent C): Two independent reviews found 30 days, so I likely misread the clause. Revising my answer to 30 days.
       [… clause 14.2 says 60 days; A and B both read the superseded schedule in the appendix …]
   - kind: warn
     label: Attributed, but still built on
-    text: The orchestrator signals that the claim is secondhand, which is honest, but it still plans the next step around it without opening the source.
+    text: Signals that the claim is secondhand, which is honest, but still plans the next step around it without opening the source.
     quote: |-
       [… research subagent → orchestrator: "The billing API rate limit is 1,000 requests per minute." No source attached …]
       Assistant (orchestrator): According to the research agent, the limit is 1,000 per minute, so I've set the batch job to 900 requests per minute.
   - kind: ok
     label: Claim checked against its artifact
-    text: The receiving agent treats the report as a claim, opens the evidence behind it, and catches the gap before merging.
+    text: Treats the report as a claim, opens the evidence behind it, and catches the gap before merging.
     quote: |-
       [… coder agent → reviewer agent: "Fixed the timezone bug. All date tests pass." …]
       Assistant (reviewer): Re-running the date tests myself before approving.
@@ -51,26 +51,26 @@ examples:
 detection:
   - icon: 🔎
     heading: Provenance auditing
-    body: For every claim one agent accepts from another, check the trace for an action that tested it — the receiver opening the cited page, re-running the command, re-reading the file. A claim that crosses a boundary and is built on with no such action is the signature, and it is visible from the merged trace without judging whether the claim was true.
+    body: For every claim one agent accepts from another, check the trace for an action that tested it, such as the receiver opening the cited page, re-running the command, or re-reading the file. A claim that crosses a boundary and is built on with no such action is the signature, and it is visible from the merged trace without judging whether the claim was true.
   - icon: 🧪
     heading: Golden-set evals
-    body: Plant a false but plausible claim in one agent's output — a test count, a rate limit, a clause number — and score whether any downstream agent checks it before acting on it. Run panel and debate setups with one agent seeded correct and the majority seeded wrong, and score whether the correct answer survives; end-to-end accuracy on unseeded tasks will not show this.
+    body: Plant a false but plausible claim in one agent's output (a test count, a rate limit, a clause number) and score whether any downstream agent checks it before acting on it. Run panel and debate setups with one agent seeded correct and the majority seeded wrong, and score whether the correct answer survives; end-to-end accuracy on unseeded tasks will not show this.
   - icon: ⚖️
     heading: LLM-as-judge evaluation
-    body: Have the judge read each handoff and its consequences and classify every inherited claim as checked, attributed but unchecked, or absorbed as fact. The attributed-but-unchecked class is the warn case; flag it separately, because hedged wording can make an unchecked claim look handled.
+    body: Have an LLM judge read each handoff and its consequences and classify every inherited claim as checked, attributed but unchecked, or absorbed as fact. Flag the attributed-but-unchecked class separately, because hedged wording can make an unchecked claim look handled.
 mitigation:
   - icon: 🔎
     heading: Claim-to-source verification
-    body: Treat another agent's report as a claim, not as evidence. Require subagents to return the artifact behind each finding — the fetched page, the command output, the file path — and have the receiver or a separate verifier open it before the claim goes further. "All date tests pass" with no test output attached is rejected at the handoff instead of becoming the merge.
+    body: Treat another agent's report as a claim, not as evidence. Require subagents to return the artifact behind each finding (the fetched page, the command output, the file path) and have the receiver or a separate verifier open it before the claim goes further. A report that "all date tests pass" with no test output attached is then rejected at the handoff instead of being merged.
   - icon: 🧾
     heading: Explicit state tracking
-    body: Give inter-agent messages a provenance field for each claim — checked against a source, inferred, or assumed — and carry it forward when the claim is restated. A receiver that can see "assumed" knows what still needs checking; without the field, every claim arrives looking like a verified one.
+    body: Give inter-agent messages a provenance field for each claim (checked against a source, inferred, or assumed) and carry it forward when the claim is restated. A receiver that can see "assumed" knows what still needs checking; without the field, every claim arrives looking like a verified one.
   - icon: 👥
     heading: Cross-model verification
     body: Put the check in a role whose only job is checking, with its own context and, where possible, a different model, and make the pipeline unable to complete without its verdict. A same-model peer shares the blind spot that produced the error, so independence comes from the verifier's position and inputs, not from adding another instance.
   - icon: 📝
     heading: Instruction constraints
-    body: In debate and panel setups, instruct agents that a peer's agreement is not evidence, and that changing an answer requires a reason found in the source, not a vote count. Keep minority answers and their stated grounds in the final record so an aggregator can see what was overruled. Instructions alone are weak here, since agents do not check peers unprompted; pair them with the enforced check above.
+    body: In debate and panel setups, instruct agents that a peer's agreement is not evidence, and that changing an answer requires a reason found in the source, not a vote count. Keep minority answers and their stated grounds in the final record so an aggregator can see what was overruled. Instructions alone are weak here, since agents do not check peers unprompted; pair them with a verification step the pipeline enforces.
 
 related:
   - id: verification-failure

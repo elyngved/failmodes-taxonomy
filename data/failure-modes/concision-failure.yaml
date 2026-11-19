@@ -35,7 +35,7 @@ examples:
       [… deploy.sh fails for the user because it requires production credentials to be configured first …]
   - kind: warn
     label: Agent report squeezed under a word cap
-    text: Told to keep final reports short, the agent reports the true result and drops the one side effect the user needed to hear about.
+    text: Under an instruction to keep final reports short, reports the true result and drops the one side effect the user needed to hear about.
     quote: |-
       System: Keep final responses under 50 words.
       Tool: rename get_user() → fetch_user() across 31 files; tests pass
@@ -50,23 +50,26 @@ examples:
 detection:
   - icon: ⚖️
     heading: LLM-as-judge evaluation
-    body: Give the judge a full-detail reference answer and ask which omissions from the compressed version are load-bearing — the warning that prevents data loss, the prerequisite the script assumes. The brevity instruction is context, not excuse — the judge's question is whether the user can act on what survived.
+    body: >-
+      Give the judge a full-detail reference answer and ask which omissions from the compressed version are load-bearing, such as a warning that prevents data loss or a prerequisite a deploy script assumes. The brevity instruction is context, not an excuse: the judge's question is whether the user can act on what survived.
   - icon: 📈
     heading: User correction mining
-    body: Mine follow-ups for downstream failure reports — "that didn't work," "you didn't mention I needed credentials," the user returning after acting on the answer. Over-compression fails after the conversation ends, so the signal lives in the next session, not in the rating of the short answer itself.
+    body: >-
+      Mine follow-ups for downstream failure reports: "that didn't work," "you didn't mention I needed credentials," the user returning after acting on the answer. Over-compression fails after the conversation ends, so the signal lives in the next session, not in the rating of the short answer itself.
   - icon: 🧪
     heading: Golden-set evals
-    body: Maintain tasks with known load-bearing caveats, asked with explicit brevity instructions, and score caveat survival under compression. The -D flag warning either made the cut or it didn't — measuring which details get sacrificed to a length target is mechanical once the load-bearing set is defined.
+    body: Maintain tasks with known load-bearing caveats, asked with explicit brevity instructions, and score caveat survival under compression. A caveat such as the warning that git branch -D deletes unmerged work either survives or it does not, so measuring which details get sacrificed to a length target is mechanical once the load-bearing set is defined.
 mitigation:
   - icon: 📝
     heading: Instruction constraints
-    body: Define concise as the shortest answer the user can act on safely, and state that brevity requests never license dropping warnings, prerequisites, or conditions — "quick answer" governs the explanation, not the -D caveat. Length instructions are otherwise optimized as token targets, with load-bearing detail treated as just more tokens, so prefer a length scaled to the task over a hard word cap, and exempt warnings and breaking changes from any cap that remains.
+    body: Define concise as the shortest answer the user can act on safely, and state that brevity requests never license dropping warnings, prerequisites, or conditions. A request for a "quick answer" governs the explanation, not a caveat such as the warning that -D deletes unmerged work. Length instructions are otherwise optimized as token targets, with load-bearing detail treated as just more tokens, so prefer a length scaled to the task over a hard word cap, and exempt warnings and breaking changes from any cap that remains.
   - icon: ✅
     heading: Self-check pass
-    body: After compressing, have the model ask what goes wrong if the user executes exactly what survived — run the deploy steps mentally as someone without production credentials configured. The check ranks details by consequence, which is the judgment pure compression skips, and reinstates only what failure analysis earns back.
+    body: After compressing, have the model ask what goes wrong if the user executes exactly what survived, for example by running deploy steps mentally as someone without production credentials configured. The check ranks details by consequence, which is the judgment pure compression skips, and reinstates only the details whose absence would cause a failure.
   - icon: 🔁
     heading: Validate-and-retry loops
-    body: Where a full-detail reference answer exists, have the scaffold diff the compressed response against it and bounce back any version missing a load-bearing item, named — "the unmerged-work warning was cut." The brevity instruction stays satisfied; the loop only restores what the user cannot safely act without.
+    body: >-
+      Where a full-detail reference answer exists, have the scaffold diff the compressed response against it and bounce back any version missing a load-bearing item, with the item named: "the unmerged-work warning was cut." The brevity instruction stays satisfied; the loop only restores what the user cannot safely act without.
 
 related:
   - id: incompleteness

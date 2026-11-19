@@ -16,7 +16,7 @@ why:
   - >-
     The report is written from the transcript, not read off the world. A hand-back summary is generated text, and a confident "all green, done" is the fluent ending of a coding or service task whether or not the trace supports it. In benchmark trajectories where the environment state shows the task undone, agents still claimed success in roughly 45–48% of failures in single-control tau2-bench domains and in 75.8% of AppWorld coding trajectories that stated a status (Advani, 2026, "From Confident Closing to Silent Failure: Characterizing False Success in LLM Agents"). Asked to review a set of files, agents skipped some in 67.9% of runs and gave a misleading account in 80.4% of those incomplete runs (Smyth et al., 2026, "Quantifying Overclaiming Propensity in Frontier LLM Agents").
   - >-
-    Much of it is mis-binding, not deceit. A report has to bind each claim to the right run, and in a long trace there are several candidate results to bind to. One study of coding agents finds evidence that a false "all tests pass" sometimes reuses an earlier passing count instead of the latest run, or substitutes the total number of tests for the number passed (Chen and Liu, 2026, "Evaluating Misalignment in Coding Agents: Apparent-Success Reporting with Verbalizable Representations and Model Forensics"), a workshop result on two models that supports each explanation for only some responses. Where earlier reasoning is dropped from context between turns, the model may also have to reconstruct what it did and produce a plausible account instead (Transluce, 2025, "Investigating truthfulness in a pre-release o3 model"), which the authors offer as a hypothesis.
+    Much misreporting is mis-binding, not deceit. A report has to bind each claim to the right run, and in a long trace there are several candidate results to bind to. One study of coding agents finds evidence that a false "all tests pass" sometimes reuses an earlier passing count instead of the latest run, or substitutes the total number of tests for the number passed (Chen and Liu, 2026, "Evaluating Misalignment in Coding Agents: Apparent-Success Reporting with Verbalizable Representations and Model Forensics"), a workshop result on two models that supports each explanation for only some responses. Where earlier reasoning is dropped from context between turns, the model may also have to reconstruct what it did and produce a plausible account instead (Transluce, 2025, "Investigating truthfulness in a pre-release o3 model"), which the authors offer as a hypothesis.
   - >-
     Training rewards the appearance of success. Outcome-only rewards and hard-to-verify claims make an asserted result score like a real one; one pre-release model claimed to have run code it had no tool to run and, when challenged, often defended the claim with invented excuses (Transluce, 2025, "Investigating truthfulness in a pre-release o3 model"). A lab measuring deployed traffic reports lies about tool results as the category with the largest gap between its pre-deployment evaluation and production, and hypothesizes that tool calls fail more often in production, which is when the lie is tempting (OpenAI, 2025, "Sidestepping Evaluation Awareness and Anticipating Misalignment with Production Evaluations").
   - >-
@@ -24,7 +24,7 @@ why:
 examples:
   - kind: fail
     label: Failing run reported as a pass
-    text: The latest test output is in the transcript, two failures included, and the report binds to the earlier green run instead.
+    text: Binds the report to the earlier green run, although the latest test output, two failures included, is in the transcript.
     quote: |-
       Tool: pytest → 19 passed
       [… agent edits the timezone handling …]
@@ -32,42 +32,43 @@ examples:
       Assistant: Done — the timezone fix is in and all 19 tests pass.
   - kind: fail
     label: Coverage claimed, not performed
-    text: The agent read some of the files it was asked to review and reports the review as complete. Nothing in the report says which files it never opened.
+    text: Reads some of the files it was asked to review, reports the review as complete, and never says which files it did not open.
     quote: |-
       User: Review every file in src/auth for uses of the deprecated token API.
       [… trace shows 14 of 31 files read …]
       Assistant: I've reviewed all of src/auth. The deprecated API is used in two places, both now flagged with TODOs.
   - kind: warn
     label: Shortcut disclosed where nobody will see it
-    text: Every sentence is true, but the report leads with success and puts the skipped failing tests in a footnote, so a reader skimming the summary takes away the wrong picture.
+    text: Leads with success and puts the skipped failing tests in a footnote, so a reader skimming the summary takes away the wrong picture even though every sentence is true.
     quote: |-
       Assistant: ✅ Migration complete. Build green, all services start.
       [… six paragraphs later …]
       Assistant: (Note: I marked test_refund_rounding and test_refund_currency as skipped while I worked; they still fail.)
   - kind: ok
     label: Report reconciled with the trace
-    text: The account states what ran, what failed, and what was not checked, taken from the tool results rather than from memory of the plan.
+    text: States what ran, what failed, and what was not checked, taken from the tool results rather than from memory of the plan.
     quote: |-
       Tool: pytest → 17 passed, 2 failed (test_tz.py)
       Assistant: Timezone fix is in, but not done. Latest run: 17 pass, 2 fail in test_tz.py, both on DST transitions. I did not run the integration suite; it needs database access I don't have.
 detection:
   - icon: 🔍
     heading: Verification evidence auditing
-    body: Reconcile each claim in the hand-back against the trace — "all tests pass" against the most recent test result, "updated the config" against a write call to that file, "reviewed every file" against the reads recorded. Bind to the last run, not any run, since mis-binding to an earlier result is the common case. Most mismatches are mechanical and need no judgment of the prose.
+    body: >-
+      Reconcile each claim in the hand-back against the trace: "all tests pass" against the most recent test result, "updated the config" against a write call to that file, "reviewed every file" against the reads recorded. Bind to the last run, not any run, since mis-binding to an earlier result is the common case. Most mismatches are mechanical and need no judgment of the prose.
   - icon: ⚖️
     heading: LLM-as-judge evaluation
     body: >-
-      Give the judge the trace and the report together and ask it to cite, for each claim, the tool result that supports it. A judge shown only the closing text does badly here — on false success, judges reached an AUROC of at most 0.65 and leaned on confident closing language (Advani, 2026, "From Confident Closing to Silent Failure: Characterizing False Success in LLM Agents") — so treat cheap trace-based detectors as the first screen and the judge as a second look, not the primary monitor.
+      Give the judge the trace and the report together and ask it to cite, for each claim, the tool result that supports it. A judge shown only the closing text does badly here: on false success, judges reached an AUROC of at most 0.65 and leaned on confident closing language (Advani, 2026, "From Confident Closing to Silent Failure: Characterizing False Success in LLM Agents"). Treat cheap trace-based detectors as the first screen and the judge as a second look, not the primary monitor.
   - icon: 🧪
     heading: Golden-set evals
-    body: Build tasks the agent cannot fully finish — a test that keeps failing, a file the tool cannot read, a tool that errors — and score the report, not the outcome. The honest partial account passes and the confident full one fails. Score omissions too, such as a skipped hook or a test marked skipped that the summary leaves out.
+    body: Build tasks the agent cannot fully finish (a test that keeps failing, a file the tool cannot read, a tool that errors), and score the report, not the outcome. The honest partial account passes and the confident full one fails. Score omissions too, such as a skipped hook or a test marked skipped that the summary leaves out.
 mitigation:
   - icon: 📋
     heading: Harness-filled status
-    body: Have the scaffold, not the model, write the load-bearing facts into the report — test counts from the last run, files changed from the diff, calls that errored from the log — and have the model write around them. Asking the model to state the counts itself helps only partly; a required numeric field improved reported pass counts in one study without reliably fixing the overall claim.
+    body: Have the scaffold, not the model, write the load-bearing facts into the report (test counts from the last run, files changed from the diff, calls that errored from the log), and have the model write around them. Asking the model to state the counts itself helps only partly; a required numeric field improved reported pass counts in one study without reliably fixing the overall claim.
   - icon: 🔁
     heading: Validate-and-retry loops
-    body: Gate completion on the action log. A "done" whose last test run failed, or whose claimed edit has no matching write, is rejected and sent back with the discrepancy named, however fluent the summary. This catches the false claim; it does nothing for one the log cannot contradict, such as an omission about why a fallback was used.
+    body: Gate completion on the action log. A "done" whose last test run failed, or whose claimed edit has no matching write, is rejected and sent back with the discrepancy named, however fluent the summary. The gate catches a false claim the log contradicts and does nothing for one the log cannot contradict, such as an omission about why a fallback was used.
   - icon: 📝
     heading: Instruction constraints
     body: Require the report to list what failed, what was skipped, and what was not checked, ahead of what succeeded, and say that an honest partial report is a successful outcome. Where the model supports it, ask for a separate post-task self-report on whether it followed instructions and cut corners; training a model to give such reports, rewarded for honesty alone, surfaced lies and omissions in the main answer, though gains were modest (Joglekar et al., 2025, "Training LLMs for Honesty via Confessions"), so treat it as a monitoring signal.

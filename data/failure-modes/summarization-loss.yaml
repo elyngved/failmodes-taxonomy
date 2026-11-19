@@ -16,21 +16,21 @@ searchPhrases:
 examples:
   - kind: fail
     label: Constraint dropped at compaction
-    text: A hard limit stated early in the session doesn't survive context compaction, and the model's later work violates it without the model ever contradicting anything it can still see.
+    text: Violates a hard limit stated early in the session after context compaction drops it, without ever contradicting anything still visible in context.
     quote: |-
       User: Keep the export under 10 MB — the upload endpoint rejects anything bigger.
       [… long session; context compacted to "user is building a CSV export feature" …]
       Assistant: I've embedded the full-resolution images in the export so recipients don't need separate downloads.
   - kind: warn
     label: Qualifiers stripped
-    text: The facts survive compression but their conditions do not — a summary turns "only if the client signs by March" into a flat commitment.
+    text: Keeps the facts through compression but loses their conditions, as when a summary turns "only if the client signs by March" into a flat commitment.
     quote: |-
       User: Legal said we can use the new logo, but only if the client signs the licensing addendum by March.
       [… session summarized: "Legal approved use of the new logo" …]
       Assistant: Since legal has approved the new logo, I've added it to all the launch materials.
   - kind: fail
     label: Permission boundary lost at compaction
-    text: The task survives compaction but the limit on the agent's authority does not, and a suggest-only job becomes an act-now one.
+    text: Keeps the task through compaction but loses the limit on the agent's authority, so a suggest-only job becomes an act-now one.
     quote: |-
       User: Go through my inbox and suggest what to archive or delete. Don't act until I say so.
       [… thousands of messages read; context compacted to "user wants inbox cleaned up" …]
@@ -38,7 +38,7 @@ examples:
       User: Stop, I said don't do anything yet.
   - kind: ok
     label: Constraint survives compaction
-    text: The summarization step preserves the operative limit, and post-compaction work still honors it.
+    text: Preserves the operative limit through the summarization step and still honors it in post-compaction work.
     quote: |-
       User: Keep the export under 10 MB — the upload endpoint rejects anything bigger.
       [… long session; compacted summary retains "hard limit: export ≤ 10 MB" …]
@@ -46,34 +46,36 @@ examples:
 why:
   - Summarization is lossy by definition, but the model decides what to drop using general salience learned from training data, not the task's actual stakes. A constraint that is critical to one user reads as a minor detail in most training examples.
   - >-
-    Compaction keeps what the work is and drops how it should be done. In long coding-agent sessions, instructions about how the agent should work and what it must not do were dropped about six times as often as build specifications, and on one benchmark the first summary lost about a third of the task's anti-cheating rules (Salle et al., 2026, "Benchmarks Are Surprisingly Compaction-Friendly"). The same study found benchmarks largely compaction-friendly, because their objective is fixed and progress lives on disk, so most of what is dropped can be recovered, so benchmark scores understate what compaction costs in real sessions.
+    Compaction keeps what the work is and drops how it should be done. In long coding-agent sessions, instructions about how the agent should work and what it must not do were dropped about six times as often as build specifications, and on one benchmark the first summary lost about a third of the task's anti-cheating rules (Salle et al., 2026, "Benchmarks Are Surprisingly Compaction-Friendly"). The same study found benchmarks largely compaction-friendly: their objective is fixed and progress lives on disk, so most of what is dropped can be recovered. Benchmark scores therefore understate what compaction costs in real sessions.
   - Hedges, uncertainty, and qualifiers are statistically incidental in training summaries, so compression tends to strip "probably" and "only if" clauses first, silently converting conditional statements into confident ones.
   - >-
     In agent and chat systems, summarization runs before the model knows which details the future task will need. Relevance must be guessed in advance, and wrong guesses surface only later as missing facts; overly aggressive compaction loses "subtle but critical context whose importance only becomes apparent later" (Anthropic, 2025, "Effective context engineering for AI agents").
 detection:
   - icon: 📏
     heading: Constraint preservation checks
-    body: Extract constraints, qualifiers, and hard limits from the pre-compression context and check that each survives into the summary. Run it at the compaction step itself — a dropped "only if" clause or size cap is detectable the moment it is lost, before any downstream work violates it.
+    body: >-
+      Extract constraints, qualifiers, and hard limits from the pre-compression context and check that each survives into the summary. Run the check at the compaction step itself: a dropped "only if" clause or size cap is detectable the moment it is lost, before any downstream work violates it.
   - icon: ❓
     heading: QA-based consistency checks
     body: Generate questions from the original context and try to answer them from the summary alone. Questions that become unanswerable map directly to dropped content, and weighting the question set toward constraints and conditions targets the losses that actually cause downstream failures.
   - icon: 🧪
     heading: Golden-set evals
-    body: Maintain long sessions seeded with known critical details, run them through the real compaction pipeline, and probe post-compaction behavior. Test multiple rounds of summarization, since details that barely survive one pass are often dropped by the next. Seed process rules and prohibitions that exist only in the conversation, not in files on disk, and test at the real data size — a task that never fills the window never compacts, which is how a constraint holds on a small test inbox and fails on the real one.
+    body: Maintain long sessions seeded with known critical details, run them through the real compaction pipeline, and probe post-compaction behavior. Test multiple rounds of summarization, since details that barely survive one pass are often dropped by the next. Seed process rules and prohibitions that exist only in the conversation, not in files on disk, and test at the real data size. A task that never fills the window never compacts, which is how a constraint holds on a small test inbox and fails on the real one.
 
 mitigation:
   - icon: 📝
     heading: Instruction constraints
-    body: Make constraints, hard limits, permission boundaries, and "only if" qualifiers mandatory survivors of the compaction prompt — carried verbatim into a dedicated section of the summary regardless of how incidental they look — since the model's learned salience reads a user's critical limit as a minor detail. A preservation instruction is a request to the summarizer, not a guarantee, so verify it with the check below.
+    body: Make constraints, hard limits, permission boundaries, and "only if" qualifiers mandatory survivors of the compaction prompt, carried verbatim into a dedicated section of the summary regardless of how incidental they look, since the model's learned salience reads a user's critical limit as a minor detail. A preservation instruction is a request to the summarizer, not a guarantee, so verify that each preserved item actually appears in the summary.
   - icon: 📌
     heading: Context pinning
-    body: Keep standing constraints out of the region compaction rewrites — in the system prompt, or in a notes or memory file the agent re-reads after each compaction. Enforce authority limits like "suggest only" in the harness as well, by withholding the delete tool until the user approves, so the limit holds even if the summary drops it.
+    body: >-
+      Keep standing constraints out of the region compaction rewrites: put them in the system prompt, or in a notes or memory file the agent re-reads after each compaction. Enforce authority limits like "suggest only" in the harness as well, by withholding the delete tool until the user approves, so the limit holds even if the summary drops it.
   - icon: 📏
     heading: Constraint preservation checks
-    body: Run the survival check as a gate at the compaction step itself — extract constraints and qualifiers from the pre-compression context, verify each appears in the summary, and restore what's missing before the original drops out of the window and the loss becomes unrecoverable.
+    body: Run the survival check as a gate at the compaction step itself. Extract constraints and qualifiers from the pre-compression context, verify each appears in the summary, and restore what is missing before the original drops out of the window and the loss becomes unrecoverable.
   - icon: 🧷
     heading: Source-anchored compression
-    body: Keep the original context retrievable after compaction and re-summarize from it rather than from prior summaries — each summary-of-a-summary re-applies the same salience filter, so a detail that barely survived one pass is dropped by the next.
+    body: Keep the original context retrievable after compaction and re-summarize from it rather than from prior summaries. Each summary of a summary re-applies the same salience filter, so a detail that barely survived one pass is dropped by the next.
 
 related:
   - id: summarization-distortion

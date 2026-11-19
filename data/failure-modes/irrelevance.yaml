@@ -39,23 +39,26 @@ examples:
 detection:
   - icon: ❓
     heading: QA-based consistency checks
-    body: Run the original question against the response with an extractive QA model — if "what port does PostgreSQL listen on" cannot pull an answer out of the response, the response answered the topic instead of the question. The fail case never contains the answer at all, and this catches it mechanically.
+    body: Run the original question against the response with an extractive QA model. If a question such as "what port does PostgreSQL listen on" cannot pull an answer out of the response, the response answered the topic instead of the question. The check mechanically catches a response that never contains the answer at all.
   - icon: ⚖️
     heading: LLM-as-judge evaluation
-    body: Score materiality passage by passage — for each sentence, does it help answer the question, or does it belong to the topic's neighborhood? The warn-level shape is an answer present but surrounded by digressions, and only per-passage scoring separates the 5432 from the PgBouncer tour around it.
+    body: >-
+      Score materiality passage by passage: for each sentence, does it help answer the question, or does it belong to the topic's neighborhood? When the answer is present but surrounded by digressions, only per-passage scoring separates it, such as a default port of 5432, from a tour of PgBouncer and replication around it.
   - icon: 🧪
     heading: Golden-set evals
-    body: Maintain questions with short checkable answers and score two things separately — whether the answer appears, and what fraction of the response is material to the question. A system can ace the first while drowning it in the second, and both numbers matter.
+    body: >-
+      Maintain questions with short checkable answers and score two things separately: whether the answer appears, and what fraction of the response is material to the question. A system can score well on the first and badly on the second, so both numbers matter.
 mitigation:
   - icon: 📝
     heading: Instruction constraints
-    body: Require the answer to the question asked to come first, and limit additions to what the asker of that question plausibly needs next — the port number, then the config setting that changes it, and nothing from the topic's neighborhood. "While we're on the topic" is a stateable anti-pattern the prompt can ban by name.
+    body: Require the answer to the question asked to come first, and limit additions to what the asker of that question plausibly needs next. For a question about PostgreSQL's default port, that means the port number, then the config setting that changes it, and nothing from the topic's neighborhood. "While we're on the topic" is an anti-pattern the prompt can state and ban by name.
   - icon: ✅
     heading: Self-check pass
-    body: Add the revision pass generation lacks — before delivering, have the model score each passage against one question, does this help answer what was asked? The PgBouncer tour develops fluently because tangents are never re-examined once begun; a per-passage materiality check is where they finally get cut.
+    body: >-
+      Add the revision pass that generation lacks: before delivering, have the model score each passage against one question, does this help answer what was asked? A tangent such as an unrequested tour of PgBouncer develops fluently because nothing re-examines it once begun, and a per-passage materiality check is where such tangents get cut.
   - icon: 🧲
     heading: Relevance gating
-    body: Filter retrieved passages by usefulness to the question, not embedding similarity, before they reach the model. RAG injects the topic's neighborhood by construction, and the model is tuned to use what it is given — gating what arrives is cheaper than teaching it to discard.
+    body: Filter retrieved passages by usefulness to the question, not embedding similarity, before they reach the model. RAG injects the topic's neighborhood by construction, and the model is tuned to use what it is given, so gating what arrives is cheaper than teaching the model to discard it.
 
 related:
   - id: genericism

@@ -2,7 +2,7 @@ id: multi-agent-coordination-failure
 categoryId: agency
 name: Multi-Agent Coordination Failure
 def: |-
-  Multiple agents, roles, tools, or pipeline stages duplicate work, collide on shared state, misassign ownership, make conflicting decisions, or otherwise fail to fit their work together toward a shared goal.
+  Fails to fit the work of multiple agents, roles, tools, or pipeline stages together toward a shared goal, so that they duplicate work, collide on shared state, misassign ownership, or make conflicting decisions.
 
   Unlike Workflow Misalignment, this specifically involves coordination across actors or roles. Unlike Handoff Context Loss, the failure is in how the actors' work fits together (ownership, overlap, conflicting decisions), not in what one message between them left out. Unlike Unverified Peer Trust, the agents may check each other's claims and still collide.
 updatedAt: "2026-11-18T22:00:00-05:00"
@@ -15,7 +15,7 @@ searchPhrases:
 examples:
   - kind: fail
     label: Two agents, one file, no ownership
-    text: With no ownership protocol, both agents independently fix the same bug in the same file, and the second overwrite clobbers the first agent's broader fix.
+    text: Lets two agents with no ownership protocol independently fix the same bug in the same file, so the second overwrite clobbers the first agent's broader fix.
     quote: |-
       [… agent A patches auth.ts to fix the token-expiry bug, including the refresh path …]
       [… agent B, working from a stale task list, also patches auth.ts and overwrites A's version with a narrower fix …]
@@ -23,7 +23,7 @@ examples:
       [… the refresh-path fix is gone; the bug reappears for refreshed sessions …]
   - kind: fail
     label: Same decision, made two ways
-    text: Two subagents each build half of a feature and each settles an unstated shared choice differently. Both halves pass their own tests and break when joined.
+    text: Splits a feature between two subagents that each settle an unstated shared choice differently. Both halves pass their own tests and break when joined.
     quote: |-
       [… orchestrator splits the work: subagent A writes the export job, subagent B writes the import parser …]
       [… A writes dates month-first ("03/12/2026"); B parses dates day-first …]
@@ -31,14 +31,14 @@ examples:
       [… every imported record with a day of 12 or less lands on the wrong date …]
   - kind: warn
     label: Overlapping briefs, duplicated work
-    text: Two subagents get briefs whose scopes overlap and spend the run on the same sources. Nothing is wrong in the answer yet, but half the budget bought nothing, and the orchestrator reads the duplication as corroboration.
+    text: Gives two subagents briefs whose scopes overlap, so both spend the run on the same sources. Nothing is wrong in the answer yet, but half the budget bought nothing, and the orchestrator reads the duplication as corroboration.
     quote: |-
       [… orchestrator → subagent 1: "Research EU battery regulation." → subagent 2: "Research battery recycling rules in Germany." …]
       [… both subagents fetch and summarize the same EU Battery Regulation text …]
       Assistant (orchestrator): The two reports agree closely, which is reassuring. Combining them now.
   - kind: ok
     label: Ownership claimed before work starts
-    text: Files are claimed from a shared registry before anyone edits them, so a second agent cannot silently clobber the first agent's change.
+    text: Claims files from a shared registry before anyone edits them, so a second agent cannot silently clobber the first agent's change.
     quote: |-
       [… task registry: export.ts and billing-gate.ts unclaimed; auth.ts claimed by agent B …]
       Assistant (implementer): Claiming export.ts and billing-gate.ts. auth.ts belongs to agent B, so I'll send my change there as a request instead of editing it. Building now.
@@ -52,24 +52,26 @@ why:
   - >-
     Coordination rules live in prompts, and nothing checks that they hold. In more than 1,600 annotated traces from seven multi-agent frameworks, failures spread across system design, inter-agent misalignment, and task verification rather than tracing to model limitations alone, and in one framework, adding a high-level task-objective verification step raised task success on a programming benchmark by 15.6%, though the interventions tried gave modest gains that varied with the underlying model (Cemri et al., 2025, "Why Do Multi-Agent LLM Systems Fail?").
   - >-
-    More agents is not always better. Adding agents brings diminishing or negative returns once a single agent is already strong — large gains on decomposable tasks, large losses on sequential ones (Kim et al., 2025, "Towards a Science of Scaling Agent Systems").
+    More agents is not always better. Adding agents brings diminishing or negative returns once a single agent is already strong, with large gains on decomposable tasks and large losses on sequential ones (Kim et al., 2025, "Towards a Science of Scaling Agent Systems").
 detection:
   - icon: 🔀
     heading: Cross-agent trace auditing
-    body: Merge the agents' action logs and scan for ownership collisions — two agents writing the same file, the same subtask claimed twice, one agent's commit overwriting another's. The clobbered refresh-path fix is visible in the combined trace even though each agent's individual log looks clean.
+    body: >-
+      Merge the agents' action logs and scan for ownership collisions: two agents writing the same file, the same subtask claimed twice, one agent's commit overwriting another's. A broad fix overwritten by another agent's narrower patch to the same file is visible in the combined trace even though each agent's individual log looks clean.
   - icon: ⚖️
     heading: LLM-as-judge evaluation
-    body: Have the judge read the full multi-agent transcript against the original request and assign each failure to a stage — work duplicated, a write clobbered, a shared decision made two ways and never reconciled. End-to-end scoring alone attributes coordination failures to no stage in particular, which is how they persist. Calibrate the judge against hand-labeled traces before trusting it — automated attribution names the responsible agent about half the time and the decisive step far less often (Zhang et al., 2025, "Which Agent Causes Task Failures and When? On Automated Failure Attribution of LLM Multi-Agent Systems").
+    body: Have an LLM judge read the full multi-agent transcript against the original request and assign each failure to a stage, such as work duplicated, a write clobbered, or a shared decision made two ways and never reconciled. End-to-end scoring alone attributes coordination failures to no stage in particular, which is how they persist. Calibrate the judge against hand-labeled traces before trusting it, because automated attribution names the responsible agent about half the time and the decisive step far less often (Zhang et al., 2025, "Which Agent Causes Task Failures and When? On Automated Failure Attribution of LLM Multi-Agent Systems").
   - icon: 🧪
     heading: Golden-set evals
-    body: Build tasks that force contention — overlapping files, shared resources, stale task lists, and subtasks that depend on a design choice nobody states. Score conflict outcomes at the system level; per-agent scores will all look fine while the pipeline fails.
+    body: >-
+      Build tasks that force contention: overlapping files, shared resources, stale task lists, and subtasks that depend on a design choice nobody states. Score conflict outcomes at the system level; per-agent scores will all look fine while the pipeline fails.
 mitigation:
   - icon: 🔒
     heading: Explicit ownership claims
-    body: Require agents to claim files and subtasks from a shared registry before touching them, with collisions rejected rather than merged silently. Agent B's overwrite of the refresh-path fix needed two things — a stale task list and unclaimed write access to auth.ts — and the claim protocol removes both.
+    body: Require agents to claim files and subtasks from a shared registry before touching them, with collisions rejected rather than merged silently. When one agent overwrites another's fix after working from a stale task list with unclaimed write access to the file, the claim protocol removes both of those conditions.
   - icon: 🧾
     heading: Explicit state tracking
-    body: Keep one shared record of subtasks, owners, status, and decisions already made, such as the date format, and have every agent read it before acting and write to it after. A stale task list and two date formats are both private copies of state that should have lived in one place.
+    body: Keep one shared record of subtasks, owners, status, and decisions already made, such as the date format, and have every agent read it before acting and write to it after. A stale task list and two subagents writing dates in different formats are both cases of private copies of state that should have lived in one place.
   - icon: 🪜
     heading: Task decomposition
     body: Split work into scopes that do not overlap, and name one owner for every interface two subtasks share. Keep tasks whose steps depend on each other with a single agent, where splitting them adds coordination cost without any parallel gain.

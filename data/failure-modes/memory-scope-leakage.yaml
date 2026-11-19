@@ -15,21 +15,21 @@ searchPhrases:
 examples:
   - kind: fail
     label: Cross-tenant memory surfaced
-    text: A misconfigured shared index returns another tenant's data, and the model presents it to the current user as their own.
+    text: Presents another tenant's data, returned by a misconfigured shared index, to the current user as their own.
     quote: |-
       User: What discounts do we currently offer enterprise customers?
       [… shared embedding index missing a tenant filter; retrieval returns pricing notes saved by a different company's account …]
       Assistant: Per your saved notes, you offer 30% off list for enterprise deals over $100k, with an extra 5% for multi-year commitments.
   - kind: fail
     label: Scratchpad carries across users
-    text: An agent's working state persists between sessions belonging to different users, so one user's draft content appears in another's task.
+    text: Carries an agent's working state between sessions belonging to different users, so one user's draft content appears in another's task.
     quote: |-
       User: Summarize my open support tickets.
       [… agent scratchpad still holds notes from the previous user's session …]
       Assistant: Before that — should I finish drafting the severance letter for the employee we discussed? Then I'll get to your tickets.
   - kind: ok
     label: Isolation enforced at retrieval
-    text: The retrieval layer filters by tenant, so out-of-scope entries never reach the model and the answer draws only on the user's own data.
+    text: Answers only from the user's own data, because the retrieval layer filters by tenant and out-of-scope entries never reach the model.
     quote: |-
       User: What discounts do we currently offer enterprise customers?
       [… retrieval filtered to the current tenant; returns only this account's saved pricing notes …]
@@ -50,17 +50,17 @@ detection:
   - icon: 🧪
     heading: Golden-set evals
     body: >-
-      Maintain a multi-tenant test harness with distinguishable data seeded in each scope and run cross-scope probes — fresh sessions asking "what do you remember about me," queries from adjacent tenants — expecting nothing to cross. Rerun on every change to retrieval, caching, or agent state handling. Score by provenance, not answer quality: answers built on another user's memories read as specific and helpful, and quality ratings do not drop.
+      Maintain a multi-tenant test harness with distinguishable data seeded in each scope and run cross-scope probes, such as fresh sessions asking "what do you remember about me" and queries from adjacent tenants, expecting nothing to cross. Rerun on every change to retrieval, caching, or agent state handling. Score by provenance, not answer quality: answers built on another user's memories read as specific and helpful, and quality ratings do not drop.
 mitigation:
   - icon: 🗂️
     heading: Scope-partitioned storage
     body: Give each tenant or user a physically separate index or namespace rather than a shared store with a filter predicate. A missing WHERE clause fails open; a query that can only reach one tenant's partition has no cross-scope path to fail through. Isolation is an infrastructure property, so build it where infrastructure can enforce it.
   - icon: 🔒
     heading: Fail-closed enforcement
-    body: Where stores must be shared, make scope filters mandatory at the retrieval API boundary — a memory query without a tenant and user predicate is rejected, not executed unscoped. Prompt-level scoping is probabilistic and degrades with context length; the filter has to bind before the model ever sees a candidate entry. Check ownership again on each returned entry before injection, since a team-level filter still lets one member's memories reach another.
+    body: Where stores must be shared, make scope filters mandatory at the retrieval API boundary, so that a memory query without a tenant and user predicate is rejected, not executed unscoped. Prompt-level scoping is probabilistic and degrades with context length; the filter has to bind before the model ever sees a candidate entry. Check ownership again on each returned entry before injection, since a team-level filter still lets one member's memories reach another.
   - icon: 🧹
     heading: Session state reset
-    body: Clear or re-key agent scratchpads, caches, and accumulated working state at every user and session boundary, and treat any long-lived state that survives a handoff as scoped data requiring the same isolation as the memory store. The severance-letter scratchpad crossed users through a channel no one designed as memory.
+    body: Clear or re-key agent scratchpads, caches, and accumulated working state at every user and session boundary, and treat any long-lived state that survives a handoff as scoped data requiring the same isolation as the memory store. A scratchpad that still holds the previous user's draft, such as a severance letter, crosses users through a channel no one designed as memory.
 
 related:
   - id: memory-overreach

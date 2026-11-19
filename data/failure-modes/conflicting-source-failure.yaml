@@ -19,28 +19,28 @@ why:
   - When retrieved sources conflict, models resolve the disagreement silently by how relevant each passage looks to the query, largely ignoring the cues people use to judge reliability, such as scientific references or a neutral tone (Wan et al., 2024, "What Evidence Do Language Models Find Convincing?").
   - >-
     The model's own parametric belief acts as a tiebreaker. Models accept coherent counter-evidence readily when it stands alone, but when the evidence set mixes passages that agree with their prior and passages that contradict it, they show strong confirmation bias toward the agreeing ones, so the conflict is settled by prior instead of being surfaced (Xie et al., 2023, "Adaptive Chameleon or Stubborn Sloth: Revealing the Behavior of Large Language Models in Knowledge Conflicts").
-  - Retrieval pipelines deliver passages stripped of provenance — no publication date, authority, or methodology — leaving the model without the metadata needed to weigh one source against another even when it does notice the conflict.
+  - Retrieval pipelines deliver passages stripped of provenance (no publication date, authority, or methodology), leaving the model without the metadata needed to weigh one source against another even when it does notice the conflict.
   - >-
     Agents that could search further to settle a conflict mostly don't. With one plausible misinformation article placed among truthful sources, frontier models' accuracy collapsed and they showed minimal search escalation (Shah and Ozgur, 2026, "The Synthetic Web: Adversarially-Curated Mini-Internets for Diagnosing Epistemic Weaknesses of Language Agents"); on an expert-annotated benchmark of conflict types, models often resolved conflicts inappropriately, and prompting them to reason explicitly about possible conflicts helped but left a large gap (Cattan et al., 2025, "DRAGged into Conflicts: Detecting and Addressing Conflicting Sources in Search-Augmented LLMs").
 
 examples:
   - kind: fail
     label: Conflict silently resolved
-    text: Two retrieved policies disagree, and the model picks one — by passage order, not by which is authoritative — without ever mentioning the other.
+    text: Picks one of two disagreeing retrieved policies by passage order rather than by which is authoritative, and never mentions the other.
     quote: |-
       User: How long do employees have to submit expense reports?
       [… passage A (2023 handbook): "within 30 days" — passage B (2025 policy update): "within 14 days" …]
       Assistant: Employees must submit expense reports within 30 days.
   - kind: fail
     label: Disagreement smoothed into false consensus
-    text: The sources report contradictory findings, and the synthesis blends them into one unified claim that neither source makes.
+    text: Blends sources that report contradictory findings into one unified claim that neither source makes.
     quote: |-
       User: Does the new onboarding flow improve activation?
       [… study A: activation up 12% — study B: no significant change, possible novelty effect …]
       Assistant: The research consistently shows the new onboarding flow improves activation by around 12%.
   - kind: warn
     label: Conflict noticed, then averaged away
-    text: The model registers that the numbers differ but resolves the tension with a vague midpoint instead of surfacing the disagreement for the user to judge.
+    text: Registers that the numbers differ but resolves the tension with a vague midpoint instead of surfacing the disagreement for the user to judge.
     quote: |-
       User: How long do employees have to submit expense reports?
       [… passage A: "within 30 days" — passage B: "within 14 days" …]
@@ -56,24 +56,24 @@ examples:
 detection:
   - icon: 🔗
     heading: Entailment checking
-    body: Run pairwise NLI across the retrieved passages before generation. A contradiction between passages establishes that a conflict existed in the evidence set — then any answer that asserts one side without mentioning the other is this failure, detected mechanically.
+    body: Run pairwise NLI across the retrieved passages before generation. A contradiction between passages establishes that a conflict existed in the evidence set, and any answer that then asserts one side without mentioning the other is a Conflicting Source Failure, detected mechanically.
   - icon: ⚖️
     heading: LLM-as-judge evaluation
-    body: Run a judge that sees the full retrieved set alongside the answer and asks whether the sources agree, and if not, how the answer handled it — flagging silent resolution, blends into false consensus, and vague midpoints that average the disagreement away.
+    body: Run a judge that sees the full retrieved set alongside the answer and asks whether the sources agree, and if not, how the answer handled it. Flag silent resolution, blends into false consensus, and vague midpoints that average the disagreement away.
   - icon: 🧪
     heading: Golden-set evals
-    body: Maintain corpora seeded with documented disagreements — a dated policy and its update, two studies with contradictory findings — and regression-test whether answers surface the conflict and resolve it by provenance, rather than by passage order or confidence of phrasing.
+    body: Maintain corpora seeded with documented disagreements (a dated policy and its update, two studies with contradictory findings), and regression-test whether answers surface the conflict and resolve it by provenance, rather than by passage order or confidence of phrasing.
 
 mitigation:
   - icon: 🛡️
     heading: Provenance tiering
-    body: Carry dates, authority, and document status through retrieval so the model has something better than passage order to resolve conflicts with. The ok-grade answer — "the 2025 update supersedes the 2023 handbook" — is only possible when the passages arrive with their provenance attached.
+    body: Carry dates, authority, and document status through retrieval so the model has something better than passage order to resolve conflicts with. An answer such as "the 2025 update supersedes the 2023 handbook" is only possible when the passages arrive with their provenance attached.
   - icon: 📝
     heading: Instruction constraints
-    body: Instruct the model to compare retrieved passages against each other before synthesizing, and to surface disagreement rather than smooth it — naming both sources and the resolution beats a vague midpoint or a silent pick, even though tuning taught it the decisive answer rates better. Explicit conflict reasoning measurably improves answers, though it does not close the gap. For a search agent, make a detected conflict a reason to look for a tie-breaking source (the official page, the newer document, the primary record) before answering.
+    body: Instruct the model to compare retrieved passages against each other before synthesizing, and to surface disagreement rather than smooth it. Naming both sources and the resolution beats a vague midpoint or a silent pick, even though tuning taught the model that the decisive answer rates better. Explicit conflict reasoning measurably improves answers, though it does not close the gap. For a search agent, make a detected conflict a reason to look for a tie-breaking source (the official page, the newer document, the primary record) before answering.
   - icon: 🚪
     heading: Entailment gating
-    body: Run pairwise NLI across the retrieved set before generation, and when passages contradict, route to a conflict-handling path that requires the answer to address both sides — so the disagreement is established mechanically instead of depending on uneven attention across a stuffed context.
+    body: Run pairwise NLI across the retrieved set before generation, and when passages contradict, route to a conflict-handling path that requires the answer to address both sides. The disagreement is then established mechanically instead of depending on uneven attention across a stuffed context.
 
 related:
   - id: source-misrepresentation

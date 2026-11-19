@@ -14,19 +14,19 @@ searchPhrases:
   - approval prompt hid what it would do
 why:
   - >-
-    The failing component is partly the human. This is a failure of the human–agent system as a whole: when nearly every request is benign, approving becomes the habit and reading becomes optional. One vendor reports that users accept 93% of an agent's permission prompts and describes the result as approval fatigue, in which people stop paying close attention to what they approve (Anthropic, 2026, "How we built Claude Code auto mode: a safer way to skip permissions"); the same vendor found that sandboxing cut permission prompts by 84% in internal use (Anthropic, 2025, "Beyond permission prompts: making Claude Code more secure and autonomous"). Both figures are single-vendor telemetry.
+    The failing component is partly the human. Approval fatigue is a failure of the human-agent system as a whole: when nearly every request is benign, approving becomes the habit and reading becomes optional. One vendor reports that users accept 93% of an agent's permission prompts and describes the result as approval fatigue, in which people stop paying close attention to what they approve (Anthropic, 2026, "How we built Claude Code auto mode: a safer way to skip permissions"); the same vendor found that sandboxing cut permission prompts by 84% in internal use (Anthropic, 2025, "Beyond permission prompts: making Claude Code more secure and autonomous"). Both figures are single-vendor telemetry.
   - >-
-    Reviewers catch what looks dangerous and miss what looks routine. In a public game that simulates an agent's permission prompts, with over 40,000 runs and about 409,000 decisions, players approved roughly one in three malicious requests; scope violations such as reading cloud credentials were the most missed category at 35%, while plainly destructive commands were caught most often (The Register, 2026, "Humans in the loop miss a third of dangerous AI coding agent requests"). It is a timed game with far more malicious requests than real work, not a controlled study, but it shows where attention fails.
+    Reviewers catch what looks dangerous and miss what looks routine. In a public game that simulates an agent's permission prompts, with over 40,000 runs and about 409,000 decisions, players approved roughly one in three malicious requests; scope violations such as reading cloud credentials were the most missed category at 35%, while plainly destructive commands were caught most often (The Register, 2026, "Humans in the loop miss a third of dangerous AI coding agent requests"). The game is timed, has far more malicious requests than real work, and is not a controlled study, but it shows where attention fails.
   - >-
     The approver sees a description, not the action. What the dialog shows can be truncated, padded with benign text, summarized by a one-line label that does not match the command, or reshaped by markup, and the content that shapes it can arrive through indirect prompt injection, so a person who reads carefully still approves something other than what runs (Checkmarx, 2025, "Turning AI Safeguards Into Weapons with HITL Dialog Forging"). Polished, confident explanations from the agent push the same way, which OWASP lists as Human-Agent Trust Exploitation (OWASP, 2025, "OWASP Top 10 for Agentic Applications").
   - >-
     Attackers target the gate itself. In a year of red-teaming agentic systems, bypassing human-in-the-loop review was the most consistently exploited failure mode, reached through consent fatigue, through manipulating whether the review step triggers at all, and through chains of steps that each look too small to need review while the combined outcome does (Microsoft AI Red Team, 2026, "Updating the taxonomy of failure modes in agentic AI systems: What a year of red teaming taught us").
   - >-
-    People respond to fatigue by switching the gate off. Among users of one coding agent, full auto-approve rose from about 20% of sessions for new users to over 40% after several hundred sessions, with oversight moving from approving each action to interrupting when needed (Anthropic, 2026, "Measuring AI agent autonomy in practice"). The authors read this as trust building, which it may be; for the gate it means that whether a risky action pauses rests on the agent and on any automated check behind it.
+    People respond to fatigue by switching the gate off. Among users of one coding agent, full auto-approve rose from about 20% of sessions for new users to over 40% after several hundred sessions, with oversight moving from approving each action to interrupting when needed (Anthropic, 2026, "Measuring AI agent autonomy in practice"). The authors read this as trust building, which it may be. For the approval gate, the shift means that whether a risky action pauses rests on the agent and on any automated check behind it.
 examples:
   - kind: fail
     label: The fiftieth prompt approved like the first
-    text: Forty-nine routine requests in a row train a one-second approval. The fiftieth runs a script whose contents changed three turns earlier, and nobody looks.
+    text: Trains a one-second approval with forty-nine routine requests in a row, then asks to run a script whose contents changed three turns earlier, and nobody looks.
     quote: |-
       System: Allow edit to src/report/format.py? [y/n]  → y (1s)
       [… 48 more edit and test-run prompts, each approved in about a second …]
@@ -34,14 +34,14 @@ examples:
       [… the agent rewrote analyze.sh earlier in the session; it now uploads the .env file to an external host …]
   - kind: fail
     label: Dialog describes a different action
-    text: The approver reads the summary and the visible part of the command. The consequential part sits past the edge of the dialog, placed there by content the agent fetched earlier.
+    text: Shows the approver a summary and a truncated command whose consequential part, placed there by content the agent fetched earlier, sits past the edge of the dialog.
     quote: |-
       System: Approve? "Run formatter on src/"  command: npx prettier --write src/ … (truncated)
       User: [approves]
       [… the full command, shaped by text in a fetched README, also changes a deploy credential …]
   - kind: warn
     label: Every prompt looks the same
-    text: Nothing is hidden and the approver is still reading, but a production deploy arrives in the same format and position as forty file edits, so nothing marks it as the one that matters.
+    text: Presents a production deploy in the same format and position as forty file edits, so nothing marks it as the one that matters, even though nothing is hidden and the approver is still reading.
     quote: |-
       System: Allow edit to tests/test_dates.py? [y/n]
       System: Allow edit to src/dates.py? [y/n]
@@ -49,7 +49,7 @@ examples:
       System: Allow edit to README.md? [y/n]
   - kind: ok
     label: One prompt, and it says what is at stake
-    text: Routine edits run inside a sandbox without prompting, so the only request in forty minutes is the consequential one, and it states the full command, the target, and whether it can be undone.
+    text: Runs routine edits inside a sandbox without prompting, so the only request in forty minutes is the consequential one, which states the full command, the target, and whether it can be undone.
     quote: |-
       System: [40 minutes of sandboxed edits and test runs, no prompts]
       System: Approval needed — production deploy.
@@ -60,13 +60,13 @@ examples:
 detection:
   - icon: 📊
     heading: Approval rate monitoring
-    body: Track, per gate and per approver, the approval rate and the time from prompt to decision, and alert when a gate is approved almost every time within a second or two. Seed occasional canary requests that should be denied and measure how many are caught; a falling catch rate is this mode's direct signal, and the overall approval rate alone cannot tell attention from trust.
+    body: Track, per gate and per approver, the approval rate and the time from prompt to decision, and alert when a gate is approved almost every time within a second or two. Seed occasional canary requests that should be denied and measure how many are caught; a falling catch rate is the direct signal of approval fatigue, and the overall approval rate alone cannot tell attention from trust.
   - icon: 🔍
     heading: Approval prompt auditing
-    body: Compare what each approval dialog displayed — summary line, visible command, rendered markup — against the action that actually executed, and flag truncation, summary mismatch, and text in the dialog that originated in untrusted content. A gate can only be as good as what it shows.
+    body: Compare what each approval dialog displayed (summary line, visible command, rendered markup) against the action that actually executed, and flag truncation, summary mismatch, and text in the dialog that originated in untrusted content.
   - icon: 🧪
     heading: Golden-set evals
-    body: Test the human-agent loop with approvers, not only the agent. Run realistic sequences with a low base rate of harmful requests and score catches by position in the sequence and by kind — scope violations and quiet credential reads, not only obvious deletions. Red-team incremental chains, where each step looks too small to need review.
+    body: Test the human-agent loop with approvers, not only the agent. Run realistic sequences with a low base rate of harmful requests and score catches by position in the sequence and by kind, covering scope violations and routine-looking credential reads as well as obvious deletions. Red-team incremental chains, where each step looks too small to need review.
 mitigation:
   - icon: 🎚️
     heading: Risk-tiered autonomy policy
@@ -74,10 +74,11 @@ mitigation:
       Reserve human prompts for actions that are irreversible, outward-facing, or above a stated threshold, and clear the routine tier with sandboxing, allowlists, or an independent classifier on tool calls. The fewer prompts that remain, the more likely each is read. Measure the classifier's miss rate rather than assume it; one vendor reports a 17% miss rate on real overeager actions (Anthropic, 2026, "How we built Claude Code auto mode: a safer way to skip permissions").
   - icon: 🪟
     heading: Approval dialog integrity
-    body: Build the dialog from the executable action, not from the agent's description of it — the full command, the target, the blast radius, whether it can be undone — and escape markup from untrusted sources, cap dialog length, and split long commands. Mark any part of the request that traces back to fetched or tool-supplied content.
+    body: >-
+      Build the dialog from the executable action, not from the agent's description of it: show the full command, the target, the blast radius, and whether it can be undone. Escape markup from untrusted sources, cap dialog length, and split long commands. Mark any part of the request that traces back to fetched or tool-supplied content.
   - icon: 🧩
     heading: Session-level review
-    body: Gate on cumulative effect as well as on single calls — first use of a new credential, first outbound transfer, first production target in a session — so a chain of individually trivial steps still produces one prompt at the point where it becomes consequential. Per-call review cannot see a risk that exists only in the sum.
+    body: Gate on cumulative effect as well as on single calls, with triggers such as the first use of a new credential, the first outbound transfer, or the first production target in a session, so a chain of individually trivial steps still produces one prompt at the point where it becomes consequential. Per-call review cannot see a risk that exists only in the sum.
 
 related:
   - id: escalation-failure

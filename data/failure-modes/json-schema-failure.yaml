@@ -15,7 +15,7 @@ searchPhrases:
 examples:
   - kind: fail
     label: Malformed JSON
-    text: Conversational packaging and dialect habits — a preamble, a code fence, an unquoted key, a trailing comma — each independently break the downstream parser.
+    text: Wraps the output in conversational packaging and dialect habits (a preamble, a code fence, an unquoted key, a trailing comma), each of which independently breaks the downstream parser.
     quote: |-
       System: Return only JSON matching {"name": string, "age": integer}.
       User: Extract the person from "Ada Lovelace, 36, London".
@@ -25,21 +25,21 @@ examples:
       ```
   - kind: fail
     label: Valid JSON, wrong schema
-    text: The output parses fine but violates the contract — a string where an integer is required and an extra property the schema doesn't allow.
+    text: Parses fine but violates the contract, with a string where an integer is required and an extra property the schema doesn't allow.
     quote: |-
       System: Return only JSON matching {"name": string, "age": integer}.
       User: Extract the person from "Ada Lovelace, 36, London".
       Assistant: {"name": "Ada Lovelace", "age": "36", "city": "London"}
   - kind: warn
     label: Schema enforced, value invented
-    text: Strict mode guarantees the shape, so the failure moves into the values. The schema requires an email, the source has none, and the decoder can only emit a string. The output conforms, so validation passes, but the schema design has forced a fabrication downstream code cannot see.
+    text: Conforms to a strict schema whose shape is guaranteed, so the failure moves into the values. The schema requires an email, the source has none, and the decoder can only emit a string. The output conforms, so validation passes, but the schema design has forced a fabrication that downstream code cannot see.
     quote: |-
       System: [strict schema] {"name": string, "age": integer, "email": string}, all required.
       User: Extract the person from "Ada Lovelace, 36, London".
       Assistant: {"name": "Ada Lovelace", "age": 36, "email": "ada.lovelace@example.com"}
   - kind: ok
     label: Conforming output
-    text: Bare JSON, correct types, no extra fields, no wrapper text.
+    text: Returns bare JSON with correct types, no extra fields, and no wrapper text.
     quote: |-
       System: Return only JSON matching {"name": string, "age": integer}.
       User: Extract the person from "Ada Lovelace, 36, London".
@@ -54,13 +54,13 @@ why:
 detection:
   - icon: ✅
     heading: Schema validation
-    body: Run every output through a real parser and schema validator before anything downstream consumes it. This catches both halves of the mode — malformed JSON and valid JSON that breaks the contract — and classifying the failures (fences, trailing commas, type mismatches, extra fields) tells you which habit to fix.
+    body: Run every output through a real parser and schema validator before anything downstream consumes it. This catches both halves of the mode, malformed JSON and valid JSON that breaks the contract, and classifying the failures (fences, trailing commas, type mismatches, extra fields) tells you which habit to fix.
   - icon: 📉
     heading: Parse failure monitoring
     body: Track validation failure rates in production, segmented by schema and output length. Structural bookkeeping degrades over long outputs, so a failure rate that climbs with response size points at nesting drift rather than dialect habits.
   - icon: 🧪
     heading: Golden-set evals
-    body: Maintain a schema corpus weighted toward the requirements with the least training signal — enum membership, required-versus-optional fields, bans on extra properties, deep nesting — and regression-test on every model, prompt, or decoding change. Under strict mode, score the values against ground truth as well as validity, and include source texts that lack a required field.
+    body: Maintain a schema corpus weighted toward the requirements with the least training signal (enum membership, required-versus-optional fields, bans on extra properties, deep nesting), and regression-test on every model, prompt, or decoding change. Under strict mode, score the values against ground truth as well as validity, and include source texts that lack a required field.
   - icon: 📊
     heading: Stop-reason monitoring
     body: Read the stop reason before parsing. Under native structured output, a refusal or a token-limit stop is how non-conforming output gets through, so route those responses to their own handling rather than to the parser, and alert on their rate per schema.
@@ -70,10 +70,11 @@ mitigation:
     body: Use grammar-constrained sampling or the provider's native structured-output mode, which makes ill-formed tokens unsamplable and well-formedness a property of the decoder rather than a learned probability. For machine-consumed output this removes the malformed half of the mode outright. Weigh the trade-off, since forcing strict formats can degrade reasoning (Tam et al., 2024, "Let Me Speak Freely? A Study on the Impact of Format Restrictions on Performance of Large Language Models"). Let the model reason before or outside the constrained answer, check which schema keywords the provider actually enforces, and make fields nullable where the source may lack them so the grammar never forces an invented value.
   - icon: 🔁
     heading: Validate-and-retry loops
-    body: Parse and schema-validate every output before anything downstream consumes it, and on failure regenerate with the validator's specific error in the prompt. This is the layer that catches what constrained decoding doesn't — the valid-JSON, wrong-schema half, like the stringified age and the extra city field the contract forbids.
+    body: >-
+      Parse and schema-validate every output before anything downstream consumes it, and on failure regenerate with the validator's specific error in the prompt. This layer catches what constrained decoding doesn't: valid JSON that breaks the schema, such as an integer field returned as a string or an extra property the contract forbids.
   - icon: ✂️
     heading: Output post-processing
-    body: Strip the conversational packaging deterministically — code fences, "Here's the JSON" preambles, trailing commentary — and apply mechanical repair for dialect habits like trailing commas and unquoted keys before parsing. Chat tuning makes the envelope the most common defect, and it's fixable without spending a regeneration.
+    body: Strip the conversational packaging (code fences, "Here's the JSON" preambles, trailing commentary) deterministically, and apply mechanical repair for dialect habits like trailing commas and unquoted keys before parsing. Chat tuning makes the envelope the most common defect, and it's fixable without spending a regeneration.
 
 related:
   - id: format-failure

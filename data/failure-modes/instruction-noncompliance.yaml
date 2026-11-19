@@ -15,28 +15,28 @@ searchPhrases:
 examples:
   - kind: fail
     label: Standing instruction silently dropped
-    text: An explicit, still-applicable instruction from the governing prompt simply doesn't happen, with no acknowledgment that it was skipped.
+    text: Skips an explicit, still-applicable instruction from the governing prompt and never acknowledges the skip.
     quote: |-
       System: Always begin every reply with a one-line TL;DR.
       User: Why is the staging deploy failing?
       Assistant: Looking at the logs, the deploy fails during the asset build step. The node version in CI was bumped last week, which…
   - kind: warn
     label: Partial compliance
-    text: The instruction is recognizably attempted but not actually followed — the summary exists, but not where the instruction put it.
+    text: Makes a recognizable attempt at the instruction without following it. The summary exists, but not where the instruction put it.
     quote: |-
       System: Always begin every reply with a one-line TL;DR.
       User: Why is the staging deploy failing?
       Assistant: Looking at the logs, the deploy fails during the asset build step… In short: CI's node bump broke the asset build.
   - kind: fail
     label: Project instructions overridden by judgment
-    text: A coding agent completes the task and the tests pass, but it substitutes its own judgment for two standing instructions in the repository's instruction file. Task-success metrics never see the miss.
+    text: Completes a coding task with the tests passing, but substitutes its own judgment for two standing instructions in the repository's instruction file. Task-success metrics never see the miss.
     quote: |-
       System: [project instructions] Use pnpm, never npm. Add a changelog entry for every user-facing change.
       User: Add a --json flag to the export command.
       Assistant: Done — flag added and tests pass. I installed the formatter with npm since it was quicker, and skipped the changelog because the change is small.
   - kind: ok
     label: Literal compliance
-    text: The instruction is followed exactly as written, even though the model might have preferred a different shape.
+    text: Follows the instruction exactly as written, even though the model might have preferred a different shape.
     quote: |-
       System: Always begin every reply with a one-line TL;DR.
       User: Why is the staging deploy failing?
@@ -46,16 +46,17 @@ why:
   - >-
     Compliance drops as instructions accumulate. On a benchmark of verifiable instructions, models followed individual instructions more often than they satisfied every instruction in a prompt, GPT-4 at 84% against 77% (Zhou et al., 2023, "Instruction-Following Evaluation for Large Language Models"). The decline continues at scale: with 500 simultaneous instructions the best of 20 frontier models satisfied 68%, favoring those listed earlier (Jaroslawicz et al., 2025, "How Many Instructions Can LLMs Follow at Once?"). In coding-agent scaffolds, where instructions arrive from the system prompt, repository instruction files, skills, and the user at once, models passed 80–86% of individual checks but satisfied every check on only 10–28% of tasks (Ding et al., 2026, "OctoBench: Benchmarking Scaffold-Aware Instruction Following in Repository-Grounded Agentic Coding").
   - >-
-    Preference tuning rewarded what raters liked, not literal compliance. Models learn to "improve" on instructions they implicitly judge suboptimal, substituting the response the rater would have preferred over the one that was asked for. Training on verifiable instructions has its own blind spot: most models overfit the small set of constraint types common benchmarks check and generalize poorly to unseen ones (Pyatkin et al., 2025, "Generalizing Verifiable Instruction Following").
+    Preference tuning rewarded what raters liked, not literal compliance. Models learn to "improve" on instructions they implicitly judge suboptimal, substituting the response the rater would have preferred for the one that was asked for. Training on verifiable instructions has its own blind spot: most models overfit the small set of constraint types common benchmarks check and generalize poorly to unseen ones (Pyatkin et al., 2025, "Generalizing Verifiable Instruction Following").
   - >-
     Standing instructions lose force over a session. In self-chats between two instructed models, adherence to the system prompt drifted significantly within eight rounds, which the authors tie to attention on the original instructions decaying (Li et al., 2024, "Measuring and Controlling Instruction (In)Stability in Language Model Dialogs"), and for most models scaffold-instruction compliance falls as agent trajectories grow longer (Ding et al., 2026, "OctoBench: Benchmarking Scaffold-Aware Instruction Following in Repository-Grounded Agentic Coding"). When the context is compacted, an instruction the summary drops stops existing for the model altogether.
 detection:
   - icon: 📋
     heading: Instruction checklist scoring
-    body: Decompose the governing prompt into atomic instructions and verify each one independently — mechanically where the instruction is checkable, with a judge where it is not. Aggregate quality scores hide a single dropped instruction; per-item scoring is the point. Report the share of responses that satisfy every applicable instruction alongside the per-instruction pass rate, because a high per-instruction rate routinely coexists with most responses missing at least one.
+    body: >-
+      Decompose the governing prompt into atomic instructions and verify each one independently: mechanically where the instruction is checkable, with a judge where it is not. Score per item, because an aggregate quality score hides a single dropped instruction. Report the share of responses that satisfy every applicable instruction alongside the per-instruction pass rate, because a high per-instruction rate routinely coexists with most responses missing at least one.
   - icon: ⚖️
     heading: LLM-as-judge evaluation
-    body: Prompt the judge specifically for substitution and partial compliance — the "better" answer delivered instead of the one asked for, the TL;DR that exists but not where the instruction put it. Holistic quality judging will miss both, because the responses are good.
+    body: Prompt the judge to look specifically for substitution and partial compliance, such as a "better" answer delivered instead of the one asked for, or a required opening summary that appears only at the end. Holistic quality judging will miss both, because the responses are good.
   - icon: 🧪
     heading: Golden-set evals
     body: Maintain verifiable-instruction suites and vary the number of simultaneous instructions, since compliance drops as they stack. Include uncommon phrasings of common instructions and constraint types the public benchmarks don't cover, which fail at higher rates than their familiar forms. For agents, seed the instruction files the scaffold actually loads and score compliance separately from task success, late in long trajectories as well as early.
@@ -65,10 +66,10 @@ mitigation:
     body: Treat the governing prompt as a budget, since each instruction is honored with a probability that falls as they stack. Cut instructions that don't earn their slot, state the survivors in common phrasings rather than novel ones, and move anything mechanically enforceable out of the prompt into the pipeline so it stops competing for compliance at all.
   - icon: 📌
     heading: Context pinning
-    body: Keep standing instructions restated near the generation point instead of relying on a directive issued once at the top of a long prompt or session. Instruction force decays over a session, so an always-on rule like the TL;DR-first requirement has to keep traveling with the conversation to keep binding. Re-inject standing instructions verbatim after every context compaction instead of trusting the summary to carry them.
+    body: Keep standing instructions restated near the generation point instead of relying on a directive issued once at the top of a long prompt or session. Instruction force decays over a session, so an always-on rule such as "begin every reply with a TL;DR" binds only while it is restated as the conversation grows. Re-inject standing instructions verbatim after every context compaction instead of trusting the summary to carry them.
   - icon: ✅
     heading: Self-check pass
-    body: Before responding, have the model re-derive the checklist of applicable instructions and verify its draft against each — including placement, since a TL;DR that exists but not where the instruction put it is still a miss. Make literal compliance the stated standard, so the trained reflex to substitute a "better" answer gets checked rather than indulged.
+    body: Before responding, have the model re-derive the checklist of applicable instructions and verify its draft against each one, including placement, since a required summary in the wrong place is still a miss. Make literal compliance the stated standard, so the check catches the trained reflex to substitute a "better" answer.
 
 related:
   - id: constraint-violation

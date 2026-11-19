@@ -15,15 +15,15 @@ searchPhrases:
 
 why:
   - A single query embedding captures one semantic direction, but many questions need evidence from several. The retriever fills the result list with variations on the aspect the query expresses most strongly, crowding out the other required pieces.
-  - Top-k is a fixed budget unrelated to how much evidence the question actually needs. Questions whose answers span many documents get the same k passages as single-fact lookups, and everything past the cutoff is lost regardless of relevance. Agentic search replaces the fixed k with a stopping decision, which can fail the same way — the agent stops once the evidence is answer-shaped, not once it is complete.
-  - Multi-hop questions defeat single-shot retrieval structurally. The second piece of evidence is often only findable using a fact from the first — a name, an ID, a date — so retrieving once, before any reading, cannot surface it (Trivedi et al., 2023, "Interleaving Retrieval with Chain-of-Thought Reasoning for Knowledge-Intensive Multi-Step Questions").
+  - Top-k is a fixed budget unrelated to how much evidence the question actually needs. Questions whose answers span many documents get the same k passages as single-fact lookups, and everything past the cutoff is lost regardless of relevance. Agentic search replaces the fixed k with a stopping decision, which can fail the same way when the agent stops once the evidence is answer-shaped instead of once it is complete.
+  - Multi-hop questions defeat single-shot retrieval structurally. The second piece of evidence is often only findable using a fact from the first (a name, an ID, a date), so retrieving once, before any reading, cannot surface it (Trivedi et al., 2023, "Interleaving Retrieval with Chain-of-Thought Reasoning for Knowledge-Intensive Multi-Step Questions").
   - >-
     Generation hides the gap. Given partial evidence, the model produces a complete-sounding answer by filling the missing pieces from its priors rather than reporting that the retrieved set was insufficient, so partial retrieval reads as success. Stronger models do well when the context is sufficient but, when it is not, often answer wrongly instead of abstaining (Joren et al., 2025, "Sufficient Context: A New Lens on Retrieval Augmented Generation Systems").
 
 examples:
   - kind: fail
     label: One aspect crowds out the rest
-    text: A question needing evidence on both pricing and data residency retrieves only pricing passages — the query's dominant aspect fills every slot — and the residency half of the answer comes from priors.
+    text: Retrieves only pricing passages for a question that needs evidence on both pricing and data residency, because the query's dominant aspect fills every slot, and then answers the residency half from priors.
     quote: |-
       User: Can we offer this customer EU data residency, and what does it cost?
       [… all 5 retrieved chunks are pricing passages; the residency docs never surface …]
@@ -31,7 +31,7 @@ examples:
       [… residency is actually Enterprise-only; the claim came from the model, not the corpus …]
   - kind: fail
     label: Second hop never retrieved
-    text: Answering requires finding which subprocessor handles backups, then that company's certification. Single-shot retrieval can't know to search for the company before reading the first document.
+    text: Finds which subprocessor handles backups but never retrieves that company's certification, because single-shot retrieval cannot know to search for the company before reading the first document.
     quote: |-
       User: Is the vendor that handles our backups SOC 2 certified?
       [… retrieval surfaces the subprocessor list naming Coldvault Inc. for backups; Coldvault's compliance doc is in the corpus but was never queried …]
@@ -39,14 +39,14 @@ examples:
       [… the certification claim is unverified; the relevant document was never fetched …]
   - kind: warn
     label: Cutoff presented as completeness
-    text: The retrieved subset is framed as the full set. Top-k returned three exceptions, and the answer says "the three exceptions are" — the count is an artifact of the retrieval budget.
+    text: Presents the retrieved subset as the full set. Top-k returned three exceptions, and the answer says the policy has three, though that count is an artifact of the retrieval budget.
     quote: |-
       User: What are the exceptions to the refund policy?
       [… the policy lists seven exceptions across two pages; top-k surfaces three …]
       Assistant: The policy has three exceptions: digital goods, custom orders, and gift cards.
   - kind: ok
     label: Gap detected, retrieval iterated
-    text: The model checks the retrieved set against what the question needs, sees a missing piece, and issues a follow-up query instead of filling the gap from priors.
+    text: Checks the retrieved set against what the question needs, sees a missing piece, and issues a follow-up query instead of filling the gap from priors.
     quote: |-
       User: Can we offer this customer EU data residency, and what does it cost?
       Assistant: I have pricing material but nothing yet on residency — searching for that separately.
@@ -56,24 +56,24 @@ examples:
 detection:
   - icon: 🔎
     heading: Claim-to-source verification
-    body: Trace every claim in the answer back to a specific retrieved passage. Claims with no supporting passage are the gaps the model filled from priors — the residency assertion that came from the model, not the corpus — and they localize exactly which evidence retrieval failed to fetch.
+    body: Trace every claim in the answer back to a specific retrieved passage. Claims with no supporting passage are the gaps the model filled from priors (such as a data residency claim that came from the model, not the corpus), and they localize exactly which evidence retrieval failed to fetch.
   - icon: ⚖️
     heading: LLM-as-judge evaluation
-    body: Before generation, run a judge that decomposes the question into the evidence it requires and checks the retrieved set against that list — flagging single-aspect result sets for multi-aspect questions and missing second hops while the gap is still recoverable by another query. A sufficient-context rating of this kind also works as an abstention signal — answer only when the rater judges the retrieved set sufficient.
+    body: Before generation, run a judge that decomposes the question into the evidence it requires and checks the retrieved set against that list. Flag single-aspect result sets for multi-aspect questions, and missing second hops, while the gap is still recoverable by another query. A sufficient-context rating of this kind also works as an abstention signal, so that the system answers only when the rater judges the retrieved set sufficient.
   - icon: 🧪
     heading: Golden-set evals
-    body: Maintain questions with their complete evidence sets labeled — multi-aspect questions, multi-hop chains, lists that span pages — and measure evidence recall rather than answer plausibility, since generation reliably makes a partial set read as a complete answer.
+    body: Maintain questions with their complete evidence sets labeled (multi-aspect questions, multi-hop chains, lists that span pages), and measure evidence recall rather than answer plausibility, since generation reliably makes a partial set read as a complete answer.
 
 mitigation:
   - icon: 🧭
     heading: Query decomposition
-    body: Split multi-aspect questions into sub-queries with their own retrieval budgets — pricing and data residency each get their own search — so the query's dominant aspect can't fill every top-k slot and crowd the other required evidence out.
+    body: Split multi-aspect questions into sub-queries with their own retrieval budgets (for example, pricing and data residency each get their own search), so the query's dominant aspect can't fill every top-k slot and crowd the other required evidence out.
   - icon: 🔁
     heading: Iterative retrieval
-    body: Interleave retrieval with reading instead of retrieving once up front — the second hop is often only findable using a fact from the first, like searching for Coldvault's compliance doc only after the subprocessor list names them (Trivedi et al., 2023, "Interleaving Retrieval with Chain-of-Thought Reasoning for Knowledge-Intensive Multi-Step Questions").
+    body: Interleave retrieval with reading instead of retrieving once up front. The second hop is often only findable using a fact from the first, as when a backup vendor's compliance doc can be searched for only after the subprocessor list names that vendor (Trivedi et al., 2023, "Interleaving Retrieval with Chain-of-Thought Reasoning for Knowledge-Intensive Multi-Step Questions").
   - icon: 📝
     heading: Instruction constraints
-    body: Require the model to check the retrieved set against what the question needs before answering, and to report gaps instead of filling them from priors — "I have pricing material but nothing yet on residency" — and never to present a top-k cutoff as a complete enumeration.
+    body: Require the model to check the retrieved set against what the question needs before answering, to report gaps instead of filling them from priors (for example, "I have pricing material but nothing yet on residency"), and never to present a top-k cutoff as a complete enumeration.
 
 related:
   - id: retrieval-miss

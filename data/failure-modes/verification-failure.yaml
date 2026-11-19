@@ -15,27 +15,27 @@ searchPhrases:
 examples:
   - kind: fail
     label: Done declared without checking
-    text: The fix is asserted as solid without ever running the tests that would have falsified it.
+    text: Asserts the fix is solid without ever running the tests that would have falsified it.
     quote: |-
       User: Fix the failing date parser — and make sure it's actually solid before you call it done.
       Assistant: Fixed — I corrected the regex, and it now handles all the formats. Done!
       [… test suite was never run; two of the five formats still fail …]
   - kind: warn
     label: Verification as restated confidence
-    text: A "check" happens, but it's the same model rereading its own output and agreeing with itself — no external signal is consulted.
+    text: Runs a "check" that consists of rereading its own output and agreeing with itself, with no external signal consulted.
     quote: |-
       User: Fix the failing date parser — and make sure it's actually solid before you call it done.
       Assistant: I've reviewed my regex change carefully and the logic looks correct for all the formats. Verified — done.
   - kind: fail
     label: Proxy check reported as verification
-    text: A real check ran, but it could not see the failure; the agent reports the proxy as proof the fix works.
+    text: Runs a real check that could not see the failure, then reports the proxy as proof the fix works.
     quote: |-
       User: The nightly report job hasn't sent anything since Tuesday. Fix it.
       Assistant: Fixed the import path. Ran the test suite — exit code 0, all green. The job is working again.
       [… the job runs under a scheduler with a different environment and still fails on import; no test touches that path …]
   - kind: ok
     label: Checked against an external signal
-    text: Verification runs against something that can actually say no — and it does, catching a miss before the work is declared done.
+    text: Verifies against something that can actually say no, and the check catches a miss before the work is declared done.
     quote: |-
       User: Fix the failing date parser — and make sure it's actually solid before you call it done.
       Assistant: Regex updated. Running the parser tests before calling it done.
@@ -43,34 +43,36 @@ examples:
       Assistant: The check caught a real miss — fixing the week-format branch, then re-running.
 why:
   - >-
-    Models cannot reliably identify errors in their own reasoning without external feedback. Asked to review their work, they tend to confirm it, and self-correction attempts often make answers worse rather than better (Huang et al., 2024, "Large Language Models Cannot Self-Correct Reasoning Yet"). Built-in reflection in reasoning models has the same shape: across eight models, the "wait, let me check" passes mostly confirm the first answer and rarely change it (Kang et al., 2025, "First Try Matters: Revisiting the Role of Reflection in Reasoning Models").
+    Models cannot reliably identify errors in their own reasoning without external feedback. Asked to review their work, they tend to confirm it, and self-correction attempts often make answers worse (Huang et al., 2024, "Large Language Models Cannot Self-Correct Reasoning Yet"). Built-in reflection in reasoning models has the same shape: across eight models, the "wait, let me check" passes mostly confirm the first answer and rarely change it (Kang et al., 2025, "First Try Matters: Revisiting the Role of Reflection in Reasoning Models").
   - >-
     The checker is the same model that made the error, and generated text conditions it toward agreement with itself. Once an answer is in context, "verified, looks correct" is the fluent continuation, so a re-check re-runs the same blind spot. Self-critique has collapsed performance where a sound external verifier raised it (Stechly et al., 2024, "On the Self-Verification Limitations of Large Language Models on Reasoning and Planning Tasks"), and verification gains shrink as solver and verifier become more alike: a model from a different family checks best, and reasoning post-training makes self-verification less useful, not more (Lu et al., 2025, "When Does Verification Pay Off? A Closer Look at LLMs as Solution Verifiers").
   - Training rarely demonstrates checking. Written sources present polished conclusions, not the validation work behind them, so verification steps have a low prior. Rewards focused on final answers do nothing to raise it, since they credit a correct answer even when the reasoning behind it is flawed (Lightman et al., 2023, "Let's Verify Step by Step").
   - >-
-    Tool results and citations arrive with the formatting of authority. Structured output from a tool or a well-formed reference pattern-matches to "reliable," so the model consumes them without independent checking. Agents adopt corrupted tool returns often, above one third of the time for every tool tested and 68% for web search, sometimes after noticing the conflict (Yang et al., 2026, "Agents Trust Tools Too Much: Measuring Reliance on Unreliable Tools"), and fluent wrong evidence is noticed far less often than missing or irrelevant evidence (Mittal, 2026, "When Tool Outputs Go Wrong: Belief Revision in Tool-Using Agents").
+    Tool results and citations look authoritative. Structured output from a tool or a well-formed reference pattern-matches to "reliable," so the model consumes them without independent checking. Agents adopt corrupted tool returns often, above one third of the time for every tool tested and 68% for web search, sometimes after noticing the conflict (Yang et al., 2026, "Agents Trust Tools Too Much: Measuring Reliance on Unreliable Tools"), and fluent wrong evidence is noticed far less often than missing or irrelevant evidence (Mittal, 2026, "When Tool Outputs Go Wrong: Belief Revision in Tool-Using Agents").
   - >-
     The check that runs is often a proxy for the one that matters. Multi-agent verifiers prompted to be thorough still check that code compiles or that no TODOs remain rather than whether it behaves correctly (Cemri et al., 2025, "Why Do Multi-Agent LLM Systems Fail?"), and coding agents treat a zero exit code or green unit tests as proof that the deployed system works.
 detection:
   - icon: 🔍
     heading: Verification evidence auditing
-    body: Mechanically tie completion claims to evidence — when the output says "verified," "tested," or "done," check the action log for an external check that actually ran. A confidence statement with no tool call behind it is the self-agreement case, detectable without judging the work itself. Where a check did run, test whether it could have failed. Did the tests exercise the changed path, and does the claim concern the environment the check ran in?
+    body: >-
+      Mechanically tie completion claims to evidence: when the output says "verified," "tested," or "done," check the action log for an external check that actually ran. A confidence statement with no tool call behind it is the self-agreement case, detectable without judging the work itself. Where a check did run, test whether it could have failed. Did the tests exercise the changed path, and does the claim concern the environment the check ran in?
   - icon: ⚖️
     heading: LLM-as-judge evaluation
-    body: Ask the judge, for each load-bearing claim, whether it was checked against something that could have said no — a test run, a query, a source lookup. Rereading one's own output and agreeing with it does not count, and the judge should be told so explicitly.
+    body: Ask the judge, for each load-bearing claim, whether it was checked against something that could have said no, such as a test run, a query, or a source lookup. Rereading one's own output and agreeing with it does not count, and the judge should be told so explicitly.
   - icon: 🧪
     heading: Golden-set evals
-    body: Seed tasks with planted defects that only an external check reveals — a failing test the fix doesn't cover, a tool result that contradicts the assumption — and score whether the system catches them before declaring done. A system that skips verification passes only the defect-free variants.
+    body: Seed tasks with planted defects that only an external check reveals (a failing test the fix doesn't cover, a tool result that contradicts the assumption), and score whether the system catches them before declaring done. A system that skips verification passes only the defect-free variants.
 mitigation:
   - icon: 📝
     heading: Instruction constraints
-    body: Define verification as consulting something that can say no — a test run, a query, a source lookup — and state explicitly that rereading one's own output does not count. Require every "done" to name its evidence. Self-review degenerates into restated confidence because agreement is the fluent continuation; the instruction makes that move recognizably noncompliant.
+    body: Define verification as consulting something that can say no (a test run, a query, a source lookup), and state explicitly that rereading one's own output does not count. Require every "done" to name its evidence. Self-review degenerates into restated confidence because agreement is the fluent continuation; the instruction makes that move recognizably noncompliant.
   - icon: 🔁
     heading: Validate-and-retry loops
-    body: Enforce the evidence requirement in the harness — a completion claim with no passing external check in the action log is rejected and the task continues, rather than shipping on asserted confidence. The model that skipped pytest gets sent back to run it; the two formats that still fail surface before "done" does.
+    body: >-
+      Enforce the evidence requirement in the harness: a completion claim with no passing external check in the action log is rejected and the task continues, rather than shipping on asserted confidence. A model that skipped the test run gets sent back to run it, and cases the fix still fails surface before "done" does.
   - icon: 👥
     heading: Cross-model verification
-    body: Route checks the environment can't perform — judgment calls, cited evidence, assumptions — to a different model or a fresh context with no stake in the answer. The checker that produced the error shares the blind spot that caused it; independence is what makes a verification pass capable of disagreeing, and a verifier from a different model family disagrees usefully more often than a second instance of the same model.
+    body: Route checks the environment can't perform (judgment calls, cited evidence, assumptions) to a different model or a fresh context with no stake in the answer. The checker that produced the error shares the blind spot that caused it; independence is what makes a verification pass capable of disagreeing, and a verifier from a different model family disagrees usefully more often than a second instance of the same model.
 
 related:
   - id: reasoning-error

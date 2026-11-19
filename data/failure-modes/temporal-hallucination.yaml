@@ -15,7 +15,7 @@ searchPhrases:
 
 why:
   - >-
-    Model weights freeze the world at the training cutoff, and language models do worse on text from after their training period, increasingly so as the gap grows (Lazaridou et al., 2021, "Mind the Gap: Assessing Temporal Generalization in Neural Language Models"). Pretraining text encodes mutable facts — officeholders, prices, product lineups — as timeless assertions. The model learns "X is Y" rather than "X was Y as of 2023," so it states frozen facts in the present tense with no representation of which ones expire (Dhingra et al., 2022, "Time-Aware Language Models as Temporal Knowledge Bases").
+    Model weights freeze the world at the training cutoff, and language models do worse on text from after their training period, increasingly so as the gap grows (Lazaridou et al., 2021, "Mind the Gap: Assessing Temporal Generalization in Neural Language Models"). Pretraining text encodes mutable facts (officeholders, prices, product lineups) as timeless assertions. The model learns "X is Y" rather than "X was Y as of 2023," so it states frozen facts in the present tense with no representation of which ones expire (Dhingra et al., 2022, "Time-Aware Language Models as Temporal Knowledge Bases").
   - >-
     A model's effective knowledge of a topic often lags its nominal cutoff. Training corpora mix crawls from many years, new crawl dumps carry substantial old content, and deduplication misses near-duplicates, so a model's knowledge often aligns with an earlier date than its reported cutoff (Cheng et al., 2024, "Dated Data: Tracing Knowledge Cutoffs in Large Language Models"). Models also misjudge where their own knowledge ends; for most frontier models self-reports understate it, and one answered 61% of the facts it claimed not to know (Qian et al., 2026, "LLMs Don't Know What They Know: Benchmarking Temporal Self-Knowledge for Financial Backtesting"). So "as of my training data" is not a reliable boundary for the model to reason from.
   - >-
@@ -34,7 +34,7 @@ examples:
       [… two LTS releases have shipped since the model's training cutoff …]
   - kind: fail
     label: Present-day evidence rejected as fake
-    text: The model's sense of "now" is pinned to its training year, so dated search results that contradict it are treated as errors instead of as news.
+    text: Treats dated search results that contradict its sense of "now" as errors instead of as news, because that sense is fixed at its training year.
     quote: |-
       User: Summarize this week's coverage of the transit strike.
       Tool: web_search — 8 articles dated November 2026
@@ -42,7 +42,7 @@ examples:
       [… the strike began four days ago; the model's training data ends more than a year earlier …]
   - kind: warn
     label: Fast-changing question, no cutoff flag
-    text: Answers a question whose answer churns constantly with full confidence and no mention that the information has a shelf life. Nothing in the transcript is checkably false — but nothing marks it as perishable either.
+    text: Answers a question whose answer churns constantly, with full confidence and no mention that the information has a shelf life. Nothing in the transcript is checkably false, but nothing marks the answer as perishable either.
     quote: |-
       User: Which model tops the leaderboard for code generation right now?
       Assistant: The top-ranked model for code generation is Corvid-3.
@@ -58,24 +58,24 @@ examples:
 detection:
   - icon: 🔎
     heading: Claim-to-source verification
-    body: Extract present-tense claims about mutable facts — latest releases, current officeholders, product status, prices — and verify each against a live source. A frozen fact stated as current fails the check even though it was true at training time, which is what makes this mode invisible to static fact-checking.
+    body: Extract present-tense claims about mutable facts (latest releases, current officeholders, product status, prices) and verify each against a live source. A frozen fact stated as current fails this check even though it was true at training time, and that is why static fact-checking does not catch this mode.
   - icon: ⚖️
     heading: LLM-as-judge evaluation
-    body: Run a judge that classifies each claim by shelf life and flags perishable facts asserted confidently without a freshness marker or live lookup. The warn-grade case — a leaderboard answer with no hint that it expires — is detectable even when nothing is checkably false yet.
+    body: Run a judge that classifies each claim by shelf life and flags perishable facts asserted confidently without a freshness marker or live lookup. A judge can flag a leaderboard answer with no hint that it expires even when nothing in it is checkably false yet.
   - icon: 🧪
     heading: Golden-set evals
-    body: Maintain a FreshQA-style set of questions whose answers change on known cadences — LTS releases, rankings, release statuses — with periodically refreshed ground truth, and regression-test whether the model answers with superseded facts, flags its cutoff, or routes to a live source.
+    body: Maintain a FreshQA-style set of questions whose answers change on known cadences (LTS releases, rankings, release statuses), with periodically refreshed ground truth, and regression-test whether the model answers with superseded facts, flags its cutoff, or routes to a live source.
 
 mitigation:
   - icon: 🛠️
     heading: Tool-backed lookup
-    body: Route perishable facts — latest releases, rankings, product status, prices — to a live search or fetch, and key the routing on the question's shelf life rather than the model's confidence, since a frozen fact is generated with exactly the same confidence as a stable one.
+    body: Route perishable facts (latest releases, rankings, product status, prices) to a live search or fetch, and key the routing on the question's shelf life rather than the model's confidence, since a frozen fact is generated with exactly the same confidence as a stable one.
   - icon: 📝
     heading: Instruction constraints
-    body: Give the model its training cutoff and today's date, and instruct it to date its claims about mutable facts — "as of my training data" — instead of asserting them in the timeless present tense the training corpus taught it. Tuning suppresses this disclaimer, so the prompt must restore it. Tell it, too, that sources dated after its cutoff are expected rather than suspect, so a date it does not recognize triggers an update and not a dismissal.
+    body: Give the model its training cutoff and today's date, and instruct it to date its claims about mutable facts ("as of my training data") instead of asserting them in the timeless present tense the training corpus taught it. Tuning suppresses this disclaimer, so the prompt must restore it. Also tell the model that sources dated after its cutoff are expected rather than suspect, so a date it does not recognize triggers an update and not a dismissal.
   - icon: 📚
     heading: Retrieval grounding
-    body: For questions about current state, require the answer to come from a retrieved, dated source rather than parametric memory — the weights froze the world at the cutoff, so on anything that changes, retrieval isn't an enhancement but the only grounded path to "now."
+    body: For questions about current state, require the answer to come from a retrieved, dated source rather than parametric memory. The weights froze the world at the cutoff, so for anything that changes, retrieval is the only grounded path to "now."
 
 related:
   - id: outdated-source-reliance

@@ -15,26 +15,26 @@ searchPhrases:
 examples:
   - kind: fail
     label: Keyword triggers the wrong task template
-    text: The context defines the goal as a legal-risk pass, but "take a look at this draft" activates the standard editing procedure instead.
+    text: Runs the standard editing procedure because "take a look at this draft" triggers it, though the context defines the goal as a legal-risk pass.
     quote: |-
       User: Take a look at this draft post before I send it to legal — anything in here that could get us in trouble?
       Assistant: Nice draft! A few suggestions: the intro could be punchier, and I'd break the third paragraph into two. Here's a polished version…
   - kind: warn
     label: Right task, invented success condition
-    text: The model does the requested kind of work but optimizes a definition of done the user never gave — scope and audience were guessed, not confirmed.
+    text: Does the requested kind of work but optimizes a definition of done the user never gave, guessing scope and audience instead of confirming them.
     quote: |-
       User: Write up the incident for Thursday's review.
       Assistant: Here's a detailed 6-page postmortem with full root-cause analysis, timelines, and 14 action items.
       User: This is for a 10-minute slot with execs — I needed half a page.
   - kind: fail
     label: Agent executes a misread goal competently
-    text: A coding agent reads "too noisy" as "remove logging" and carries out the wrong task thoroughly; the user wanted lower verbosity, not less observability.
+    text: Reads "too noisy" as "remove logging" in a coding task and carries out the wrong task thoroughly; the user wanted lower verbosity, not less observability.
     quote: |-
       User: Clean up the logging in the payments service — it's way too noisy.
       Assistant: Done. Removed 212 logging calls across 31 files; the service now runs silently. Tests pass.
   - kind: ok
     label: Goal restated before the work
-    text: The model surfaces its reading of the objective in one line and then does that work, so a misread would be caught immediately.
+    text: Surfaces its reading of the objective in one line and then does that work, so a misread would be caught immediately.
     quote: |-
       User: Take a look at this draft post before I send it to legal — anything in here that could get us in trouble?
       Assistant: Reading this as a risk review, not an edit pass. Two flags: the uptime claim in paragraph 2 is a specific guarantee we don't contractually make, and the competitor comparison quotes their pricing without a source.
@@ -47,23 +47,25 @@ why:
 detection:
   - icon: ⚖️
     heading: LLM-as-judge evaluation
-    body: Give the judge the full request and ask what objective the response actually optimized, then compare against the stated one. Prompt it for the keyword-template case specifically — a "take a look" answered with an edit pass when the surrounding context defined a risk review.
+    body: Give the judge the full request and ask what objective the response actually optimized, then compare against the stated one. Prompt it specifically for the keyword-template case, such as a "take a look" request answered with an edit pass when the surrounding context defined a risk review.
   - icon: 📈
     heading: User correction mining
-    body: Mine transcripts for the lagging signal — follow-ups like "that's not what I asked," immediate rework requests, and answers regenerated with the goal restated more explicitly. Clusters of corrections on a request phrasing identify the templates that misfire.
+    body: >-
+      Mine transcripts for the lagging signals: follow-ups like "that's not what I asked," immediate rework requests, and answers regenerated with the goal restated more explicitly. Clusters of corrections on a request phrasing identify the templates that misfire.
   - icon: 🧪
     heading: Golden-set evals
-    body: Maintain prompts where a surface keyword conflicts with the contextually defined goal, and score which one the model follows. Include cases with implicit success conditions — audience, scope, definition of done — where the right behavior is to surface the inferred goal before the work.
+    body: Maintain prompts where a surface keyword conflicts with the contextually defined goal, and score which one the model follows. Include cases with implicit success conditions (audience, scope, definition of done) where the right behavior is to surface the inferred goal before the work.
 mitigation:
   - icon: 📝
     heading: Instruction constraints
-    body: Require the model to restate its reading of the objective in one line before the work begins — "reading this as a risk review, not an edit pass." Decoding commits to an interpretation in the first tokens; forcing the goal into those tokens makes the commitment explicit, cheap to check, and immediately correctable when it's wrong.
+    body: Require the model to restate its reading of the objective in one line before the work begins, such as "reading this as a risk review, not an edit pass." Decoding commits to an interpretation in the first tokens; forcing the goal into those tokens makes the commitment explicit, cheap to check, and immediately correctable when it's wrong.
   - icon: 🚦
     heading: Human approval gates
-    body: For expensive deliverables, gate the work on a confirmed framing — surface the inferred audience, scope, and definition of done, and get a nod before investing. The six-page postmortem for a ten-minute exec slot costs a full rework; the gate costs one line, spent exactly where invented success conditions do their damage.
+    body: >-
+      Gate expensive deliverables on a confirmed framing: surface the inferred audience, scope, and definition of done, and get a nod before investing. A six-page postmortem written for a ten-minute exec slot costs a full rework; the gate costs one line, spent exactly where invented success conditions do their damage.
   - icon: ✅
     heading: Self-check pass
-    body: Before delivering, have the model re-read the original request and check what the response actually optimized against what was asked — prompted specifically for the keyword trap, where "take a look" pulled in the standard editing template while the surrounding context defined a different job. The check targets the pull toward the nearest common task.
+    body: Have the model re-read the original request before delivering and check what the response actually optimized against what was asked. Prompt the check specifically for the keyword trap, as when "take a look" pulls in the standard editing template while the surrounding context defines a different job, since the pull toward the nearest common task is what the check targets.
 
 related:
   - id: query-rewrite-failure

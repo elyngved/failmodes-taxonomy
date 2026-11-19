@@ -14,16 +14,16 @@ searchPhrases:
   - unnecessary tool call
 why:
   - >-
-    Models weigh their own knowledge poorly against an available tool. Tool overuse — reaching for an external tool on a task the model could solve from what it already knows — is common enough to train against: teaching agents when knowledge suffices cut tool use by 24% while improving performance by more than 37% on the authors' benchmark, so the extra calls were costing accuracy as well as time (Qian et al., 2025, "SMART: Self-Aware Agent for Tool Overuse Mitigation").
+    Models weigh their own knowledge poorly against an available tool. Tool overuse, which means reaching for an external tool on a task the model could solve from what it already knows, is common enough to train against. Teaching agents when knowledge suffices cut tool use by 24% while improving performance by more than 37% on the authors' benchmark, so the extra calls were costing accuracy as well as time (Qian et al., 2025, "SMART: Self-Aware Agent for Tool Overuse Mitigation").
   - >-
-    The signal is there; the decision does not use it. Whether a call is needed can be read linearly from a model's hidden state before it generates anything, more reliably than from its own stated reasoning, and steering on that signal cut tool calls by 48% with a 1.7% accuracy loss across the models tested (Sun et al., 2026, "LLM Agents Already Know When to Call Tools - Even Without Reasoning"). This is a laboratory result, but it suggests overuse is a policy learned in tuning, not a lack of self-knowledge.
+    Models carry a usable signal of whether a call is needed, but their decisions do not use it. Whether a call is needed can be read linearly from a model's hidden state before it generates anything, more reliably than from its own stated reasoning, and steering on that signal cut tool calls by 48% with a 1.7% accuracy loss across the models tested (Sun et al., 2026, "LLM Agents Already Know When to Call Tools - Even Without Reasoning"). This is a laboratory result, but it suggests overuse is a policy learned in tuning, not a lack of self-knowledge.
   - >-
     Benchmarks long scored whether a call was right, not whether it was needed. Most tool-use evaluations check the tool and its parameters, so a superfluous call that returns something harmless costs nothing in the score (Ross et al., 2025, "When2Call: When (not) to Call Tools"). Where no-tool control tasks are included, models with similar overall scores behave very differently on them, and one model family showed an always-call pattern (Soni, 2026, "ToolFailBench: Diagnosing Tool-Use Failures in LLM Agents").
-  - Deployment guidance pushes one way. System prompts that tell agents to verify everything, ground every answer, or "always check the latest", written to prevent Missing Tool Invocation, make a lookup the safe-seeming default even for stable facts and content already in context. The call's cost is invisible to the model unless the scaffold shows it, while a skipped call that turns out to be needed is visibly wrong.
+  - Deployment guidance pushes toward calling. System prompts that tell agents to verify everything, ground every answer, or "always check the latest", written to prevent Missing Tool Invocation, make a lookup the safe-seeming default even for stable facts and content already in context. The call's cost is invisible to the model unless the scaffold shows it, while a skipped call that turns out to be needed is visibly wrong.
 examples:
   - kind: fail
     label: Web search for a stable fact
-    text: A definition that has not changed in decades gets a search, three page fetches, and several seconds of latency, and the answer is the one the model would have given anyway.
+    text: Spends a search, three page fetches, and several seconds of latency on a definition that has not changed in decades, then gives the answer the model would have given anyway.
     quote: |-
       User: What does HTTP status 404 mean?
       Tool: web_search("HTTP 404 meaning") → 10 results
@@ -31,14 +31,14 @@ examples:
       Assistant: 404 Not Found means the server couldn't find the requested resource.
   - kind: fail
     label: Sensitive data touched for a general question
-    text: The question needs no account data, but the agent queries the production database "for context", reading customer records and writing an access-log entry for nothing.
+    text: Queries the production database "for context" on a question that needs no account data, reading customer records and writing an access-log entry for nothing.
     quote: |-
       User: What's a sensible default timeout for an internal HTTP client?
       Tool: query_db("SELECT * FROM service_configs JOIN customers USING (account_id) LIMIT 500") → 500 rows
       Assistant: Looking at your services, most use 30 seconds. A good default is 5–10 seconds for internal calls, with retries and backoff.
   - kind: warn
     label: Re-reading what is already in context
-    text: The agent re-fetches a file it wrote two turns ago. Sometimes that is a sensible freshness check; here nothing else could have changed it, and the content is still in the window.
+    text: Re-fetches a file the assistant wrote two turns ago. A re-read can be a sensible freshness check, but here nothing else could have changed the file, and its content is still in the window.
     quote: |-
       Assistant: I've written config.yaml with the three retry settings above.
       User: What's the max-retries value you used?
@@ -46,7 +46,7 @@ examples:
       Assistant: max_retries is 5.
   - kind: ok
     label: Answered from what is already known
-    text: The model answers directly from stable knowledge and offers a lookup only for the part that would actually depend on live data.
+    text: Answers directly from stable knowledge and offers a lookup only for the part that depends on live data.
     quote: |-
       User: What does HTTP status 404 mean, and are we serving many of them?
       Assistant: 404 Not Found means the server couldn't find the requested resource. Whether you're serving many is a live question, so I'll check that one.
@@ -54,23 +54,24 @@ examples:
 detection:
   - icon: 🧪
     heading: Golden-set evals
-    body: Pair every tool-required task with a no-tool control that offers the same tools but can be answered from the prompt or stable knowledge, and score call rate on the controls alongside accuracy on the tool-required half. A system tuned only to stop missing calls will pass the first half and fail the second, which is the trade this set is built to show.
+    body: Pair every tool-required task with a no-tool control that offers the same tools but can be answered from the prompt or stable knowledge, and score call rate on the controls alongside accuracy on the tool-required half. A system tuned only to stop missing calls will pass the tool-required tasks and fail the controls, and the paired set is built to show that trade.
   - icon: ⚙️
     heading: Context ablation testing
-    body: Re-run sampled turns with the tool result removed and compare answers. If the answer is unchanged and correct, the call bought nothing; aggregated by tool and request type, the share of such calls shows where overuse concentrates.
+    body: Re-run sampled turns with the tool result removed and compare answers. If the answer is unchanged and correct, the call added nothing. Aggregated by tool and request type, the share of such calls shows where overuse concentrates.
   - icon: ⚖️
     heading: LLM-as-judge evaluation
     body: Show the judge the request, the context available before the call, and the call itself, and ask whether a correct answer was possible without it. Give calls that touched sensitive data or had side effects their own flag, since a superfluous read of customer records costs more than a superfluous search.
 mitigation:
   - icon: 📝
     heading: Instruction constraints
-    body: State when not to call — stable facts, content already in the conversation, arithmetic the model can do inline — next to the rules for when a call is required. Tighten in both directions with care; guidance against unnecessary calls is known to overcorrect into skipping required ones, so measure both halves of the eval set after every change.
+    body: State when not to call (stable facts, content already in the conversation, arithmetic the model can do inline) next to the rules for when a call is required. Tighten in both directions with care; guidance against unnecessary calls is known to overcorrect into skipping required ones, so measure both halves of the eval set after every change.
   - icon: 🔐
     heading: Least-privilege tool access
-    body: Expose a tool only to the request classes that need it — no database tool for general Q&A, no write tools for read-only questions — and use the API's tool-choice control to disable tools for request types that never need them. A call the model cannot make costs nothing, and the sensitive-data read in the fail example needed a capability the question never required.
+    body: >-
+      Expose a tool only to the request classes that need it, with no database tool for general Q&A and no write tools for read-only questions, and use the API's tool-choice control to disable tools for request types that never need them. A call the model cannot make costs nothing: an agent answering a general question about HTTP client timeouts cannot read customer records if it holds no database tool.
   - icon: 🛑
     heading: Call budget enforcement
-    body: Put the cost of each call in front of the model and the scaffold — a per-request budget of calls, tokens returned, and latency — and log calls against it. Overuse persists because the price is invisible at decision time; a visible budget turns "check just in case" into a choice with a cost.
+    body: Put the cost of each call in front of the model and the scaffold as a per-request budget of calls, tokens returned, and latency, and log calls against it. Overuse persists because the price is invisible at decision time; a visible budget turns "check just in case" into a choice with a cost.
   - icon: 🧑‍🏫
     heading: Preference data curation
     body: Include paired trajectories where answering directly is preferred over an equally correct answer reached through a needless call, alongside the opposite pairs where the call was required. Training only on the second kind teaches that calling is always the safer move.

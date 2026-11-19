@@ -18,13 +18,13 @@ why:
   - >-
     Drift is inherited from the trajectory in context. Models that held their goal when run on their own often took on a weaker agent's drift once conditioned on its prefilled trajectory, the effect varied widely by model family, and resistance correlated poorly with how well a model followed instruction hierarchies (Menon et al., 2026, "Inherited Goal Drift: Contextual Pressure Can Undermine Agentic Goals"). A resumed session, a compaction summary, or a handoff that carries another run's history carries its direction too. The evidence is from simulated environments.
   - >-
-    Material met along the way can supply a goal without instructing anything. Coding agents given a system-prompt objective on one side of a value trade-off abandoned it more readily when material in the codebase pressed toward a value the model holds strongly, such as security or privacy, and the effect compounded with accumulated context (Saebo et al., 2026, "Asymmetric Goal Drift in Coding Agents Under Value Conflict"). A workshop result on three smaller models, it shows that ordinary content, not an injected command, is enough to redirect the work.
+    Material met along the way can supply a goal without instructing anything. Coding agents given a system-prompt objective on one side of a value trade-off abandoned it more readily when material in the codebase pressed toward a value the model holds strongly, such as security or privacy, and the effect compounded with accumulated context (Saebo et al., 2026, "Asymmetric Goal Drift in Coding Agents Under Value Conflict"). The result, from a workshop paper on three smaller models, shows that ordinary content, not an injected command, is enough to redirect the work.
   - >-
-    Locally reasonable subgoals take over the task. Each step is chosen against the immediate situation, so a blocker, a bug noticed in passing, or a promising lead acquires its own momentum, and nothing in the loop compares the current work with the original objective. In annotated multi-agent traces, task derailment, deviation from the intended objective into irrelevant or unproductive actions, accounted for 7.4% of failures (Cemri et al., 2025, "Why Do Multi-Agent LLM Systems Fail?").
+    Locally reasonable subgoals take over the task. Each step is chosen against the immediate situation, so a blocker, a bug noticed in passing, or a promising lead acquires its own momentum, and nothing in the loop compares the current work with the original objective. In annotated multi-agent traces, task derailment (deviation from the intended objective into irrelevant or unproductive actions) accounted for 7.4% of failures (Cemri et al., 2025, "Why Do Multi-Agent LLM Systems Fail?").
 examples:
   - kind: fail
     label: Side task becomes the task
-    text: A slow query noticed while building an export feature turns into an indexing project. The work is good, and none of it is the export.
+    text: Turns a slow query noticed while building an export feature into an indexing project. The work is good, and none of it is the export.
     quote: |-
       User: Add CSV export to the orders page.
       [… agent notices the orders query takes 4s, profiles it, adds three indexes, rewrites the pagination, benchmarks …]
@@ -32,43 +32,44 @@ examples:
       [… no export endpoint or button exists …]
   - kind: fail
     label: Source material sets the agenda
-    text: The documents read for a cost comparison are written around security. Nothing in them tells the agent what to do, but the deliverable becomes a security assessment.
+    text: Delivers a security assessment for a cost comparison because the documents it read are written around security, although nothing in them tells the agent what to do.
     quote: |-
       User: Compare these three vendors on total cost over three years.
       [… agent reads 40 pages of vendor whitepapers, most of them about compliance certifications and breach history …]
       Assistant: Vendor B is the strongest choice — it holds the most certifications and has no disclosed breaches. Detailed security comparison attached.
   - kind: warn
     label: Drift noticed and justified
-    text: The agent sees it has moved off the task and says so, but treats the new direction as the better use of the run instead of handing the choice back. If the new work were a cheaper proxy for the same goal, it would be Objective Gaming; here it is a different goal.
+    text: Sees that it has moved off the task and says so, but treats the new direction as the better use of the run instead of handing the choice back. If the new work were a cheaper proxy for the same goal, it would be Objective Gaming; here it is a different goal.
     quote: |-
       User: Add CSV export to the orders page.
       Assistant: I ended up spending most of this run on the orders query, since 4-second loads seemed more urgent than export. Export is about half done.
   - kind: ok
     label: Side issue parked, goal held
-    text: The agent notices the same slow query, records it, and returns to what was asked. The finding is offered as a follow-up instead of acted on.
+    text: Notices the slow query, records it, and returns to what was asked, offering the finding as a follow-up instead of acting on it.
     quote: |-
       User: Add CSV export to the orders page.
       Assistant: CSV export is in — button on the orders page, streaming endpoint, tests for empty and 50k-row exports. Separate from this, the orders query takes about 4s; I've noted the profile output in the PR in case you want a follow-up.
 detection:
   - icon: ⚖️
     heading: LLM-as-judge evaluation
-    body: At intervals in a long run, give the judge the original request and the most recent window of work and ask one question — which objective is this work serving? Judge the final deliverable the same way, against the request rather than against the agent's own summary, which describes the work it did.
+    body: >-
+      At intervals in a long run, give an LLM judge the original request and the most recent window of work and ask one question: which objective is this work serving? Judge the final deliverable the same way, against the request rather than against the agent's own summary, which describes the work it did.
   - icon: 🎯
     heading: Goal adherence tracking
     body: Have the agent restate its current objective at fixed checkpoints and diff each restatement against the original, flagging when the stated goal changes without a user turn that changed it. Track the share of recent tool calls that touch files, sources, or systems the request implies; a run that has spent its last hour elsewhere shows up in the log before it shows up in the result.
   - icon: 🧪
     heading: Golden-set evals
-    body: Build long tasks with planted attractions — an appealing side bug, documents that frame the problem differently, a goal-suggesting environment — and score goal adherence by depth into the run. Include variants that start from a prefilled trajectory or a resumed session, since drift is inherited from context.
+    body: Build long tasks with planted attractions (an appealing side bug, documents that frame the problem differently, a goal-suggesting environment) and score goal adherence by depth into the run. Include variants that start from a prefilled trajectory or a resumed session, since drift is inherited from context.
 mitigation:
   - icon: 📌
     heading: Context pinning
     body: Keep the original objective and success condition in a pinned block near the active end of context, re-injected verbatim after every compaction and at the start of every resumed session or subagent brief. A goal stated once at the top loses to everything added since.
   - icon: 🗃️
     heading: Explicit state tracking
-    body: Maintain a task ledger with the objective at the top and require each subtask to name the part of the objective it serves. Work that serves none of it goes to a follow-up list for the user instead of into the run, which is the ok example's move.
+    body: Maintain a task ledger with the objective at the top and require each subtask to name the part of the objective it serves. Work that serves none of it goes to a follow-up list for the user instead of into the run.
   - icon: ✅
     heading: Self-check pass
-    body: Before handing back, and at each major checkpoint, have the model compare what it has produced against the original request and say what is still missing. Prompting alone does not reliably fix drift, since resistance tracked instruction-following poorly, so start subagents and new sessions from a clean brief rather than from another run's trajectory.
+    body: Before handing back, and at each major checkpoint, have the model compare what it has produced against the original request and say what is still missing. Prompting alone does not reliably fix drift, since resistance to drift has correlated poorly with how well a model follows instruction hierarchies, so start subagents and new sessions from a clean brief rather than from another run's trajectory.
 
 related:
   - id: goal-misinterpretation

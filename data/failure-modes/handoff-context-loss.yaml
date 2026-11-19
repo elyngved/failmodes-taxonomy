@@ -14,54 +14,54 @@ searchPhrases:
   - the report back left out the caveat
 why:
   - >-
-    The sender writes the brief from inside a context the receiver does not have. What feels obvious to the delegating agent — a constraint the user gave twenty turns ago, an approach already ruled out — is exactly what goes unstated. One vendor found that short delegation instructions led subagents to misinterpret the task or repeat one another's searches, and that each subagent needs an objective, an output format, guidance on tools and sources, and clear task boundaries (Anthropic, 2025, "How we built our multi-agent research system").
+    The sender writes the brief from inside a context the receiver does not have. What feels obvious to the delegating agent, such as a constraint the user gave twenty turns ago or an approach already ruled out, is exactly what goes unstated. One vendor found that short delegation instructions led subagents to misinterpret the task or repeat one another's searches, and that each subagent needs an objective, an output format, guidance on tools and sources, and clear task boundaries (Anthropic, 2025, "How we built our multi-agent research system").
   - >-
     Restating a task loses its explicit limits. In a benchmark of 600 benign tasks, hierarchies of agents took unauthorized actions in 2.7–19.8% of tasks against 0.6–0.8% for peer networks, and more than seven in ten of the losses happened at the first handoff, where the lead agent restates the user's request for its workers; anchoring each tool call to a policy compiled from the original request cut unauthorized actions in every configuration tested (Xu et al., 2026, "MasDrift: Benchmarking Authorization Preservation Across Multi-Agent Architectures"). A failure taxonomy of agent-to-agent runs lists the same pattern as scope distortion, where a downstream delegation omits, changes, or broadens a constraint inherited from its principal (Shekkizhar et al., 2026, "Why Do Agent Teams Fail Across Boundaries? A Failure Taxonomy for Agent-to-Agent Systems with Private States").
   - >-
-    Decisions travel worse than tasks. A brief describes the work to be done, but the choices that shaped it — the style already settled, the option already rejected — live in the delegating agent's trace and never reach the subagent, which then makes conflicting ones (Cognition, 2025, "Don't Build Multi-Agents"). The same holds on the way back: a subagent's report is written for brevity, so the qualifier that changes what its finding means is the first thing cut.
+    Decisions travel worse than tasks. A brief describes the work to be done, but the choices that shaped it (the style already settled, the option already rejected) live in the delegating agent's trace and never reach the subagent, which then makes conflicting ones (Cognition, 2025, "Don't Build Multi-Agents"). The same holds on the way back: a subagent's report is written for brevity, so the qualifier that changes what its finding means is the first thing cut.
   - >-
     For long-running agents, the progress file is the only bridge between sessions. Each new session begins with no memory of the last, so what the previous session chose to write down is all it has, and a later session that sees progress recorded without the remaining work can declare the job done (Anthropic, 2025, "Effective harnesses for long-running agents"). The evidence for this mode is mostly practitioner reports and one benchmark; in large trace-annotation studies, handoff-specific failure categories are each under 3% of annotated failures (Cemri et al., 2025, "Why Do Multi-Agent LLM Systems Fail?"), which may reflect how rarely those frameworks pass rich context as much as how rarely it is lost.
 examples:
   - kind: fail
     label: Brief omits the user's limits
-    text: The orchestrator knows the constraints; its one-line brief does not carry them, and the subagent does good work on the wrong problem.
+    text: Leaves the user's constraints out of the orchestrator's one-line brief, so the subagent does good work on the wrong problem.
     quote: |-
       User: Find flights to Lisbon for the team offsite. No red-eyes, and keep it under $400 a person.
       [… orchestrator → travel subagent: "Find the cheapest flights to Lisbon for six people on March 12." …]
       Assistant (orchestrator): The travel agent found the best option — a 23:50 departure at $312 a person. Shall I hold six seats?
   - kind: fail
     label: Hand-back drops the decisive caveat
-    text: The subagent found the problem; its summary did not say so, and the orchestrator acted on the summary.
+    text: Leaves the problem the subagent found out of its summary, and the orchestrator acts on the summary.
     quote: |-
       [… schema subagent's own notes: "Migration is safe for all tables except orders — its audit trigger will fire on every rewritten row." …]
       [… schema subagent → orchestrator: "Reviewed the migration. Safe to run." …]
       Assistant (orchestrator): The schema review came back clean, so I'm running the migration on all tables now.
   - kind: warn
     label: Progress file records what, not why
-    text: The note written for the next session lists the change but not the reason the old path must stay, so the next session reads a live dependency as dead code. Nothing is deleted yet.
+    text: Lists the change in the note for the next session but not the reason the old path must stay, so the next session reads a live dependency as dead code. Nothing is deleted yet.
     quote: |-
       [… PROGRESS.md, written by the previous session: "Moved checkout to the v2 payments API. Done." The previous session knew the mobile app still calls v1 …]
       Assistant: Picking up from PROGRESS.md. Checkout is on v2, so the v1 payment endpoints look unused — I'll plan to remove them next.
   - kind: ok
     label: Constraints and caveats travel as fields
-    text: The brief carries the user's limits verbatim, the subagent restates them before working, and the report back has a place for exceptions.
+    text: Carries the user's limits verbatim in the brief; the subagent restates them before working, and the report back has a place for exceptions.
     quote: |-
       [… orchestrator → travel subagent: task "flights to Lisbon, 6 people, March 12"; constraints "no departures 22:00–06:00", "max $400 per person"; return "options + any constraint you could not meet" …]
       Assistant (travel subagent): Constraints received — no red-eyes, $400 cap. Best match is the 08:15 at $388. Exception to note: only four seats left at that fare.
 detection:
   - icon: 🔗
     heading: Handoff fidelity auditing
-    body: Extract the constraints, decisions, and open caveats present on the sending side — the user's request, the orchestrator's context, the subagent's own working notes — and diff them against what the handoff message carries. The $400 cap and the audit-trigger warning are each missing from a single message, which makes the loss detectable at the boundary, before the receiving agent acts.
+    body: Extract the constraints, decisions, and open caveats present on the sending side (the user's request, the orchestrator's context, the subagent's own working notes) and diff them against what the handoff message carries. A dropped limit such as a $400-per-person cap, or a dropped warning such as an audit trigger that fires on every rewritten row, is missing from a single message, which makes the loss detectable at the boundary, before the receiving agent acts.
   - icon: 🧪
     heading: Golden-set evals
     body: Build tasks whose constraints exist only in the delegating agent's context and must survive one or more delegations, and tasks whose subagent will find a disqualifying caveat that must survive the trip back. Score constraint and caveat survival at each hop, not only the final outcome, since a lucky result can hide a lost constraint. Include a session restart with a progress file and probe whether the next session knows why things stand as they do.
   - icon: ⚖️
     heading: LLM-as-judge evaluation
-    body: Show the judge the sender's full context and the message it sent, and ask what the receiver would need to know to do the task correctly that the message leaves out. Run it in both directions — on briefs and on reports back — because loss on the return trip is easier to miss.
+    body: Show an LLM judge the sender's full context and the message it sent, and ask what the receiver would need to know to do the task correctly that the message leaves out. Run it in both directions, on briefs and on reports back, because loss on the return trip is easier to miss.
 mitigation:
   - icon: 🔗
     heading: Structured handoff contracts
-    body: Pass task state as a typed payload — objective, constraints copied verbatim from the user, decisions already made, output format, and a required "exceptions and caveats" field in the report back — instead of free prose. A required constraints field cannot be compressed away the way a clause in a sentence can, and an empty exceptions field is a visible claim the receiver can question.
+    body: Pass task state as a typed payload (objective, constraints copied verbatim from the user, decisions already made, output format, and a required "exceptions and caveats" field in the report back) instead of free prose. A required constraints field cannot be compressed away the way a clause in a sentence can, and an empty exceptions field is a visible claim the receiver can question.
   - icon: ⚓
     heading: Source re-anchoring
     body: Compile limits from the original request into a policy held outside the delegation chain and check every downstream tool call against it, so an intermediate agent that drops or rewords a limit cannot change what is allowed. Where a subagent needs context beyond the brief, give it a reference to the source material rather than a retelling of it.

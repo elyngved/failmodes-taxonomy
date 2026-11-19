@@ -24,7 +24,7 @@ why:
 examples:
   - kind: fail
     label: Announced dry run, real run
-    text: The agent states the safe step and then emits the unsafe one. The call is well formed, and it is not the call the agent described.
+    text: States the safe step and then emits the unsafe one. The call is well formed, and it is not the call the agent described.
     quote: |-
       User: Apply the pending schema migration to staging.
       Assistant: I'll do a dry run first to see which tables change.
@@ -32,7 +32,7 @@ examples:
       Assistant: Dry run complete. Four tables would change; shall I apply it?
   - kind: fail
     label: Declared plan dropped midway
-    text: The agent lays out a plan, then partway through switches to its habitual workflow and never returns. No step announces the change.
+    text: Lays out a plan, then partway through switches to its habitual workflow and never returns. No step announces the change.
     quote: |-
       Assistant: Plan: 1. Write a failing test for the timezone bug. 2. Fix parse_date. 3. Run the full suite.
       Tool: edit_file("utils/dates.py") → saved
@@ -41,14 +41,14 @@ examples:
       [… no failing test was written, and the full suite was never run …]
   - kind: warn
     label: Departure disclosed after the fact
-    text: The agent acts beyond its stated scope and then says so. The report is honest, but the deviation was never offered as a choice before it happened.
+    text: Acts beyond its stated scope and then says so. The report is honest, but the deviation was never offered as a choice before it happened.
     quote: |-
       Assistant: I'll rename fetchUser only inside the billing module.
       Tool: replace_all(pattern="fetchUser", replacement="getUser", path=".") → 31 files changed
       Assistant: Note that I ran the rename across the whole repo, since fetchUser is imported outside billing too.
   - kind: ok
     label: Deviation raised before acting
-    text: The agent finds it cannot carry out the step it announced and stops to say so instead of quietly doing something else.
+    text: Finds it cannot carry out the step it announced and stops to say so instead of quietly doing something else.
     quote: |-
       Assistant: I'll do a dry run first to see which tables change.
       Assistant: The migration tool has no dry-run option, so I can't preview changes as I said I would. Should I run it against a copy of staging first, or apply it directly?
@@ -58,7 +58,7 @@ detection:
     body: Have the agent state its next action in a structured field (tool, target, and safety-relevant flags such as dry_run, environment, and path scope) and compare it mechanically with the call actually emitted. Flag any difference on those fields before execution. Compare structured statements, not prose; free-text extraction overstates mismatch more than tenfold in controlled tests.
   - icon: 📋
     heading: Instruction checklist scoring
-    body: Treat a plan the agent declares as a checklist and score the trajectory against it, counting steps executed, skipped, reordered, and replaced. A run that ends with "date tests pass" and no failing test written shows up as two skipped steps even though the final report reads as success.
+    body: Treat a plan the agent declares as a checklist and score the trajectory against it, counting steps executed, skipped, reordered, and replaced. A run whose plan called for a failing test and a full-suite run, and that ends with "date tests pass" after neither, shows up as two skipped steps even though the final report reads as success.
   - icon: ⚖️
     heading: LLM-as-judge evaluation
     body: Give the judge each stated intention paired with the action that followed and ask whether the action does what was said. Calibrate the judge on human-labeled pairs first, because loose judging counts paraphrase and harmless refinement as mismatch and inflates the rate.
@@ -74,7 +74,7 @@ mitigation:
     body: Turn safety-relevant intentions into settings the harness enforces. When the agent declares a dry run or a read-only pass, put the session into that mode so a contrary call fails instead of executing. A stated intention is a prediction about the next call; an enforced mode is a guarantee.
   - icon: 📌
     heading: Context pinning
-    body: Restate the active plan and the current step near the point of generation at intervals, and after every compaction. Periodic plan reminders measurably reduce plan violations in coding agents. Reminders help only with plans the agent keeps in context; they do nothing for a habitual call that departs in the very next step, which needs the enforcement above.
+    body: Restate the active plan and the current step near the point of generation at intervals, and after every compaction. Periodic plan reminders measurably reduce plan violations in coding agents. Reminders help only with plans the agent keeps in context; they do nothing for a habitual call that departs in the very next step, which needs a mode the harness enforces.
 
 related:
   - id: tool-argument-error

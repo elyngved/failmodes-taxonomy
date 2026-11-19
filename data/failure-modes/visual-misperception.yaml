@@ -15,9 +15,9 @@ searchPhrases:
 
 why:
   - >-
-    Language priors override what is in the image. When a familiar subject is altered, models report the familiar version. Across seven domains of counterfactual images (such as an extra stripe added to a well-known logo), vision-language models averaged 17.05% counting accuracy, removing the background, and with it the cues that trigger the prior, nearly doubled accuracy, and telling the model to double-check or rely only on the image gained about two points (Vo et al., 2025, "Vision Language Models are Biased").
+    Language priors override what is in the image. When a familiar subject is altered, models report the familiar version. Across seven domains of counterfactual images (such as an extra stripe added to a well-known logo), vision-language models averaged 17.05% counting accuracy; removing the background, and with it the cues that trigger the prior, nearly doubled accuracy; and telling the model to double-check or rely only on the image gained about two points (Vo et al., 2025, "Vision Language Models are Biased").
   - >-
-    Fine detail is lost before any reasoning happens. Images are resized and cut into patches for the encoder, so small text, thin lines, and closely spaced shapes are the first casualties. Four vision-language models averaged 58.07% on seven tasks trivial for people, such as counting line intersections or naming a circled letter, and reached near-perfect accuracy once the shapes were spaced further apart (Rahmanzadehgervi et al., 2024, "Vision language models are blind: Failing to translate detailed visual features into words").
+    Fine detail is lost before any reasoning happens. Images are resized and cut into patches for the encoder, so small text, thin lines, and closely spaced shapes are lost first. Four vision-language models averaged 58.07% on seven tasks trivial for people, such as counting line intersections or naming a circled letter, and reached near-perfect accuracy once the shapes were spaced further apart (Rahmanzadehgervi et al., 2024, "Vision language models are blind: Failing to translate detailed visual features into words").
   - >-
     The model can look at the right place and still answer wrong. Probing of several model families found that deeper layers attend to the correct evidence region even on questions the model gets wrong, so the failure is partly in using what was seen, not only in seeing it (Liu et al., 2025, "Seeing but Not Believing: Probing the Disconnect Between Visual Attention and Answer Correctness in VLMs"). Nothing in training rewards saying "I can't make that out," so an unreadable region gets a confident reading anyway.
   - >-
@@ -26,14 +26,14 @@ why:
 examples:
   - kind: fail
     label: Typical sign read instead of this one
-    text: The sign departs from the common pattern, and the answer follows the common pattern.
+    text: Answers from the common pattern for parking signs, though this sign departs from it.
     quote: |-
       User: Can I park here on Saturday? [attaches photo]
       [… image: a street sign reading "NO PARKING 7AM–7PM MON–SAT" …]
       Assistant: Yes. The sign restricts parking Monday to Friday, so Saturday is fine.
   - kind: fail
     label: Misread screen state drives the next step
-    text: A computer-use agent reads a checked box as unchecked, concludes the setting is already correct, and saves.
+    text: Reads a checked box in a computer-use task as unchecked, concludes the setting is already correct, and saves.
     quote: |-
       User: Make sure the invite doesn't go to the whole department, then save it.
       [… screenshot: the "Send to all department members" checkbox is checked …]
@@ -41,14 +41,14 @@ examples:
       Tool: click("Save") → saved
   - kind: warn
     label: Confident reading of an unreadable region
-    text: The total is obscured in the photo. The model gives a plausible figure instead of saying it cannot read one.
+    text: Gives a plausible figure for a total the photo obscures, instead of saying it cannot read one.
     quote: |-
       User: What's the total on this receipt? [attaches photo]
       [… image: a receipt folded across the bottom; the total line is creased and unreadable …]
       Assistant: The total is $48.70.
   - kind: ok
     label: Evidence read out before the answer
-    text: The model transcribes what the sign actually says, then answers from that transcription.
+    text: Transcribes what the sign actually says, then answers from that transcription.
     quote: |-
       User: Can I park here on Saturday? [attaches photo]
       [… image: a street sign reading "NO PARKING 7AM–7PM MON–SAT" …]
@@ -62,7 +62,7 @@ detection:
   - icon: 🔍
     heading: Observation replay auditing
     body: >-
-      In computer-use traces, compare each claim the agent makes about the screen, such as "the option is unchecked" or "the total reads $480," against the accessibility tree, DOM, or OCR captured at the same step. Trace a failed run back to the earliest step whose observation was wrong. Misperception usually surfaces several actions later, and a fix aimed at the step that broke visibly misses the cause.
+      Compare each claim a computer-use agent makes about the screen in its trace, such as "the option is unchecked" or "the total reads $480," against the accessibility tree, DOM, or OCR captured at the same step. Trace a failed run back to the earliest step whose observation was wrong. Misperception usually surfaces several actions later, and a fix aimed at the step that broke visibly misses the cause.
   - icon: ⚖️
     heading: LLM-as-judge evaluation
     body: >-
@@ -76,7 +76,7 @@ mitigation:
   - icon: 🔎
     heading: Tool-backed lookup
     body: >-
-      When a text channel exists for what is on screen (accessibility tree, DOM, form state, an OCR pass, file metadata), read load-bearing values from it and use the image for layout and context. Check the two channels against each other before acting. A checkbox state is a field in the DOM, so there is no reason to infer it from pixels.
+      Read load-bearing values from a text channel for what is on screen (accessibility tree, DOM, form state, an OCR pass, file metadata) when one exists, and use the image for layout and context. Check the two channels against each other before acting. A checkbox state is a field in the DOM, so there is no reason to infer it from pixels.
   - icon: 🔬
     heading: Region re-inspection
     body: >-

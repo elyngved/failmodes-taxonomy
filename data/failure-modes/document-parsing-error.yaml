@@ -14,7 +14,7 @@ searchPhrases:
   - scanned page came out garbled
 
 why:
-  - Most document formats store appearance, not structure. A PDF records where glyphs sit on the page; which lines form a column, which cells form a row, and which text is a footnote must all be inferred from geometry, and a scan has no text layer at all. Every conversion is a reconstruction, and a blank cell, a merged header, or a second column is where the reconstruction guesses.
+  - Most document formats store appearance, not structure. A PDF records where glyphs sit on the page; which lines form a column, which cells form a row, and which text is a footnote must all be inferred from geometry, and a scan has no text layer at all. Every conversion reconstructs that structure, and it has to guess at a blank cell, a merged header, or a second column.
   - >-
     Conversion errors pass silently into retrieval and generation. On a benchmark of 8,561 document images, no OCR solution tested was adequate for building a retrieval knowledge base; the best fell short of ground-truth text on both retrieval and answer quality, severe recognition noise cut performance by nearly half, and questions about tables, formulas, and charts suffered most. Character-level edit distance did not predict which parser gave better answers (Zhang et al., 2024, "OCR Hinders RAG: Evaluating the Cascading Impact of OCR on Retrieval-Augmented Generation").
   - >-
@@ -25,7 +25,7 @@ why:
 examples:
   - kind: fail
     label: Empty cell shifts the row
-    text: The parser drops a blank cell, every value after it moves one column left, and the model correctly reports the wrong table.
+    text: Drops a blank cell during parsing, so every value after it moves one column left, and the model then faithfully reports the shifted table.
     quote: |-
       [… page 7 of pricing.pdf: table "Tier | Setup fee | Monthly"; the Basic row has an empty setup-fee cell, then "$30" …]
       Tool: parse_pdf(page 7) → "Tier | Setup fee | Monthly / Basic | $30 | / Pro | $200 | $90"
@@ -33,7 +33,7 @@ examples:
       Assistant: Basic has a $30 setup fee. The pricing table doesn't list a monthly price for it.
   - kind: fail
     label: Footnote stripped with the footer
-    text: Header-and-footer removal takes the footnote with it, and the exception it carried disappears from the policy.
+    text: Strips the footnote along with the page footer, so the exception it carried disappears from the policy.
     quote: |-
       [… page 2 of refund-policy.pdf: "Refunds are available within 60 days.¹" with footnote "¹ Annual plans excluded." at the foot of the page …]
       Tool: parse_pdf(page 2) → "Refunds are available within 60 days."
@@ -41,7 +41,7 @@ examples:
       Assistant: Yes. Refunds are available within 60 days of purchase, so you're covered.
   - kind: warn
     label: Chart reduced to its title
-    text: Text extraction keeps the slide title and drops the chart. The model is honest about the gap, but the gap was created upstream and will recur on every question about that slide.
+    text: Keeps the slide title and drops the chart during text extraction. The model is honest about the gap, but the gap was created upstream and will recur on every question about that slide.
     quote: |-
       [… slide 9 of q3-review.pptx: bar chart showing revenue down 12% quarter on quarter, titled "Revenue by quarter" …]
       Tool: extract_text(slide 9) → "Revenue by quarter"
@@ -49,7 +49,7 @@ examples:
       Assistant: Slide 9 is titled "Revenue by quarter," but the extracted text has no figures, so I can't say from this.
   - kind: ok
     label: Structural check, page re-read
-    text: The pipeline flags a row with fewer cells than the header, and the system checks the rendered page before answering.
+    text: Flags a row with fewer cells than the header at parse time, then checks the rendered page before answering.
     quote: |-
       Tool: parse_pdf(page 7) → table; warning: row "Basic" has 2 cells under a 3-column header
       Tool: render_region(page 7, table 1) → Basic: setup fee blank, monthly $30

@@ -15,7 +15,7 @@ searchPhrases:
 
 why:
   - >-
-    Recognizers are trained to produce fluent text, and they produce it over silence and noise too. In one study, about 1% of transcriptions from a widely used speech model contained whole phrases or sentences that were never spoken, 38% of those carried explicit harms such as violent content, invented associations, or false authority, and the hallucinations fell disproportionately on speakers with longer pauses, such as people with aphasia (Koenecke et al., 2024, "Careless Whisper: Speech-to-Text Hallucination Harms"). Non-speech sounds trigger a recurring set of such phrases, which is why filtering them out lowers error rates (Barański et al., 2025, "Investigation of Whisper ASR Hallucinations Induced by Non-Speech Audio").
+    Recognizers are trained to produce fluent text, and they produce it over silence and noise too. In one study, about 1% of transcriptions from a widely used speech model contained whole phrases or sentences that were never spoken; 38% of those carried explicit harms such as violent content, invented associations, or false authority; and the hallucinations fell disproportionately on speakers with longer pauses, such as people with aphasia (Koenecke et al., 2024, "Careless Whisper: Speech-to-Text Hallucination Harms"). Non-speech sounds trigger a recurring set of such phrases, which is why filtering them out lowers error rates (Barański et al., 2025, "Investigation of Whisper ASR Hallucinations Induced by Non-Speech Audio").
   - >-
     Word error rate hides the words that matter. Fifteen recognition models averaged a 44% error rate on spoken street names, and for speakers whose first language was not English the resulting routing errors were twice as large (Zhou et al., 2026, "'Sorry, I Didn't Catch That': How Speech Models Miss What Matters Most"). On a vendor's benchmark of single-field calls, the best voice agent captured a name, email, phone number, or address correctly in 60.3% of ordinary calls, and when agents checked a capture that was wrong, they ended with the right value only 24–37% of the time (Sierra, 2026, "τ-Entity: Can voice agents get the details right?").
   - >-
@@ -26,14 +26,14 @@ why:
 examples:
   - kind: fail
     label: Amount misheard, then acted on
-    text: The recognizer hears "fifty" for "fifteen," and the agent moves the transcribed amount without reading it back.
+    text: Mishears "fifteen" as "fifty," then moves the transcribed amount without reading it back.
     quote: |-
       User: (spoken) I'd like to move fifteen thousand to savings.
       Tool: transcript → "I'd like to move fifty thousand to savings."
       Assistant: (spoken) Done. I've moved $50,000 to your savings account.
   - kind: fail
     label: Words inserted over silence
-    text: During a pause in a meeting, the recognizer invents a sentence, and the meeting summary turns it into an action item.
+    text: Invents a sentence during a pause in a meeting, and the meeting summary turns it into an action item.
     quote: |-
       User: (spoken) Next item is the vendor contract.
       [… audio: 6 s of silence while the speaker scrolls through the document …]
@@ -41,7 +41,7 @@ examples:
       Assistant: Action items: cancel the vendor contract (decided in the meeting).
   - kind: warn
     label: Background speech taken as the caller
-    text: A television in the room is transcribed as the caller. A confirmation step catches it this time, but the transcript still records a request the caller never made.
+    text: Transcribes a television in the room as the caller. A confirmation step catches it this time, but the transcript still records a request the caller never made.
     quote: |-
       [… audio: a TV in the room says "cancel my subscription" while the caller is silent …]
       Tool: transcript → "Cancel my subscription."
@@ -49,7 +49,7 @@ examples:
       User: (spoken) What? No.
   - kind: ok
     label: Uncertain value confirmed in a different form
-    text: The recognizer marks the amount as uncertain, and the agent confirms it digit by digit before acting.
+    text: Marks the amount as uncertain at recognition, then confirms it digit by digit before acting.
     quote: |-
       User: (spoken) I'd like to move fifteen thousand to savings.
       Tool: transcript → "I'd like to move fifty thousand to savings." (low confidence on "fifty"; alternative "fifteen")
@@ -75,7 +75,7 @@ mitigation:
   - icon: 🔁
     heading: Validate-and-retry loops
     body: >-
-      For entities and consequential values, read back in a form that separates confusable words (digit by digit, letter by letter, "one-five" against "five-zero") and validate against something external: a checksum, a format rule, the account on file. Read-back costs time and does not always fix the value; in one vendor benchmark a prescribed confirm-and-correct sequence raised full success from 14–41% of tasks to 37–54% but added over 20 seconds per call. Reserve it for fields that drive actions.
+      Read back entities and consequential values in a form that separates confusable words (digit by digit, letter by letter, "one-five" against "five-zero") and validate against something external: a checksum, a format rule, the account on file. Read-back costs time and does not always fix the value; in one vendor benchmark a prescribed confirm-and-correct sequence raised full success from 14–41% of tasks to 37–54% but added over 20 seconds per call. Reserve it for fields that drive actions.
   - icon: 🧾
     heading: Uncertainty passthrough
     body: >-

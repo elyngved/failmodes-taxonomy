@@ -15,20 +15,20 @@ searchPhrases:
 examples:
   - kind: fail
     label: Diagnosis delivered, action withheld
-    text: The task plainly implies fixing the problem, the fix is trivial and reversible, and the model stops at describing it.
+    text: Stops at describing the fix, although the task plainly implies making it and the fix is trivial and reversible.
     quote: |-
       User: The build is broken — sort it out, the team is blocked.
       Assistant: I found the issue: line 42 of webpack.config.js references a plugin that was removed in the last commit. Deleting that line would fix the build. Let me know if you'd like me to do that!
   - kind: warn
     label: Literal request done, implied steps stranded
-    text: The asked-for line is fixed, but the same broken reference appears in two sibling configs the model just read — it mentions neither.
+    text: Fixes the asked-for line but says nothing about the same broken reference in two sibling configs it just read.
     quote: |-
       User: The build is broken — sort it out, the team is blocked.
       Assistant: Fixed — removed the stale plugin reference from webpack.config.js. The build passes now.
       [… webpack.prod.js and webpack.test.js contain the identical reference; their builds fail an hour later …]
   - kind: fail
     label: Unattended run parked on a trivial step
-    text: Nobody is there to answer, the step is cheap and undoable, and the agent spends the night waiting for permission it already had.
+    text: Spends the night waiting for permission it already had, although nobody is there to answer and the step is cheap and undoable.
     quote: |-
       User: Port the sync engine to the new storage layer. Run overnight; I'll review in the morning.
       [… 20 minutes in: the test runner needs a dev dependency that the project's own setup notes say to install …]
@@ -36,7 +36,7 @@ examples:
       [… no further activity for nine hours …]
   - kind: ok
     label: Implied scope carried through
-    text: The model treats the goal — unblock the team — as the task, completing the obvious low-risk steps without waiting to be re-prompted.
+    text: Treats the goal of unblocking the team as the task and completes the obvious low-risk steps without waiting to be re-prompted.
     quote: |-
       User: The build is broken — sort it out, the team is blocked.
       Assistant: Fixed. The removed plugin was still referenced in webpack.config.js — and in the prod and test configs, so I cleaned all three. All builds pass; the team is unblocked.
@@ -51,23 +51,24 @@ why:
 detection:
   - icon: ⚖️
     heading: LLM-as-judge evaluation
-    body: Ask the judge what obvious, low-risk steps the task implied and which of them the response completed. Describing the one-line fix and closing with "let me know if you'd like me to do that" is the signature — diagnosis delivered, trivially reversible action withheld.
+    body: Ask an LLM judge what obvious, low-risk steps the task implied and which of them the response completed. The signature is a response that describes a one-line fix and closes with "let me know if you'd like me to do that," delivering the diagnosis and withholding a trivially reversible action.
   - icon: 📈
     heading: User correction mining
-    body: Mine follow-up turns for re-prompts that merely authorize the obvious — "yes, do it," "go ahead," "I meant fix it." A high rate of single-step approval turns after responses that stopped short measures systematic passivity directly from production traffic. In unattended runs the same signal is idle time — a session that ends its last turn on a question and then sits until a human returns.
+    body: Mine follow-up turns for re-prompts that merely authorize the obvious, such as "yes, do it," "go ahead," or "I meant fix it." A high rate of single-step approval turns after responses that stopped short measures systematic passivity directly from production traffic. In unattended runs, the same signal shows up as idle time, when a session ends its last turn on a question and then sits until a human returns.
   - icon: 🧪
     heading: Golden-set evals
-    body: Build tasks whose goal plainly implies follow-through — a broken build with the same stale reference in three configs — and score against the implied scope, not the literal request. Partial credit for the named file only is exactly the miss worth measuring. Pair each with a variant where holding back is correct and score the pair, so a system cannot pass by always acting or always deferring.
+    body: Build tasks whose goal plainly implies follow-through, such as a broken build with the same stale reference in three configs, and score against the implied scope, not the literal request. A response that fixes only the named file earns partial credit, and that is exactly the miss worth measuring. Pair each with a variant where holding back is correct and score the pair, so a system cannot pass by always acting or always deferring.
 mitigation:
   - icon: 🎚️
     heading: Risk-tiered autonomy policy
-    body: Define action tiers by reversibility and grant standing autonomy on the lowest tier — deleting one stale config line is a trivially undoable edit, not a decision needing sign-off. Safety tuning overgeneralizes caution; an explicit low-risk tier gives the model permission to act where deference was never wanted. For unattended runs, say in the task brief that nobody will answer questions, so the lowest tier proceeds and anything above it is logged for the human and set aside while the rest of the work continues.
+    body: Define action tiers by reversibility and grant standing autonomy on the lowest tier. Deleting one stale config line, for instance, is a trivially undoable edit, not a decision needing sign-off. Safety tuning overgeneralizes caution; an explicit low-risk tier gives the model permission to act where deference was never wanted. For unattended runs, say in the task brief that nobody will answer questions, so the lowest tier proceeds and anything above it is logged for the human and set aside while the rest of the work continues.
   - icon: 📝
     heading: Instruction constraints
-    body: Instruct the model to treat the stated goal, not the literal sentence, as the task — "sort it out" means the build works when you stop, including the sibling configs you just read. The answer-and-stop rhythm is the trained default, so carrying work forward has to be authorized in so many words.
+    body: >-
+      Instruct the model to treat the stated goal, not the literal sentence, as the task: "sort it out" means the build works when you stop, including the sibling configs you just read. The answer-and-stop rhythm is the trained default, so carrying work forward has to be authorized explicitly.
   - icon: ✅
     heading: Self-check pass
-    body: Before ending the turn, have the model list the obvious next steps the task implies and check each as done, deferred with a reason, or wrongly stranded. The warn example passes any output-quality check — only an explicit implied-steps pass catches the two configs left to fail an hour later.
+    body: Before ending the turn, have the model list the obvious next steps the task implies and check each as done, deferred with a reason, or wrongly stranded. A response that fixes the named config and leaves two sibling configs with the same reference to fail an hour later passes any output-quality check; only an explicit implied-steps pass catches it.
 
 related:
   - id: missing-tool-invocation

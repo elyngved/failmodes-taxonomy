@@ -4,7 +4,7 @@ name: Outdated Source Reliance
 def: |-
   Bases an answer on sources that are too old for the user's freshness requirement or for the domain's rate of change.
 
-  Unlike Temporal Hallucination, this names the grounding failure — the system selected or trusted a stale source — rather than the temporally wrong claim itself. Unlike Index Drift, the stale source may be retrieved correctly from an index that is itself functioning as designed.
+  Unlike Temporal Hallucination, this mode names the grounding failure (the system selected or trusted a stale source) rather than the temporally wrong claim itself. Unlike Index Drift, the stale source may be retrieved correctly from an index that is itself functioning as designed.
 updatedAt: "2026-11-18T22:00:00-05:00"
 
 searchPhrases:
@@ -25,14 +25,14 @@ why:
 examples:
   - kind: fail
     label: Stale page outranks the current one
-    text: Retrieval works as designed — the old pricing page is topically perfect — but the system trusts it and states superseded prices as current.
+    text: Trusts a topically perfect old pricing page that retrieval returned as designed, and states its superseded prices as current.
     quote: |-
       User: What does the Pro plan cost?
       [… retrieval returns a well-matched 2022 pricing page; pricing changed in 2024 …]
       Assistant: The Pro plan costs $12 per user per month, billed annually.
   - kind: fail
     label: The agent's own result gone stale
-    text: Hours into a session, the agent answers from a status it fetched that morning instead of re-checking, because nothing in its context marks the result as old.
+    text: Hours into a session, answers from a status fetched that morning instead of re-checking, because nothing in the agent's context marks the result as old.
     quote: |-
       Tool: [09:02] deploy_status — staging: healthy
       [… five hours of unrelated work …]
@@ -41,7 +41,7 @@ examples:
       [… staging went down at 12:40; the agent never re-called deploy_status …]
   - kind: warn
     label: Undated source, unflagged
-    text: The retrieved passage carries no timestamp, and the answer passes its content along without acknowledging that its currency is unknown.
+    text: Passes along the content of a retrieved passage that carries no timestamp, without acknowledging that its currency is unknown.
     quote: |-
       User: What does the Pro plan cost?
       [… retrieved chunk has no publication date; chunking stripped the page metadata …]
@@ -58,24 +58,25 @@ examples:
 detection:
   - icon: 📅
     heading: Source age auditing
-    body: Log the publication or last-modified date of every source an answer relies on, and alert when a source's age exceeds the freshness budget for its domain — months for package docs and pricing, longer for slow-moving topics. Undated sources are their own alert; chunking that strips timestamps makes staleness invisible downstream.
+    body: >-
+      Log the publication or last-modified date of every source an answer relies on, and alert when a source's age exceeds the freshness budget for its domain: months for package docs and pricing, longer for slow-moving topics. Treat an undated source as an alert in its own right, because chunking that strips timestamps makes staleness invisible downstream.
   - icon: ⚖️
     heading: LLM-as-judge evaluation
-    body: Run a judge that sees the retrieved sources with their dates and asks whether the question is time-sensitive and whether the answer's grounding is current enough for it — flagging answers that state superseded content as current or pass along undated sources unhedged.
+    body: Run a judge that sees the retrieved sources with their dates and asks whether the question is time-sensitive and whether the answer's grounding is current enough for it. Flag answers that state superseded content as current or pass along undated sources unhedged.
   - icon: 🧪
     heading: Golden-set evals
-    body: Maintain questions whose correct answers changed recently — prices, recommended setups, current plans — seeded with topically strong stale documents in the corpus, and regression-test whether the system answers from the stale page or reaches for a current source.
+    body: Maintain questions whose correct answers changed recently (prices, recommended setups, current plans), seed the corpus with topically strong stale documents for them, and regression-test whether the system answers from the stale page or reaches for a current source.
 
 mitigation:
   - icon: 🧩
     heading: Retrieval tuning
-    body: Carry publication dates through chunking and make recency a ranking signal with a freshness budget per domain — months for pricing and package docs, longer for slow-moving topics — so a well-written 2022 page can't outrank the current one on topical similarity alone.
+    body: Carry publication dates through chunking and make recency a ranking signal with a freshness budget per domain (months for pricing and package docs, longer for slow-moving topics), so a well-written 2022 page cannot outrank the current one on topical similarity alone.
   - icon: 📝
     heading: Instruction constraints
     body: Instruct the model to check source dates against the question's rate of change before trusting them, to flag undated passages as unknown-currency rather than passing them along, and to treat "this source is too old for this question" as a valid reason to keep looking.
   - icon: 🛠️
     heading: Tool-backed lookup
-    body: For fast-decay questions — prices, current plans, recommended setups — route to a live fetch or search instead of answering from the corpus. The ok-grade behavior is exactly this — noticing the 2022 page and checking the live pricing page before answering. In agent sessions, timestamp every tool result and give each tool a maximum reuse age, after which the result must be fetched again before it is relied on. Timestamps alone do not get models to re-check reliably, so the reuse age has to be enforced in the harness.
+    body: For fast-decay questions (prices, current plans, recommended setups), route to a live fetch or search instead of answering from the corpus. For a pricing question, the system should notice that the retrieved page is from 2022 and check the live pricing page before answering. In agent sessions, timestamp every tool result and give each tool a maximum reuse age, after which the result must be fetched again before it is relied on. Timestamps alone do not get models to re-check reliably, so the reuse age has to be enforced in the harness.
 
 related:
   - id: temporal-hallucination

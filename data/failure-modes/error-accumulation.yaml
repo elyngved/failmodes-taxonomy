@@ -15,7 +15,7 @@ searchPhrases:
 examples:
   - kind: fail
     label: Early approximation compounds
-    text: No single step is outrageous — a rounding here, a restated figure there — but thirty steps later the final number is far from the inputs.
+    text: Takes no outrageous step, only a rounding here and a restated figure there, but thirty steps later the final number is far from the inputs.
     quote: |-
       User: Work through the quarterly budget from these department figures.
       Assistant: Step 2: Engineering comes to $1,184k — call it roughly $1,180k.
@@ -24,13 +24,13 @@ examples:
       User: The raw figures sum to $4,742k — where did $132k go?
   - kind: fail
     label: Small shifts compound across stages
-    text: Each stage of a pipeline passes its input on almost faithfully, making one small, defensible approximation. No single stage is wrong enough to flag; the final claim is.
+    text: Passes a figure through pipeline stages that each relay it almost faithfully, with one small, defensible approximation apiece. No single stage is wrong enough to flag, but the final claim is.
     quote: |-
       [… extraction stage: revenue "$4.74M, up 2.6%"; analysis agent: "about $4.7M, modest growth"; drafting agent working from the analysis: "growth" …]
       Assistant (drafting agent): Revenue grew strongly this quarter, to nearly $5M.
   - kind: warn
     label: Drift visible in restatements
-    text: Nothing has broken yet, but a value is mutating as the model restates it from its own output instead of re-reading the source.
+    text: Mutates a value while restating it from its own output instead of re-reading the source, though nothing has broken yet.
     quote: |-
       User: Work through the quarterly budget from these department figures.
       Assistant: Step 2: Engineering comes to $1,184k.
@@ -38,13 +38,13 @@ examples:
       Assistant: Step 6: Adding the engineering total of $1,148k…
   - kind: ok
     label: Re-grounding at checkpoints
-    text: Intermediate results are periodically re-derived from the source data rather than trusted from the model's own transcript, so drift gets caught mid-chain.
+    text: Periodically re-derives intermediate results from the source data rather than trusting its own transcript, so drift gets caught mid-chain.
     quote: |-
       User: Work through the quarterly budget from these department figures.
       Assistant: Step 6: Before combining, let me re-check subtotals against the original figures… Engineering should be $1,184k — I wrote $1,180k earlier, correcting that before it propagates.
 why:
   - >-
-    Autoregressive generation conditions every step on the model's own prior output. An early mistake becomes trusted context for everything that follows, and errors breed errors: per-step accuracy falls once the context contains the model's own earlier mistakes, an effect that larger models do not shed and that thinking reduces (Sinha et al., 2025, "The Illusion of Diminishing Returns: Measuring Long Horizon Execution in LLMs").
+    Autoregressive generation conditions every step on the model's own prior output. An early mistake becomes trusted context for everything that follows, and each error makes the next more likely: per-step accuracy falls once the context contains the model's own earlier mistakes, an effect that larger models do not shed and that thinking reduces (Sinha et al., 2025, "The Illusion of Diminishing Returns: Measuring Long Horizon Execution in LLMs").
   - >-
     Per-step error rates compound multiplicatively. Even high accuracy on individual steps yields low end-to-end success over long chains, and measured error grows with reasoning depth (Dziri et al., 2023, "Faith and Fate: Limits of Transformers on Compositionality"). The arithmetic also runs the other way: a small gain in per-step reliability buys a large gain in the task length a model can sustain, which is why long-horizon agent capability can rise quickly while short-task benchmarks look flat (Sinha et al., 2025, "The Illusion of Diminishing Returns: Measuring Long Horizon Execution in LLMs").
   - Models restate earlier intermediate results from their own generated text rather than re-deriving them. Each restatement is another generation step where numbers, names, and qualifiers can mutate slightly.
@@ -55,20 +55,21 @@ why:
 detection:
   - icon: 🪜
     heading: Step-level validation
-    body: Validate intermediate results against the source data or environment at checkpoints, rather than scoring only the final answer. Drift is invisible end-to-end until it fails; checked per step, the $1,184k that became $1,180k is caught before it propagates.
+    body: Validate intermediate results against the source data or environment at checkpoints, rather than scoring only the final answer. Drift is invisible end-to-end until it fails; checked per step, a subtotal of $1,184k restated as $1,180k is caught before it propagates.
   - icon: 🔍
     heading: Restatement diffing
     body: Diff every restated value, name, or assumption against its earlier occurrence in the chain. A figure that mutates across restatements is the early signature of this mode, detectable mechanically from the transcript before anything downstream breaks.
   - icon: 🧪
     heading: Golden-set evals
-    body: Maintain multi-step tasks with checkable final answers and chart accuracy against chain length. End-to-end success that falls faster than per-step accuracy predicts is compounding — and identifies how long a chain the system can sustain before requiring a re-grounding checkpoint.
+    body: Maintain multi-step tasks with checkable final answers and chart accuracy against chain length. End-to-end success that falls faster than per-step accuracy predicts is compounding, and the curve shows how long a chain the system can sustain before requiring a re-grounding checkpoint.
 mitigation:
   - icon: ⚓
     heading: Checkpoint re-grounding
-    body: Build periodic returns to ground truth into long chains — re-derive subtotals from the original figures, re-read the source figure instead of the restated one, re-query the environment. Autoregressive generation never revisits its own past output on its own, so the checkpoint has to be a scheduled step, and it's what catches the $1,180k before it propagates.
+    body: >-
+      Build periodic returns to ground truth into long chains: re-derive subtotals from the original figures, re-read the source figure instead of the restated one, re-query the environment. Autoregressive generation never revisits its own past output on its own, so the checkpoint has to be a scheduled step, and it is what catches a subtotal misrestated as $1,180k before the error propagates.
   - icon: 🗃️
     heading: Explicit state tracking
-    body: Keep intermediate results in structured external state — a scratchpad file, a variables table, tool-held values — and read them back from there rather than restating them from the transcript. Every prose restatement is another generation step where a figure can mutate; a value fetched from a store cannot drift between uses. When results pass between agents or sessions, store each with its provenance (checked against the source, or assumed) so the consumer knows which inherited facts still need checking.
+    body: Keep intermediate results in structured external state (a scratchpad file, a variables table, tool-held values) and read them back from there rather than restating them from the transcript. Every prose restatement is another generation step where a figure can mutate; a value fetched from a store cannot drift between uses. When results pass between agents or sessions, store each with its provenance (checked against the source, or assumed) so the consumer knows which inherited facts still need checking.
   - icon: 🪜
     heading: Task decomposition
     body: Split long chains into segments that are independently validated before the next begins, since per-step error compounds multiplicatively with depth. A verified segment boundary resets accumulated error to zero, converting one thirty-step chain into several short ones the per-step accuracy can actually sustain.

@@ -15,24 +15,24 @@ searchPhrases:
 
 why:
   - >-
-    Queries and documents describe the same thing in different words — the classic vocabulary mismatch problem. Lexical search misses synonyms outright, and dense retrieval only closes the gap where its training data covered the paraphrase pattern. Tested zero-shot across 18 datasets, dense retrievers often scored below plain BM25, especially on datasets with a large domain shift such as biomedical search (Thakur et al., 2021, "BEIR: A Heterogenous Benchmark for Zero-shot Evaluation of Information Retrieval Models").
+    Queries and documents describe the same thing in different words (the classic vocabulary mismatch problem). Lexical search misses synonyms outright, and dense retrieval only closes the gap where its training data covered the paraphrase pattern. Tested zero-shot across 18 datasets, dense retrievers often scored below plain BM25, especially on datasets with a large domain shift such as biomedical search (Thakur et al., 2021, "BEIR: A Heterogenous Benchmark for Zero-shot Evaluation of Information Retrieval Models").
   - >-
     Dense vectors compress a passage into a few hundred dimensions, which preserves topical gist but blurs exact identifiers. Queries hinging on a specific error code, part number, or name often lose to passages that are merely about the same topic. The limit is structural, not a tuning gap: the number of distinct top-k result sets a single-vector embedding can return is bounded by its dimension, and state-of-the-art embedders fail a deliberately simple benchmark built to hit that bound (Weller et al., 2025, "On the Theoretical Limitations of Embedding-Based Retrieval").
   - >-
-    Single-shot pipelines get one attempt, so a query that happens to embed badly produces a miss with no recovery path. Agentic search removes the single attempt but adds a decision the agent can get wrong — whether to search at all, and when to stop. In an analysis of about 1,000 deep-research reports, failing to seek needed external information and leaning on prior knowledge instead was the most common retrieval failure, 16% of all failures (Zhang et al., 2025, "How Far Are We from Genuinely Useful Deep Research Agents?").
+    Single-shot pipelines get one attempt, so a query that happens to embed badly produces a miss with no recovery path. Agentic search removes the single attempt but adds a decision the agent can get wrong: whether to search at all, and when to stop. In an analysis of about 1,000 deep-research reports, failing to seek needed external information and leaning on prior knowledge instead was the most common retrieval failure, 16% of all failures (Zhang et al., 2025, "How Far Are We from Genuinely Useful Deep Research Agents?").
   - Misses are silent while distractors are visible. The system still returns k confident results, the model still answers from them or from priors, and no signal indicates that the best document in the corpus was never fetched.
 
 examples:
   - kind: fail
     label: Vocabulary mismatch hides the document
-    text: The corpus answers the question, but in different words — the query says "PTO carryover" while the policy says "annual leave accrual" — and the right document never surfaces.
+    text: Never surfaces the right document, because the policy that answers the question says "annual leave accrual" where the query says "PTO carryover".
     quote: |-
       User: How much PTO can I carry over into next year?
       [… the answer lives in "Annual Leave Accrual Policy", which shares no vocabulary with the query and ranks below the cutoff …]
       Assistant: I couldn't find a carryover policy — your organization may not allow PTO carryover.
   - kind: fail
     label: Exact identifier blurred by embeddings
-    text: The query hinges on a specific error code, but dense vectors preserve topic rather than identifiers, so generic troubleshooting pages outrank the one document about this exact code.
+    text: Lets generic troubleshooting pages outrank the one document about the specific error code in the query, because dense vectors preserve topic rather than identifiers.
     quote: |-
       User: What does error E-4031 mean on the payment terminal?
       [… the E-4031 reference page exists but loses to general "payment terminal troubleshooting" passages …]
@@ -40,7 +40,7 @@ examples:
       [… per the unretrieved reference page, E-4031 is a tamper lockout requiring a replacement device …]
   - kind: fail
     label: Literal search, absence concluded
-    text: A coding agent searches the repository by exact string, gets nothing, and treats the empty result as proof of absence — the helper exists under a name that never uses the query's word.
+    text: Searches the repository by exact string, gets nothing, and treats the empty result as proof of absence, though the helper exists under a name that never uses the query's word.
     quote: |-
       User: Is there already a helper that retries HTTP calls with backoff?
       Tool: grep -rn "retry" src/ — no matches
@@ -48,7 +48,7 @@ examples:
       [… src/net/resilience.py defines with_backoff(), which wraps every outbound call; the codebase now has two …]
   - kind: ok
     label: Reformulate before concluding absence
-    text: When the first query comes back thin, the system tries synonym and adjacent-vocabulary reformulations before reporting that the corpus lacks the answer.
+    text: Tries synonym and adjacent-vocabulary reformulations when the first query comes back thin, before reporting that the corpus lacks the answer.
     quote: |-
       User: How much PTO can I carry over into next year?
       Tool: search "PTO carryover" — weak results; retry "vacation rollover", "annual leave accrual" — returns leave policy
@@ -57,24 +57,25 @@ examples:
 detection:
   - icon: 🧪
     heading: Golden-set evals
-    body: Maintain labeled query-to-document pairs concentrated on the known blind spots — vocabulary mismatch ("PTO carryover" vs "annual leave accrual"), exact identifiers like error codes, and inferential gaps where the answering document shares no surface form with the question — and track recall@k as the primary metric.
+    body: Maintain labeled query-to-document pairs concentrated on the known blind spots, and track recall@k as the primary metric. Cover vocabulary mismatch ("PTO carryover" vs "annual leave accrual"), exact identifiers like error codes, and inferential gaps where the answering document shares no surface form with the question.
   - icon: 🔍
     heading: Negative-result auditing
-    body: Sample the cases where the system reported "not found" or answered thinly, and verify each against the corpus with human search or a judge with full corpus access. Misses are silent in production, so absence claims are the only queue where they reliably surface. In agent traces, add the questions about the corpus that were answered with no search call at all.
+    body: Sample the cases where the system reported "not found" or answered thinly, and verify each against the corpus with human search or a judge with full corpus access. Misses are silent in production, so absence claims are the only queue where they reliably surface. In agent traces, also sample the questions about the corpus that were answered with no search call at all.
   - icon: 🔀
     heading: Retriever disagreement analysis
-    body: Run lexical and dense retrieval side by side offline and diff their results. Documents one retriever finds and the other misses map each system's blind spots — identifier queries dense vectors blur, paraphrases lexical match can't bridge — and tell you where a hybrid or fallback would recover the miss.
+    body: Run lexical and dense retrieval side by side offline and diff their results. Documents one retriever finds and the other misses map each system's blind spots (identifier queries that dense vectors blur, paraphrases that lexical match cannot bridge) and show where a hybrid or fallback would recover the miss.
 
 mitigation:
   - icon: 🔀
     heading: Hybrid retrieval
-    body: Combine lexical and dense retrieval so each covers the other's blind spot — exact identifiers like E-4031 that embeddings blur into topic, and paraphrases like "PTO carryover" versus "annual leave accrual" that keyword match can't bridge — then rerank the merged list; in one evaluation, contextual embeddings plus BM25 plus a reranker cut top-20 retrieval failures by 67% (Anthropic, 2024, "Introducing Contextual Retrieval"). Coding agents need the same pairing. Grep finds exact names but misses code that never uses the query's words, and a semantic index alongside grep beat grep alone in one vendor's agent evaluations (Cursor, 2025, "Improving agent with semantic search").
+    body: Combine lexical and dense retrieval so each covers the other's blind spot (exact identifiers like E-4031 that embeddings blur into topic, and paraphrases like "PTO carryover" versus "annual leave accrual" that keyword match cannot bridge), then rerank the merged list. In one evaluation, contextual embeddings plus BM25 plus a reranker cut top-20 retrieval failures by 67% (Anthropic, 2024, "Introducing Contextual Retrieval"). Coding agents need the same pairing. Grep finds exact names but misses code that never uses the query's words, and a semantic index alongside grep beat grep alone in one vendor's agent evaluations (Cursor, 2025, "Improving agent with semantic search").
   - icon: 🔁
     heading: Iterative retrieval
-    body: When the first query returns thin results, reformulate with synonyms and adjacent vocabulary before answering or concluding absence — a query that happens to embed badly should cost a retry, not produce a confident "your organization may not allow carryover." In an agent, treat a zero-hit search as a prompt to try synonyms or a semantic search before concluding absence.
+    body: When the first query returns thin results, reformulate with synonyms and adjacent vocabulary before answering or concluding absence. A query that happens to embed badly should cost a retry, not produce a confident answer such as "your organization may not allow carryover." In an agent, treat a zero-hit search as a prompt to try synonyms or a semantic search before concluding absence.
   - icon: 🧩
     heading: Retrieval tuning
-    body: Adapt the retriever to the corpus it actually serves — fine-tune or benchmark embeddings on domain text, and add query expansion for the corpus's own vocabulary — since retrievers tuned on web QA degrade sharply on the legal, biomedical, and internal-jargon documents that matter most.
+    body: >-
+      Adapt the retriever to the corpus it actually serves: fine-tune or benchmark embeddings on domain text, and add query expansion for the corpus's own vocabulary. Retrievers tuned on web QA degrade sharply on the legal, biomedical, and internal-jargon documents that matter most.
 
 related:
   - id: partial-retrieval
