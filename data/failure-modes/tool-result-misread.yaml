@@ -4,7 +4,7 @@ name: Tool Result Misread
 def: |-
   Misinterprets, ignores, overgeneralizes, or incorrectly transforms the result returned by a tool.
 
-  Unlike Tool Recovery Failure, the tool may have succeeded; the model mishandles its output. Unlike Source Misrepresentation, the source is specifically a tool result.
+  Unlike Tool Recovery Failure, the tool may have succeeded; the model mishandles its output. Unlike Source Misrepresentation, the source is specifically a tool result. Unlike Visual Misperception, the result is text or structured data; misreading the pixels of a returned screenshot belongs there.
 updatedAt: "2026-11-18T22:00:00-05:00"
 
 searchPhrases:
@@ -75,3 +75,4 @@ related:
   - id: context-conflicting-hallucination
   - id: verification-failure
   - id: unknown-answer-fabrication
+  - id: visual-misperception

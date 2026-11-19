@@ -4,7 +4,7 @@ name: Output Truncation
 def: |-
   Delivers a response cut off mid-thought by a token limit, stop sequence, or timeout — often without the system or the model registering that the output is incomplete.
 
-  Unlike Premature Termination, the model did not decide to stop; the cutoff is mechanical. Unlike Incompleteness, the missing content was never generated rather than omitted from an otherwise finished answer.
+  Unlike Premature Termination, the model did not decide to stop; the cutoff is mechanical. Unlike Incompleteness, the missing content was never generated rather than omitted from an otherwise finished answer. Unlike Turn-Taking Failure, the cut is a generation limit, not an interruption of speech playback.
 updatedAt: "2026-11-18T22:00:00-05:00"
 
 searchPhrases:
@@ -76,3 +76,4 @@ related:
   - id: incompleteness
   - id: premature-termination
   - id: json-schema-failure
+  - id: turn-taking-failure

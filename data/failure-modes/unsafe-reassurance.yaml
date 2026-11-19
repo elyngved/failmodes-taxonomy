@@ -4,7 +4,7 @@ name: Unsafe Reassurance
 def: |-
   Reassures the user despite meaningful uncertainty, danger, insufficient evidence, or a need for stronger caution.
 
-  Unlike Calibration Failure, this specifically lowers perceived risk or concern. Unlike Social Sycophancy, the reassurance is about risk, safety, or uncertainty in the situation rather than preserving the user's social self-image.
+  Unlike Calibration Failure, this specifically lowers perceived risk or concern. Unlike Social Sycophancy, the reassurance is about risk, safety, or uncertainty in the situation rather than preserving the user's social self-image. Unlike Delusion Reinforcement, a risk is played down, not a false belief built up.
 updatedAt: "2026-11-18T22:00:00-05:00"
 
 searchPhrases:
@@ -76,3 +76,4 @@ related:
   - id: social-sycophancy
   - id: dependency-encouragement
   - id: refusal-underreach
+  - id: delusion-reinforcement

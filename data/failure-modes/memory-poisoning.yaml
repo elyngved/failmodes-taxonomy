@@ -79,3 +79,4 @@ related:
   - id: memory-contamination
   - id: memory-scope-leakage
   - id: user-conformity
+  - id: memory-hallucination

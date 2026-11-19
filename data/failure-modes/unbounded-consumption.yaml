@@ -75,3 +75,4 @@ related:
   - id: tool-loop
   - id: overthinking
   - id: indirect-prompt-injection
+  - id: unnecessary-tool-invocation

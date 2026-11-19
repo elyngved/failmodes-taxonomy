@@ -4,7 +4,7 @@ name: Memory Omission
 def: |-
   Fails to store, retrieve, or apply information that should have persisted across turns, sessions, tasks, or agent steps.
 
-  Unlike Context Rot, the missing information belongs in memory rather than only active context. Unlike Memory Conflict, the problem is absence or non-use of the memory, not mishandling memories that compete with one another.
+  Unlike Context Rot, the missing information belongs in memory rather than only active context. Unlike Memory Conflict, the problem is absence or non-use of the memory, not mishandling memories that compete with one another. Unlike Handoff Context Loss, the fact belonged in a persistent store meant to be consulted later, not in a message handed to the next actor.
 updatedAt: "2026-11-18T22:00:00-05:00"
 
 searchPhrases:
@@ -75,3 +75,4 @@ related:
   - id: context-rot
   - id: memory-conflict
   - id: memory-staleness
+  - id: handoff-context-loss

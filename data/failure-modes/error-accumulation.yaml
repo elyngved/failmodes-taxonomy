@@ -4,7 +4,7 @@ name: Error Accumulation
 def: |-
   Allows small mistakes, approximations, stale assumptions, or unverified intermediate results to compound across a multi-step task, whether within one reasoning chain or as outputs pass between agents, pipeline stages, or sessions, until the final output fails.
 
-  Unlike Reasoning Error, no single inference may be obviously catastrophic. Unlike Tool Context Overload or Multi-Agent Coordination Failure, the drift comes from compounding errors, not from too much intermediate state or from handoffs that broke; every handoff may work as designed and still carry the error forward.
+  Unlike Reasoning Error, no single inference may be obviously catastrophic. Unlike Tool Context Overload or Handoff Context Loss, the drift comes from compounding errors, not from too much intermediate state or from a handoff that dropped something; every handoff may work as designed and still carry the error forward. Unlike Unverified Peer Trust, no single act of acceptance has to be the mistake; each step's error is small and the harm comes from compounding.
 updatedAt: "2026-11-18T22:00:00-05:00"
 
 searchPhrases:
@@ -23,13 +23,11 @@ examples:
       Assistant: Final budget: $4,610k.
       User: The raw figures sum to $4,742k — where did $132k go?
   - kind: fail
-    label: Unverified assumption crosses agents and sessions
-    text: A subagent's guess about the schema is passed up as fact, built on by a second agent, and saved to the project notes, so the next day's session inherits it too.
+    label: Small shifts compound across stages
+    text: Each stage of a pipeline passes its input on almost faithfully, making one small, defensible approximation. No single stage is wrong enough to flag; the final claim is.
     quote: |-
-      Tool: research_agent → "The users table has a deleted_at column for soft deletes."
-      Assistant: Noted in NOTES.md. Handing the query work to the reporting agent.
-      [… the reporting agent builds 12 queries on the assumed column; the next session loads NOTES.md and extends them …]
-      Tool: run_query → ERROR: column "deleted_at" does not exist
+      [… extraction stage: revenue "$4.74M, up 2.6%"; analysis agent: "about $4.7M, modest growth"; drafting agent working from the analysis: "growth" …]
+      Assistant (drafting agent): Revenue grew strongly this quarter, to nearly $5M.
   - kind: warn
     label: Drift visible in restatements
     text: Nothing has broken yet, but a value is mutating as the model restates it from its own output instead of re-reading the source.
@@ -67,7 +65,7 @@ detection:
 mitigation:
   - icon: ⚓
     heading: Checkpoint re-grounding
-    body: Build periodic returns to ground truth into long chains — re-derive subtotals from the original figures, re-read the schema instead of trusting the assumed column, re-query the environment. Autoregressive generation never revisits its own past output on its own, so the checkpoint has to be a scheduled step, and it's what catches the $1,180k before it propagates.
+    body: Build periodic returns to ground truth into long chains — re-derive subtotals from the original figures, re-read the source figure instead of the restated one, re-query the environment. Autoregressive generation never revisits its own past output on its own, so the checkpoint has to be a scheduled step, and it's what catches the $1,180k before it propagates.
   - icon: 🗃️
     heading: Explicit state tracking
     body: Keep intermediate results in structured external state — a scratchpad file, a variables table, tool-held values — and read them back from there rather than restating them from the transcript. Every prose restatement is another generation step where a figure can mutate; a value fetched from a store cannot drift between uses. When results pass between agents or sessions, store each with its provenance (checked against the source, or assumed) so the consumer knows which inherited facts still need checking.
@@ -80,4 +78,5 @@ related:
   - id: verification-failure
   - id: state-inconsistency
   - id: tool-context-overload
-  - id: multi-agent-coordination-failure
+  - id: handoff-context-loss
+  - id: unverified-peer-trust

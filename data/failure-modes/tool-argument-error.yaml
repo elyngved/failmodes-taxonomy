@@ -4,7 +4,7 @@ name: Tool Argument Error
 def: |-
   Calls a tool with arguments that are malformed, incomplete, unauthorized, stale, poorly scoped, or semantically wrong for the intended operation.
 
-  Unlike Wrong Tool Selection, the chosen tool may be appropriate while the call parameters are not. Unlike JSON/Schema Failure, the malformed structure is sent to a tool rather than returned as final output.
+  Unlike Wrong Tool Selection, the chosen tool may be appropriate while the call parameters are not. Unlike JSON/Schema Failure, the malformed structure is sent to a tool rather than returned as final output. Unlike Environment Misidentification, the wrong value is in the call; there the call is right for the intended target and the name resolves to a different resource.
 updatedAt: "2026-11-18T22:00:00-05:00"
 
 searchPhrases:
@@ -80,5 +80,6 @@ related:
   - id: wrong-tool-selection
   - id: json-schema-failure
   - id: code-api-hallucination
-  - id: clarification-underuse
-  - id: state-inconsistency
+  - id: environment-misidentification
+  - id: gui-grounding-error
+  - id: reasoning-action-mismatch

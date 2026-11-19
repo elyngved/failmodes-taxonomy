@@ -85,3 +85,4 @@ related:
   - id: index-drift
   - id: format-failure
   - id: json-schema-failure
+  - id: evaluation-awareness

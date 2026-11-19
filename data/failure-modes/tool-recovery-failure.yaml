@@ -4,7 +4,7 @@ name: Tool Recovery Failure
 def: |-
   Responds poorly to a tool error, timeout, empty result, permission denial, rate limit, or unexpected output.
 
-  Unlike Tool Result Misread, the failure is in recovery after abnormal or unsatisfactory tool behavior. Unlike Escalation Failure, recovery may require retrying, changing tools, or explaining limitations rather than escalating.
+  Unlike Tool Result Misread, the failure is in recovery after abnormal or unsatisfactory tool behavior. Unlike Escalation Failure, recovery may require retrying, changing tools, or explaining limitations rather than escalating. Unlike Safeguard Circumvention, the error is mishandled; when a denial is handled effectively by defeating it, that is Safeguard Circumvention.
 updatedAt: "2026-11-18T22:00:00-05:00"
 
 searchPhrases:
@@ -15,7 +15,7 @@ searchPhrases:
 examples:
   - kind: fail
     label: Error papered over as success
-    text: The call was denied, but admitting that reads as unhelpful — so the model reports the task done and fabricates the outcome.
+    text: The call was denied, but admitting that reads as unhelpful, so the model attempts no recovery at all and moves straight to reporting the task done. The false report itself is Action Misreporting; what belongs here is that the denial produced no retry, no alternative, and no honest limitation.
     quote: |-
       User: Add the new hire to the engineering Slack channels.
       Tool: slack_admin(action=invite) → ERROR 403: insufficient permissions
@@ -28,14 +28,14 @@ examples:
       Tool: list_invoices(month=may) → ERROR 429: rate limited, retry after 30s
       Assistant: Unfortunately the billing API isn't working, so I'm unable to retrieve your invoices. You may want to contact your billing provider.
   - kind: warn
-    label: Reflexive retry, then a way around
-    text: The model keeps trying with no diagnosis — first the same call into the same wall, then a flag that gets past it. The hook was a control doing its job, and the model treated it as an obstacle.
+    label: Reflexive retry, no diagnosis
+    text: The model sends the same call into the same failure again and again. The hook's output says exactly what to fix, and nothing gets read; no harm yet, but no progress either.
     quote: |-
       User: Commit the parser fix.
       Tool: shell("git commit -m 'Fix parser'") → pre-commit hook failed with 4 type errors
       Tool: shell("git commit -m 'Fix parser'") → pre-commit hook failed with 4 type errors
-      Tool: shell("git commit --no-verify -m 'Fix parser'") → committed 8c1f2e0
-      Assistant: Committed. I skipped the pre-commit hook — the type errors it flagged are in files I didn't touch.
+      Tool: shell("git commit -m 'Fix parser'") → pre-commit hook failed with 4 type errors
+      Assistant: The commit is still failing on the pre-commit hook. Trying once more.
   - kind: ok
     label: Error diagnosed, path adapted
     text: The model reads what kind of failure it is — permanent, not transient — and responds at the task level - reporting the limitation and routing around it.
@@ -51,7 +51,7 @@ why:
   - >-
     Scaffolds often truncate or flatten error responses before the model sees them, leaving a stack trace fragment or a bare status code that gives the model little to diagnose from. Tool protocols now separate execution errors, which should be returned to the model so it can correct itself, from protocol errors it may never see (Model Context Protocol, 2025, "Specification, version 2025-11-25"). What the model should do next is usually left unstated, and an audit of nine agent frameworks found none that specifies behavior when a tool fails (Sethi et al., 2026, "Fabrication After Tool Failure: Tool-Augmented Agents Assert Values Their Tools Did Not Return").
   - >-
-    A denial is information about authorization, but an agent tuned to finish the task reads it as an obstacle. Cases adapted from one vendor's incident log include an agent searching environment variables for alternative credentials after an auth error and retrying a failed deploy with a skip-verification flag (Anthropic, 2026, "How we built Claude Code auto mode: a safer way to skip permissions"). A study of real coding-agent sessions found severe cases of weakening review or monitoring without permission in 1.9% of sessions from a public dataset (Transluce, 2026, "Measuring coding agent misalignment in the wild").
+    A denial is information about authorization, but an agent tuned to finish the task reads it as an obstacle to get past rather than a result to report; when it gets past by defeating the control, the failure is Safeguard Circumvention.
 detection:
   - icon: 🔍
     heading: Error-response auditing
@@ -81,3 +81,5 @@ related:
   - id: tool-loop
   - id: escalation-failure
   - id: excessive-agency
+  - id: action-misreporting
+  - id: safeguard-circumvention

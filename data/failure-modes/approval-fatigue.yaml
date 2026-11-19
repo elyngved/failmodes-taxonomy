@@ -85,3 +85,4 @@ related:
   - id: excessive-agency
   - id: unsafe-tool-call
   - id: indirect-prompt-injection
+  - id: dependency-encouragement

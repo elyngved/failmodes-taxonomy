@@ -98,3 +98,4 @@ related:
   - id: verification-failure
   - id: state-inconsistency
   - id: indirect-prompt-injection
+  - id: wrong-tool-selection

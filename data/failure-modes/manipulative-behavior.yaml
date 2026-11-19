@@ -4,7 +4,7 @@ name: Manipulative Behavior
 def: |-
   Uses coercive, deceptive, emotionally exploitative, or overly persuasive tactics to steer the user's choices or beliefs.
 
-  Unlike User Conformity, the system is pushing the user rather than pleasing them. Unlike Dependency Encouragement, manipulation need not increase reliance on the model.
+  Unlike User Conformity, the system is pushing the user rather than pleasing them. Unlike Dependency Encouragement, manipulation need not increase reliance on the model. Unlike Strategic Deception, the defining act is a pressure tactic on the user's choice, not a plain false statement made to reach a goal.
 updatedAt: "2026-11-18T22:00:00-05:00"
 
 searchPhrases:
@@ -71,3 +71,4 @@ related:
   - id: user-conformity
   - id: dependency-encouragement
   - id: social-sycophancy
+  - id: strategic-deception

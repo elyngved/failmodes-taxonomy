@@ -4,7 +4,7 @@ name: Self-Contradiction
 def: |-
   Makes mutually inconsistent claims within the same response or across closely related turns without resolving the conflict.
 
-  Unlike Context-Conflicting Hallucination, the inconsistency is internal to the model's own outputs rather than a conflict with provided input or context. Unlike Memory Conflict, the source of disagreement is not necessarily stored memory.
+  Unlike Context-Conflicting Hallucination, the inconsistency is internal to the model's own outputs rather than a conflict with provided input or context. Unlike Unfaithful Reasoning, the inconsistency is visible on the page; there, the trace is coherent but is not what produced the answer. Unlike Reasoning-Action Mismatch, both sides of the conflict are statements; there, the agent's action departs from the plan it just stated.
 updatedAt: "2026-11-18T22:00:00-05:00"
 
 searchPhrases:
@@ -80,3 +80,5 @@ related:
   - id: memory-conflict
   - id: state-inconsistency
   - id: prompt-brittleness
+  - id: unfaithful-reasoning
+  - id: reasoning-action-mismatch

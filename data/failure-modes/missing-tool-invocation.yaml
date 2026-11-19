@@ -4,7 +4,7 @@ name: Missing Tool Invocation
 def: |-
   Fails to call an available tool when tool use is necessary for correctness, freshness, computation, retrieval, verification, or task completion.
 
-  Unlike Insufficient Agency, this is specifically about omitted tool use. Unlike Verification Failure, the missing check is a tool call rather than general review or reasoning.
+  Unlike Insufficient Agency, this is specifically about omitted tool use. Unlike Verification Failure, the missing check is a tool call rather than general review or reasoning. Unlike Unnecessary Tool Invocation, the error is the skipped call, not a superfluous one.
 updatedAt: "2026-11-18T22:00:00-05:00"
 
 searchPhrases:
@@ -53,7 +53,7 @@ why:
 detection:
   - icon: 🔍
     heading: Tool-call coverage auditing
-    body: Classify incoming requests by whether they require live, account-specific, or computed data, and flag responses produced with zero tool calls. "What's our MRR right now?" answered without touching query_metrics is detectable from the trace alone, regardless of whether the number happens to be close. Reconcile action claims the same way — a reply saying a message was sent or a record updated, with no matching call in the trace, is flagged from the log.
+    body: Classify incoming requests by whether they require live, account-specific, or computed data, and flag responses produced with zero tool calls. "What's our MRR right now?" answered without touching query_metrics is detectable from the trace alone, regardless of whether the number happens to be close.
   - icon: ⚖️
     heading: LLM-as-judge evaluation
     body: Show the judge the available tools alongside the response and ask whether the answer could be known without calling one. Hedged guesses should be flagged as firmly as confident ones — uncertainty the model acknowledged but didn't resolve with the tool sitting there is still the failure.
@@ -75,5 +75,6 @@ related:
   - id: insufficient-agency
   - id: wrong-tool-selection
   - id: verification-failure
-  - id: step-omission
   - id: unknown-answer-fabrication
+  - id: action-misreporting
+  - id: unnecessary-tool-invocation

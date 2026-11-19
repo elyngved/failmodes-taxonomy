@@ -4,7 +4,7 @@ name: Unknown-Answer Fabrication
 def: |-
   Gives a confident answer when the system lacks enough evidence, access, or uncertainty resolution to know the answer.
 
-  Unlike content-specific hallucinations such as Entity Hallucination or Numerical Hallucination, this mode describes the decision to answer instead of acknowledge uncertainty; the fabricated content can take many forms.
+  Unlike content-specific hallucinations such as Entity Hallucination or Numerical Hallucination, this mode describes the decision to answer instead of acknowledge uncertainty; the fabricated content can take many forms. Unlike Action Misreporting, the unsupported content is about the world or the user's situation, not about what the system itself did; an answer that states or implies a check, test, or lookup the trace does not show belongs there, even when the claim it supports is also a guess. Unlike Strategic Deception, the system lacks the information; there, it has it and states otherwise.
 updatedAt: "2026-11-18T22:00:00-05:00"
 
 searchPhrases:
@@ -77,3 +77,5 @@ related:
   - id: extrinsic-hallucination
   - id: entity-hallucination
   - id: missing-tool-invocation
+  - id: action-misreporting
+  - id: strategic-deception

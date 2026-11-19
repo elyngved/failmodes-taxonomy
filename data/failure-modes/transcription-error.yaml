@@ -4,7 +4,7 @@ name: Transcription Error
 def: |-
   Converts speech to text wrongly before the model reasons about it: substitutes plausible words, mishears names, numbers, and spelled-out strings, drops content, transcribes other voices as the user, or inserts phrases that were never spoken. The response then treats the transcript as what was said.
 
-  Unlike Goal Misinterpretation, the model reasons correctly about the wrong words. Unlike Quote Hallucination, the invented words are in the system's input channel, not in its answer. Unlike Turn-Taking Failure, the words are what goes wrong, not when the system speaks; unlike Visual Misperception, the input is audio, and the error usually sits in a separate recognition stage whose output the model has no reason to doubt.
+  Unlike Goal Misinterpretation, the model reasons correctly about the wrong words. Unlike Quote Hallucination, the invented words are in the system's input channel, not in its answer. Unlike Turn-Taking Failure, the words are what goes wrong, not when the system speaks.
 updatedAt: "2026-11-18T22:00:00-05:00"
 
 searchPhrases:

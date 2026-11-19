@@ -4,7 +4,7 @@ name: Premature Termination
 def: |-
   Stops, summarizes, or hands back control before the user's task is actually complete, whether by simply halting early or by mistakenly treating unfinished work as done.
 
-  Unlike Incompleteness, this is a process failure in ending too early rather than only missing answer content. Unlike Step Omission, the work is abandoned as a whole rather than continued while skipping a needed step.
+  Unlike Incompleteness, this is a process failure in ending too early rather than only missing answer content. Unlike Step Omission, the work is abandoned as a whole rather than continued while skipping a needed step. Unlike Action Misreporting, the defect is where the work stopped; a false account of what was done belongs there.
 updatedAt: "2026-11-18T22:00:00-05:00"
 
 searchPhrases:
@@ -49,7 +49,7 @@ why:
 detection:
   - icon: 🔍
     heading: Verification evidence auditing
-    body: When the output declares the task done, mechanically check the action log against the request's enumerable scope. "Migrate all 12 components" with a migration log showing three is a contradiction between claim and evidence — no judgment of the prose required. Check the final report the same way — the files it says were covered and the tests it says passed, against the reads and runs recorded in the transcript.
+    body: When the output declares the task done, mechanically check the action log against the request's enumerable scope. "Migrate all 12 components" with a migration log showing three is a contradiction between claim and evidence — no judgment of the prose required.
   - icon: ⚖️
     heading: LLM-as-judge evaluation
     body: Ask the judge to compare the final state against the original request and classify the ending — complete, honestly partial, or partial presented as done. The warn-level handback matters too — "would you like me to continue?" returns control the user never asked to have back.
@@ -74,3 +74,4 @@ related:
   - id: insufficient-agency
   - id: output-truncation
   - id: verification-failure
+  - id: action-misreporting

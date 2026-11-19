@@ -2,9 +2,9 @@ id: workflow-misalignment
 categoryId: agency
 name: Workflow Misalignment
 def: |-
-  Uses an execution pattern, cadence, handoff style, approval flow, or collaboration process that conflicts with the user's expected workflow or the task's operational structure.
+  Uses an execution pattern, cadence, handoff timing, approval flow, or collaboration process that conflicts with the user's expected workflow or the task's operational structure.
 
-  Unlike Planning Failure, the steps may be logically valid but mismatched to how the work should be done. Unlike Escalation Failure, it can include over-involving, under-involving, or sequencing people incorrectly, not only failing to pause for required oversight.
+  Unlike Planning Failure, the steps may be logically valid but mismatched to how the work should be done. Unlike Escalation Failure, it can include over-involving, under-involving, or sequencing people incorrectly, not only failing to pause for required oversight. Unlike Handoff Context Loss, the handoff may carry everything needed; it comes at the wrong point or in the wrong form for how the team works.
 updatedAt: "2026-11-18T22:00:00-05:00"
 
 searchPhrases:
@@ -73,3 +73,5 @@ related:
   - id: planning-failure
   - id: escalation-failure
   - id: multi-agent-coordination-failure
+  - id: handoff-context-loss
+  - id: goal-drift

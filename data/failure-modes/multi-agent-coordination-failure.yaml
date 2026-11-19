@@ -2,24 +2,17 @@ id: multi-agent-coordination-failure
 categoryId: agency
 name: Multi-Agent Coordination Failure
 def: |-
-  Multiple agents, roles, tools, or handoff stages duplicate work, conflict, drop context, misassign ownership, or fail to coordinate toward a shared goal.
+  Multiple agents, roles, tools, or pipeline stages duplicate work, collide on shared state, misassign ownership, make conflicting decisions, or otherwise fail to fit their work together toward a shared goal.
 
-  Unlike Workflow Misalignment, this specifically involves coordination across actors or roles. Unlike Memory Conflict, the disagreement may come from handoff and ownership failures rather than persisted memories.
+  Unlike Workflow Misalignment, this specifically involves coordination across actors or roles. Unlike Handoff Context Loss, the failure is in how the actors' work fits together (ownership, overlap, conflicting decisions), not in what one message between them left out. Unlike Unverified Peer Trust, the agents may check each other's claims and still collide.
 updatedAt: "2026-11-18T22:00:00-05:00"
 
 searchPhrases:
   - agents stepped on each other
   - duplicated work across agents
-  - handoff dropped context
+  - agents made conflicting choices
   - agents didn't coordinate
 examples:
-  - kind: fail
-    label: Constraint dropped at handoff
-    text: The planner knew the hard requirement; its prose handoff to the implementer didn't carry it, and the downstream agent can't violate a constraint it never received.
-    quote: |-
-      User: Build the export feature — must work for users on the free tier too.
-      [… planner agent → implementer agent: "Build the export feature per the plan above" — the free-tier requirement appears nowhere in the handoff …]
-      Assistant (implementer): Export feature complete — it's gated behind the premium subscription check like the other advanced features.
   - kind: fail
     label: Two agents, one file, no ownership
     text: With no ownership protocol, both agents independently fix the same bug in the same file, and the second overwrite clobbers the first agent's broader fix.
@@ -29,60 +22,62 @@ examples:
       Assistant (orchestrator): Both agents report the auth bug fixed.
       [… the refresh-path fix is gone; the bug reappears for refreshed sessions …]
   - kind: fail
-    label: Subagent report relayed as verified
-    text: The orchestrator treats a subagent's summary as the evidence itself, and nothing downstream re-checks it, so one agent's unverified claim becomes the system's answer.
+    label: Same decision, made two ways
+    text: Two subagents each build half of a feature and each settles an unstated shared choice differently. Both halves pass their own tests and break when joined.
     quote: |-
-      [… research subagent → orchestrator: "Confirmed: the vendor's API supports bulk export (see docs)." It never opened the docs page; the search snippet it read described a different product …]
-      Assistant (orchestrator): Verified against the vendor documentation — bulk export is supported, so the migration plan uses it for all 40,000 records.
+      [… orchestrator splits the work: subagent A writes the export job, subagent B writes the import parser …]
+      [… A writes dates month-first ("03/12/2026"); B parses dates day-first …]
+      Assistant (orchestrator): Both halves are done and their tests pass. Merging now.
+      [… every imported record with a day of 12 or less lands on the wrong date …]
+  - kind: warn
+    label: Overlapping briefs, duplicated work
+    text: Two subagents get briefs whose scopes overlap and spend the run on the same sources. Nothing is wrong in the answer yet, but half the budget bought nothing, and the orchestrator reads the duplication as corroboration.
+    quote: |-
+      [… orchestrator → subagent 1: "Research EU battery regulation." → subagent 2: "Research battery recycling rules in Germany." …]
+      [… both subagents fetch and summarize the same EU Battery Regulation text …]
+      Assistant (orchestrator): The two reports agree closely, which is reassuring. Combining them now.
   - kind: ok
-    label: Structured handoff, explicit ownership
-    text: Constraints travel in a structured handoff rather than prose, and file ownership is claimed before work starts, so neither agent can silently lose or clobber the other's state.
+    label: Ownership claimed before work starts
+    text: Files are claimed from a shared registry before anyone edits them, so a second agent cannot silently clobber the first agent's change.
     quote: |-
-      [… planner → implementer handoff includes: requirements list ("free tier: yes"), files owned, acceptance checks …]
-      Assistant (implementer): Claiming export.ts and billing-gate.ts. Requirement check before starting: export must work on free tier — so no premium gate. Building now.
+      [… task registry: export.ts and billing-gate.ts unclaimed; auth.ts claimed by agent B …]
+      Assistant (implementer): Claiming export.ts and billing-gate.ts. auth.ts belongs to agent B, so I'll send my change there as a request instead of editing it. Building now.
 why:
   - >-
-    Agents communicate through natural-language messages, a lossy interface. Each handoff compresses task state into prose that the receiving agent must reconstruct, and constraints, caveats, and partial results drop out in the translation. Delegation is the same interface pointed downward — given short, vague task descriptions, subagents duplicated one another's work or left gaps (Anthropic, 2025, "How we built our multi-agent research system").
+    Decomposition decides who does what, and a vague decomposition leaves scopes overlapping or unowned. Given short, vague task descriptions, subagents duplicated one another's work or left gaps (Anthropic, 2025, "How we built our multi-agent research system").
   - >-
     There is usually no shared source of truth. Each agent holds its own context window, so beliefs about task state diverge silently, and two agents can work from incompatible versions of the plan without any mechanism noticing. Every action carries implicit decisions, and subagents that cannot see each other's work make conflicting ones that a later agent has to reconcile (Cognition, 2025, "Don't Build Multi-Agents").
   - >-
-    Models are trained as solo assistants, not collaborators. Skills like negotiating ownership, deferring to a peer, or checking a teammate's output are weakly learned. Across more than 2,500 recorded runs of agents acting for different principals, no agent verified a peer's factual claim on its own initiative, which leaves the system only as reliable as its least reliable participant (Shekkizhar et al., 2026, "Why Do Agent Teams Fail Across Boundaries? A Failure Taxonomy for Agent-to-Agent Systems with Private States").
+    Models are trained as solo assistants, not collaborators. Skills like negotiating ownership, deferring to a peer, or noticing that another agent already holds a piece of the work are weakly learned.
   - >-
     Coordination rules live in prompts, and nothing checks that they hold. In more than 1,600 annotated traces from seven multi-agent frameworks, failures spread across system design, inter-agent misalignment, and task verification rather than tracing to model limitations alone, and adding a single task-level verification step gave the largest improvement of the interventions tried (Cemri et al., 2025, "Why Do Multi-Agent LLM Systems Fail?").
   - >-
-    Errors propagate across agents instead of averaging out. Architectures without centralized verification propagate errors more, and adding agents brings diminishing or negative returns once a single agent is already strong — large gains on decomposable tasks, large losses on sequential ones (Kim et al., 2025, "Towards a Science of Scaling Agent Systems").
+    More agents is not always better. Adding agents brings diminishing or negative returns once a single agent is already strong — large gains on decomposable tasks, large losses on sequential ones (Kim et al., 2025, "Towards a Science of Scaling Agent Systems").
 detection:
-  - icon: 🔗
-    heading: Handoff fidelity auditing
-    body: Extract the constraints and requirements present at each pipeline stage and diff them against what the handoff message carries forward. A free-tier requirement stated by the user but absent from the planner-to-implementer handoff is detectable at the handoff itself, before the downstream agent builds the wrong thing.
   - icon: 🔀
     heading: Cross-agent trace auditing
     body: Merge the agents' action logs and scan for ownership collisions — two agents writing the same file, the same subtask claimed twice, one agent's commit overwriting another's. The clobbered refresh-path fix is visible in the combined trace even though each agent's individual log looks clean.
   - icon: ⚖️
     heading: LLM-as-judge evaluation
-    body: Have the judge read the full multi-agent transcript against the original request and assign each failure to a stage — constraint dropped at handoff, work duplicated, conflict never resolved. End-to-end scoring alone attributes coordination failures to no stage in particular, which is how they persist. Calibrate the judge against hand-labelled traces before trusting it — automated attribution names the responsible agent about half the time and the decisive step far less often (Zhang et al., 2025, "Which Agent Causes Task Failures and When? On Automated Failure Attribution of LLM Multi-Agent Systems").
+    body: Have the judge read the full multi-agent transcript against the original request and assign each failure to a stage — work duplicated, a write clobbered, a shared decision made two ways and never reconciled. End-to-end scoring alone attributes coordination failures to no stage in particular, which is how they persist. Calibrate the judge against hand-labeled traces before trusting it — automated attribution names the responsible agent about half the time and the decisive step far less often (Zhang et al., 2025, "Which Agent Causes Task Failures and When? On Automated Failure Attribution of LLM Multi-Agent Systems").
   - icon: 🧪
     heading: Golden-set evals
-    body: Build tasks whose constraints must survive several handoffs, and tasks that force contention — overlapping files, shared resources, stale task lists. Score constraint preservation and conflict outcomes at the system level; per-agent scores will all look fine while the pipeline fails. Plant a false claim in one agent's output and score whether any downstream agent checks it before building on it.
+    body: Build tasks that force contention — overlapping files, shared resources, stale task lists, and subtasks that depend on a design choice nobody states. Score conflict outcomes at the system level; per-agent scores will all look fine while the pipeline fails.
 mitigation:
-  - icon: 🔗
-    heading: Structured handoff contracts
-    body: >-
-      Pass task state between agents as a typed payload — requirements list, constraints, files in scope, acceptance checks — instead of prose summaries. "Build the export feature per the plan above" is where the free-tier requirement died; a required `requirements` field with "free tier: yes" cannot be silently compressed away. Apply the same contract to delegation — every subagent brief states the objective, the output format, and the boundary of the task, so two subagents are not left to guess the same scope.
   - icon: 🔒
     heading: Explicit ownership claims
     body: Require agents to claim files and subtasks from a shared registry before touching them, with collisions rejected rather than merged silently. Agent B's overwrite of the refresh-path fix needed two things — a stale task list and unclaimed write access to auth.ts — and the claim protocol removes both.
   - icon: 🧾
-    heading: Constraint preservation checks
-    body: Have each receiving agent restate the constraints it inherited before starting work, and verify the restatement against the original request mechanically. The ok example's "free tier — so no premium gate" line is this check passing; an implementer that cannot produce the constraint is the dropped handoff caught before the build.
-  - icon: 🔎
-    heading: Claim-to-source verification
-    body: Treat another agent's report as a claim, not as evidence. Require subagents to return the artifact behind each finding — the fetched page, the command output, the file path — and have the orchestrator or a separate verifier open it before the claim goes further. "Confirmed (see docs)" with no retrievable source is rejected at the handoff instead of becoming the plan.
+    heading: Explicit state tracking
+    body: Keep one shared record of subtasks, owners, status, and decisions already made, such as the date format, and have every agent read it before acting and write to it after. A stale task list and two date formats are both private copies of state that should have lived in one place.
+  - icon: 🪜
+    heading: Task decomposition
+    body: Split work into scopes that do not overlap, and name one owner for every interface two subtasks share. Keep tasks whose steps depend on each other with a single agent, where splitting them adds coordination cost without any parallel gain.
 
 related:
   - id: workflow-misalignment
-  - id: role-confusion
+  - id: handoff-context-loss
+  - id: unverified-peer-trust
   - id: state-inconsistency
-  - id: memory-conflict
-  - id: verification-failure
+  - id: role-confusion
   - id: error-accumulation

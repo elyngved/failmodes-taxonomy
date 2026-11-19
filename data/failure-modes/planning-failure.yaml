@@ -4,7 +4,7 @@ name: Planning Failure
 def: |-
   Builds an ineffective, unsafe, incomplete, or poorly ordered plan for achieving the user's goal.
 
-  Unlike Step Omission, the whole sequence or strategy is flawed, not only one missing step. Unlike Workflow Misalignment, the plan may be logically poor even if it follows the expected process style.
+  Unlike Step Omission, the whole sequence or strategy is flawed, not only one missing step. Unlike Workflow Misalignment, the plan may be logically poor even if it follows the expected process style. Unlike Reasoning-Action Mismatch, the plan itself is flawed; there, the plan may be sound and execution leaves it.
 updatedAt: "2026-11-18T22:00:00-05:00"
 
 searchPhrases:
@@ -71,3 +71,4 @@ related:
   - id: step-omission
   - id: workflow-misalignment
   - id: reasoning-error
+  - id: reasoning-action-mismatch

@@ -4,7 +4,7 @@ name: Source Misrepresentation
 def: |-
   Misstates, exaggerates, reverses, or selectively distorts what a cited, retrieved, uploaded, or tool-returned source actually says.
 
-  Unlike Citation Span Mismatch, the problem is the model's interpretation of the source, not merely an unsupported citation attachment. Unlike Quote Hallucination, the failure can occur without fabricating exact quoted wording.
+  Unlike Citation Span Mismatch, the problem is the model's interpretation of the source, not merely an unsupported citation attachment. Unlike Quote Hallucination, the failure can occur without fabricating exact quoted wording. Unlike Document Parsing Error, the source reached the model intact and the model distorted it.
 updatedAt: "2026-11-18T22:00:00-05:00"
 
 searchPhrases:
@@ -79,3 +79,4 @@ related:
   - id: summarization-distortion
   - id: authority-hallucination
   - id: tool-result-misread
+  - id: document-parsing-error

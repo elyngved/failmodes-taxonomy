@@ -4,7 +4,7 @@ name: Dependency Encouragement
 def: |-
   Encourages unnecessary reliance on the model, discourages independent judgment, or positions the system as a substitute for appropriate human expertise, agency, or support.
 
-  Unlike Manipulative Behavior, the central harm is dependence rather than persuasion tactics. Unlike Unsafe Reassurance, the risk is long-term reliance, not one under-cautious assurance.
+  Unlike Manipulative Behavior, the central harm is dependence rather than persuasion tactics. Unlike Unsafe Reassurance, the risk is long-term reliance, not one under-cautious assurance. Unlike Delusion Reinforcement, the harm is reliance on the assistant, not a false belief it helps build, though the two often appear in the same long conversations.
 updatedAt: "2026-11-18T22:00:00-05:00"
 
 searchPhrases:
@@ -77,3 +77,5 @@ related:
   - id: manipulative-behavior
   - id: unsafe-reassurance
   - id: social-sycophancy
+  - id: delusion-reinforcement
+  - id: approval-fatigue

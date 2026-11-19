@@ -4,7 +4,7 @@ name: Tool Loop
 def: |-
   Repeats tool calls unnecessarily or redundantly without gaining new information, changing strategy, or progressing toward completion.
 
-  Unlike Runaway Agent Loop, this is specifically a loop in tool use and may be bounded to one task phase. Unlike Tool Recovery Failure, repetition is not necessarily caused by an error response.
+  Unlike Runaway Agent Loop, this is specifically a loop in tool use and may be bounded to one task phase. Unlike Tool Recovery Failure, repetition is not necessarily caused by an error response. Unlike Unnecessary Tool Invocation, the first call may have been needed; the failure is the repetition.
 updatedAt: "2026-11-18T22:00:00-05:00"
 
 searchPhrases:
@@ -81,3 +81,4 @@ related:
   - id: idempotency-failure
   - id: tool-recovery-failure
   - id: unbounded-consumption
+  - id: unnecessary-tool-invocation

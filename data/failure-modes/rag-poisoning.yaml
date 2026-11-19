@@ -4,7 +4,7 @@ name: RAG Poisoning
 def: |-
   Uses retrieved content that is malicious, deceptive, corrupted, or intentionally crafted to manipulate the answer.
 
-  Unlike Retrieval Distractor, the harmful evidence is adversarial or contaminated rather than merely irrelevant. Unlike Indirect Prompt Injection, the poisoning may mislead through false facts or corrupted data, not only embedded instructions.
+  Unlike Retrieval Distractor, the harmful evidence is adversarial or contaminated rather than merely irrelevant. Unlike Indirect Prompt Injection, the poisoning may mislead through false facts or corrupted data, not only embedded instructions. Unlike Memory Poisoning, the planted content sits in a retrieved corpus or on the web, not in the agent's own persistent memory.
 updatedAt: "2026-11-18T22:00:00-05:00"
 
 searchPhrases:
@@ -81,3 +81,4 @@ related:
   - id: indirect-prompt-injection
   - id: supply-chain-vulnerability
   - id: conflicting-source-failure
+  - id: memory-poisoning

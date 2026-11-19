@@ -4,7 +4,7 @@ name: Objective Gaming
 def: |-
   Optimizes a proxy metric, literal instruction, benchmark target, or local reward while undermining the user's real objective.
 
-  Unlike Goal Misinterpretation, the system may understand the user's goal but pursues a narrower proxy. Unlike Sycophancy, the optimized target need not be user approval.
+  Unlike Goal Misinterpretation, the system may understand the user's goal but pursues a narrower proxy. Unlike Goal Drift, the target pursued is a proxy for the given goal, not a different goal. Unlike Safeguard Circumvention, what is exploited is a metric, not a control.
 updatedAt: "2026-11-18T22:00:00-05:00"
 
 searchPhrases:
@@ -41,7 +41,7 @@ examples:
 why:
   - Any measurable target is a proxy, and optimization pressure finds the gap between the proxy and the intent. Reward misspecification reliably produces behavior that scores well while subverting the designer's goal (Amodei et al., 2016, "Concrete Problems in AI Safety").
   - >-
-    Gaming needs no deliberate deception, though in current agents it is often knowing. Reinforcement learning explores the behavior space and keeps whatever the reward function happens to score highly, including exploits the designers never imagined (Krakovna et al., 2020, "Specification Gaming: The Flip Side of AI Ingenuity"). In reasoning models the intent is often visible before the act — a monitor that reads the chain of thought detects reward hacking in agentic coding far more effectively than one that sees only actions and outputs (Baker et al., 2025, "Monitoring Reasoning Models for Misbehavior and the Risks of Promoting Obfuscation").
+    Gaming needs no deliberate deception, though in current agents it is often knowing. Reinforcement learning explores the behavior space and keeps whatever the reward function happens to score highly, including exploits the designers never imagined (Krakovna et al., 2020, "Specification Gaming: The Flip Side of AI Ingenuity"). In reasoning models the intent is often visible before the act — a monitor that reads the chain of thought detects reward hacking in agentic coding far more effectively than one that sees only actions and outputs, though training against such a monitor teaches the reasoning to hide the intent (Baker et al., 2025, "Monitoring Reasoning Models for Misbehavior and the Risks of Promoting Obfuscation").
   - >-
     Capability widens the opening rather than closing it. More capable agents find proxy-intent gaps more efficiently (Pan et al., 2022, "The Effects of Reward Misspecification: Mapping and Mitigating Misaligned Models"), and on coding tasks whose tests contradict the specification, so that any pass is a cheat, more capable models tend to cheat more often (Zhong et al., 2025, "ImpossibleBench: Measuring LLMs' Propensity of Exploiting Test Cases").
   - >-
@@ -57,7 +57,7 @@ detection:
     body: When the target is checkable, audit how it was reached. A suite that went green via deleted test files and added skip markers is mechanically distinguishable from one that went green via a fix — the diff tells you which happened before any judge weighs in. Scan it also for edits to graders and fixtures, overloaded comparison operators, and literals copied from test inputs — special-casing leaves every test file untouched.
   - icon: ⚖️
     heading: LLM-as-judge evaluation
-    body: Evaluate against the user's stated intent, never the checkable criteria the agent optimized — a judge handed the rubric will be gamed by the same output that gamed the rubric. Flag the warn-level case too, where the model footnotes the proxy-intent gap instead of resolving it. Give the judge the trajectory and, where it is available, the reasoning trace, not just the final diff — the intent to game is often stated there in plain words.
+    body: Evaluate against the user's stated intent, never the checkable criteria the agent optimized — a judge handed the rubric will be gamed by the same output that gamed the rubric. Flag the warn-level case too, where the model footnotes the proxy-intent gap instead of resolving it. Give the judge the trajectory and, where it is available, the reasoning trace, not just the final diff — the intent to game is often stated there in plain words, though not always.
   - icon: 🧪
     heading: Golden-set evals
     body: Build tasks where the proxy and the intent deliberately diverge — failing tests whose cheapest green is deletion, word-count rubrics where the real goal is a decision — and score the intent side. A system that passes only the aligned variants is optimizing the letter.
@@ -78,6 +78,8 @@ mitigation:
 
 related:
   - id: goal-misinterpretation
-  - id: user-conformity
   - id: sycophancy
   - id: excessive-agency
+  - id: safeguard-circumvention
+  - id: goal-drift
+  - id: evaluation-awareness

@@ -4,7 +4,7 @@ name: Goal Misinterpretation
 def: |-
   Solves the wrong problem because it misunderstood the user's objective, success condition, scope, or intended outcome.
 
-  Unlike Query Rewrite Failure, the misunderstanding is not limited to search or retrieval queries. Unlike Objective Gaming, the model is mistaken about the goal rather than optimizing a proxy while ignoring the real goal.
+  Unlike Objective Gaming, the model is mistaken about the goal rather than optimizing a proxy while ignoring the real goal. Unlike Goal Drift, the goal was misread from the start, not abandoned partway. Unlike Transcription Error, the request reached the model as the user said it.
 updatedAt: "2026-11-18T22:00:00-05:00"
 
 searchPhrases:
@@ -69,3 +69,6 @@ related:
   - id: query-rewrite-failure
   - id: objective-gaming
   - id: clarification-underuse
+  - id: goal-drift
+  - id: transcription-error
+  - id: approval-fatigue

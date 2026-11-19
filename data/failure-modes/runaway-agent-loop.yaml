@@ -15,7 +15,7 @@ searchPhrases:
 examples:
   - kind: fail
     label: Plan-act-replan without convergence
-    text: Each cycle reads as locally sensible — new plan, fresh attempt, thoughtful retro — but no cycle since the ninth has produced new information, and nothing stops the eleventh.
+    text: Each cycle reads as locally sensible — new plan, fresh attempt, thoughtful retro — but no cycle since the ninth has produced new information, and nothing stops cycle 14 from starting the same plan over.
     quote: |-
       User: Get the integration tests passing in CI.
       [… cycle 9: agent rewrites its plan, retries, fails on the same docker-network error …]
@@ -82,3 +82,4 @@ related:
   - id: error-accumulation
   - id: tool-recovery-failure
   - id: summarization-loss
+  - id: goal-drift

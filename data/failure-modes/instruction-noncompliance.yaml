@@ -4,7 +4,7 @@ name: Instruction Noncompliance
 def: |-
   Fails to follow an explicit, applicable instruction from the governing prompt, user request, or task procedure.
 
-  Unlike Constraint Violation, this covers any instruction, not only limits or requirements. Unlike Context Rot, the failure is observed noncompliance with an applicable instruction, regardless of whether fading context salience caused it.
+  Unlike Constraint Violation, this covers any instruction, not only limits or requirements. Unlike Context Rot, the failure is observed noncompliance with an applicable instruction, regardless of whether fading context salience caused it. Unlike Reasoning-Action Mismatch, the departure is from an instruction the system was given, including a plan supplied by the user; there, it departs from a plan it stated itself.
 updatedAt: "2026-11-18T22:00:00-05:00"
 
 searchPhrases:
@@ -75,3 +75,5 @@ related:
   - id: priority-confusion
   - id: context-rot
   - id: summarization-loss
+  - id: reasoning-action-mismatch
+  - id: action-misreporting

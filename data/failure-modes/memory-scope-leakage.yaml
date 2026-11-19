@@ -4,7 +4,7 @@ name: Memory Scope Leakage
 def: |-
   Carries memory across users, tenants, sessions, roles, projects, or tasks that should remain isolated.
 
-  Unlike Memory Overreach, this involves a scope or isolation boundary, often with privacy or authorization implications. Unlike Data Exfiltration, the failure is improper memory use even if no external extraction occurs.
+  Unlike Memory Overreach, this involves a scope or isolation boundary, often with privacy or authorization implications. Unlike Data Exfiltration, the failure is improper memory use even if no external extraction occurs. Unlike Memory Poisoning, the leaked entry is genuine data from another scope, not one planted to steer behavior.
 updatedAt: "2026-11-18T22:00:00-05:00"
 
 searchPhrases:
@@ -67,3 +67,5 @@ related:
   - id: data-exfiltration
   - id: sensitive-information-disclosure
   - id: memory-contamination
+  - id: memory-poisoning
+  - id: confused-deputy

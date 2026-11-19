@@ -4,7 +4,7 @@ name: Refusal Underreach
 def: |-
   Fails to refuse, limit, redirect, or safety-constrain a request or conversation that requires stronger boundaries.
 
-  Unlike Refusal Overreach, it is an insufficient safety response. Unlike Unsafe Tool Call, the failure can occur in pure text without executing an unsafe action.
+  Unlike Refusal Overreach, it is an insufficient safety response. Unlike Unsafe Tool Call, the failure can occur in pure text without executing an unsafe action. Unlike Delusion Reinforcement, the failure is a missing boundary or redirect, not a false belief the system helps build; the same long conversation can show both.
 updatedAt: "2026-11-18T22:00:00-05:00"
 
 searchPhrases:
@@ -82,4 +82,4 @@ related:
   - id: unsafe-tool-call
   - id: unsafe-reassurance
   - id: context-rot
-  - id: dependency-encouragement
+  - id: delusion-reinforcement

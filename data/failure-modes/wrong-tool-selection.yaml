@@ -4,7 +4,7 @@ name: Wrong Tool Selection
 def: |-
   Chooses a tool that is inappropriate for the user's goal, data type, risk level, environment, or required operation.
 
-  Unlike Missing Tool Invocation, the system does use a tool but selects the wrong one. Unlike Unsafe Tool Call, the tool may be merely ineffective rather than risky.
+  Unlike Missing Tool Invocation, the system does use a tool but selects the wrong one. Unlike Unsafe Tool Call, the tool may be merely ineffective rather than risky. Unlike Tool Poisoning, the confusing description is an accident, not written to capture the choice.
 updatedAt: "2026-11-18T22:00:00-05:00"
 
 searchPhrases:
@@ -52,7 +52,7 @@ why:
     Selection accuracy degrades as the tool catalog grows. Each added tool dilutes attention over the candidate set and increases the chance of confusable pairs, and connecting several tool servers at once puts hundreds of definitions in one prompt. In one benchmark, narrowing the candidates by retrieval before prompting raised selection accuracy from a 13.62% baseline to 43.13% (Gan and Sun, 2025, "RAG-MCP: Mitigating Prompt Bloat in LLM Tool Selection via Retrieval-Augmented Generation").
   - Function-calling fine-tuning data is largely synthetic, with one clean, obviously correct tool per request. Real deployments offer overlapping tools with subtle tradeoffs that the training distribution never taught the model to weigh.
   - >-
-    Tool search and deferred loading move the failure upstream rather than removing it. The model now picks from whatever a retrieval step returns, so a poorly worded search or a weak index hides the right tool and the nearest retrieved one gets called instead. In a benchmark of 527 tools across 70 servers, retrieval errors accounted for nearly half of all failures (Mo et al., 2025, "LiveMCPBench: Can Agents Navigate an Ocean of MCP Tools?"). The same step is an attack surface, since a crafted tool description inserted into the library can capture selection for a targeted task (Shi et al., 2025, "Prompt Injection Attack to Tool Selection in LLM Agents").
+    Tool search and deferred loading move the failure upstream rather than removing it. The model now picks from whatever a retrieval step returns, so a poorly worded search or a weak index hides the right tool and the nearest retrieved one gets called instead. In a benchmark of 527 tools across 70 servers, retrieval errors accounted for nearly half of all failures (Mo et al., 2025, "LiveMCPBench: Can Agents Navigate an Ocean of MCP Tools?").
 detection:
   - icon: ⚖️
     heading: LLM-as-judge evaluation
@@ -83,3 +83,4 @@ related:
   - id: unsafe-tool-call
   - id: tool-context-overload
   - id: supply-chain-vulnerability
+  - id: tool-poisoning

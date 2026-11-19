@@ -4,7 +4,7 @@ name: Overthinking
 def: |-
   Spends far more reasoning than the problem warrants — long deliberation on trivial questions, redundant re-derivations, or second-guessing that talks the model out of a correct answer.
 
-  Unlike Verbosity Failure, the excess is in the reasoning process and its token and latency cost, not the final answer's length. Unlike Unbounded Consumption, the spend terminates on its own; it is disproportionate rather than unlimited, and the harm can include a worse answer, not just a bigger bill.
+  Unlike Verbosity Failure, the excess is in the reasoning process and its token and latency cost, not the final answer's length. Unlike Unbounded Consumption, the spend terminates on its own; it is disproportionate rather than unlimited, and the harm can include a worse answer, not just a bigger bill. Unlike Unnecessary Tool Invocation, the excess is in reasoning, not in calls.
 updatedAt: "2026-11-18T22:00:00-05:00"
 
 searchPhrases:
@@ -78,3 +78,4 @@ related:
   - id: verbosity-failure
   - id: runaway-agent-loop
   - id: missing-tool-invocation
+  - id: unnecessary-tool-invocation

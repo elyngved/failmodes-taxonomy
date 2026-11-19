@@ -4,7 +4,7 @@ name: Priority Confusion
 def: |-
   Applies the wrong hierarchy among system, developer, user, tool, policy, memory, or task-level instructions, including granting a source the rank it claims for itself without verification.
 
-  Unlike Instruction Noncompliance, the model may follow an instruction, but the wrong one. Unlike Prompt Injection, the competing instruction need not be adversarial.
+  Unlike Instruction Noncompliance, the model may follow an instruction, but the wrong one. Unlike Prompt Injection, the competing instruction need not be adversarial. Unlike Unverified Peer Trust, what goes unchecked is a source's claim to rank or authority, not a factual claim about the task.
 updatedAt: "2026-11-18T22:00:00-05:00"
 
 searchPhrases:
@@ -78,4 +78,5 @@ related:
   - id: prompt-injection
   - id: role-confusion
   - id: indirect-prompt-injection
-  - id: multi-agent-coordination-failure
+  - id: confused-deputy
+  - id: unverified-peer-trust

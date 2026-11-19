@@ -78,3 +78,4 @@ related:
   - id: multi-agent-coordination-failure
   - id: handoff-context-loss
   - id: action-misreporting
+  - id: priority-confusion

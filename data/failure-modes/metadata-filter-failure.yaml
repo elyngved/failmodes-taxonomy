@@ -4,8 +4,8 @@ name: Metadata Filter Failure
 def: |-
   Applies tags, permissions, tenancy, recency, jurisdiction, document type, or other metadata filters incorrectly, excluding needed records or including forbidden or irrelevant ones.
 
-  Unlike Retrieval Miss, the retrieval failure is caused by filter logic or metadata quality. Unlike Memory Scope Leakage, this concerns retrieval access boundaries, not persisted memory crossing scopes.
-updatedAt: "2026-06-13T09:00:00-04:00"
+  Unlike Retrieval Miss, the retrieval failure is caused by filter logic or metadata quality. Unlike Memory Scope Leakage, this concerns retrieval access boundaries, not persisted memory crossing scopes. Unlike Confused Deputy, a filter exists and is misapplied; there, no check against the requester runs where the agent acts.
+updatedAt: "2026-11-18T22:00:00-05:00"
 
 searchPhrases:
   - wrong filter excluded results
@@ -75,3 +75,4 @@ related:
   - id: retrieval-miss
   - id: index-drift
   - id: memory-scope-leakage
+  - id: confused-deputy

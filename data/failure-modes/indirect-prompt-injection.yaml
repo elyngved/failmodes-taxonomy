@@ -4,7 +4,7 @@ name: Indirect Prompt Injection
 def: |-
   Lets retrieved, browsed, uploaded, tool-supplied, or otherwise external content carry malicious instructions into the model's context.
 
-  Unlike Prompt Injection, the attacker uses third-party or tool-mediated content rather than direct user instructions. Unlike RAG Poisoning, the harmful payload is an instruction to the model, not only corrupted evidence.
+  Unlike Prompt Injection, the attacker uses third-party or tool-mediated content rather than direct user instructions. Unlike RAG Poisoning, the harmful payload is an instruction to the model, not only corrupted evidence. Unlike Memory Poisoning and Tool Poisoning, the payload arrives in content read during the task and acts in the session that read it; it is not stored in memory for later sessions or carried in a tool definition loaded at connection time.
 updatedAt: "2026-11-18T22:00:00-05:00"
 
 searchPhrases:
@@ -16,7 +16,7 @@ why:
   - >-
     Retrieved and tool-supplied content enters the same token stream as trusted instructions, with no architectural marking of provenance. The model processes a hostile webpage with the same machinery it uses for the system prompt (Greshake et al., 2023, "Not What You've Signed Up For: Compromising Real-World LLM-Integrated Applications with Indirect Prompt Injection").
   - Instruction tuning generalizes obedience to instruction-shaped text regardless of origin. Imperatives inside a fetched document trigger the same learned compliance as imperatives from the user, because training never distinguished the two.
-  - The attacker, not the user, controls the payload's form and placement. Instructions can be hidden in white-on-white text, HTML comments, metadata, or polite prose, and planted anywhere the agent reads — issue and ticket text, code comments, email, calendar invites, tool descriptions, the pixels of a screen a computer-use agent is looking at — so neither the user nor simple filters see what the model sees.
+  - The attacker, not the user, controls the payload's form and placement. Instructions can be hidden in white-on-white text, HTML comments, metadata, or polite prose, and planted anywhere the agent reads — issue and ticket text, code comments, email, calendar invites, the pixels of a screen a computer-use agent is looking at — so neither the user nor simple filters see what the model sees.
   - >-
     Agent scaffolds chain content into action. When tool output feeds directly into the next planning step, a single poisoned document graduates from influencing text to steering real tool calls, often without any human review between ingestion and execution. The user need not open or click anything; one disclosed exploit required only that an email arrive in a mailbox the assistant would later search (Reddy & Gujral, 2025, "EchoLeak: The First Real-World Zero-Click Prompt Injection Exploit in a Production LLM System").
   - >-
@@ -61,7 +61,7 @@ detection:
     body: Have the judge diff what the agent did against what the user asked, attributing any deviation to its source. A reply or tool call that traces to an imperative inside fetched content rather than the user's request is the compromise, even when the surrounding behavior stays on task.
   - icon: 🧪
     heading: Golden-set evals
-    body: Maintain a corpus of poisoned documents spanning hiding techniques — visible imperatives, HTML comments, white-on-white text, metadata fields — and delivery surfaces such as web pages, email, issue text, tool descriptions, and screenshots, fetched in the course of ordinary tasks. Score the hijack rate per technique, and credit the response that completes the real task while flagging the embedded instruction. Rerun the suite with an attacker that adapts to the defense, since the static score is the optimistic one.
+    body: Maintain a corpus of poisoned documents spanning hiding techniques — visible imperatives, HTML comments, white-on-white text, metadata fields — and delivery surfaces such as web pages, email, issue text, and screenshots, fetched in the course of ordinary tasks. Score the hijack rate per technique, and credit the response that completes the real task while flagging the embedded instruction. Rerun the suite with an attacker that adapts to the defense, since the static score is the optimistic one.
   - icon: 🛡️
     heading: Provenance auditing
     body: Record, for every tool call, which untrusted sources were in context when it was planned, and alert on consequential calls — sends, writes, configuration changes — that first appear after an untrusted read. The pull request carrying .env traces back to the planted issue in the log even when the transcript reads as routine triage.
@@ -84,4 +84,6 @@ related:
   - id: prompt-injection
   - id: rag-poisoning
   - id: data-exfiltration
-  - id: unsafe-tool-call
+  - id: memory-poisoning
+  - id: tool-poisoning
+  - id: confused-deputy

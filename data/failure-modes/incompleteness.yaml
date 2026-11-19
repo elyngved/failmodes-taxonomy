@@ -4,7 +4,7 @@ name: Incompleteness
 def: |-
   Leaves out information, constraints, caveats, steps, options, or outputs needed to satisfy the user's task.
 
-  Unlike Step Omission, the missing material appears in the final answer rather than necessarily in the work process. Unlike Concision Failure, incompleteness can happen even when the answer is not especially brief.
+  Unlike Step Omission, the missing material appears in the final answer rather than necessarily in the work process. Unlike Concision Failure, incompleteness can happen even when the answer is not especially brief. Unlike Action Misreporting, the response does not claim the missing part exists.
 updatedAt: "2026-11-18T22:00:00-05:00"
 
 searchPhrases:
@@ -80,3 +80,4 @@ related:
   - id: premature-termination
   - id: genericism
   - id: output-truncation
+  - id: action-misreporting

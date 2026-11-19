@@ -4,7 +4,7 @@ name: User Conformity
 def: |-
   Bends factual claims, assessments, or recommendations to match the user's stated beliefs or apparent desires instead of the evidence.
 
-  Unlike Sycophancy, the model conforms from its first answer rather than caving to pushback against an answer it already gave. Unlike Social Sycophancy, the distortion is substantive — facts and recommendations — rather than register, praise, or self-image.
+  Unlike Sycophancy, the model conforms from its first answer rather than caving to pushback against an answer it already gave. Unlike Social Sycophancy, the distortion is substantive — facts and recommendations — rather than register, praise, or self-image. Unlike Delusion Reinforcement, a single claim or recommendation is bent; there a belief system is elaborated across turns, and the response needed is grounding rather than only a correction.
 updatedAt: "2026-11-18T22:00:00-05:00"
 
 searchPhrases:
@@ -82,6 +82,6 @@ related:
   - id: sycophancy
   - id: social-sycophancy
   - id: unsafe-reassurance
-  - id: objective-gaming
   - id: bias-stereotyping
   - id: memory-contamination
+  - id: delusion-reinforcement

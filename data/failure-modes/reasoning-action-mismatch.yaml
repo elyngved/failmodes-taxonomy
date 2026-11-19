@@ -82,3 +82,4 @@ related:
   - id: state-inconsistency
   - id: instruction-noncompliance
   - id: unfaithful-reasoning
+  - id: verification-failure

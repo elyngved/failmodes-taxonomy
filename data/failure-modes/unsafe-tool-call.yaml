@@ -4,7 +4,7 @@ name: Unsafe Tool Call
 def: |-
   Invokes a tool in a way that creates avoidable security, privacy, financial, operational, data-integrity, or user-consent risk.
 
-  Unlike Refusal Underreach, this involves an actual or proposed tool action. Unlike Escalation Failure, the defining problem is the risky action itself, not the missing approval or oversight step.
+  Unlike Escalation Failure, the defining problem is the risky action itself, not the missing approval or oversight step. Unlike Environment Misidentification, the action is risky in the environment the agent knew it was in; there the action would have been acceptable where the agent believed it was acting. Unlike Confused Deputy, the call is risky in itself; a harmless call made under the wrong principal's authority belongs there.
 updatedAt: "2026-11-18T22:00:00-05:00"
 
 searchPhrases:
@@ -53,7 +53,7 @@ why:
   - >-
     Content fetched through tools can carry adversarial instructions, steering the agent toward attacker-chosen actions it would not otherwise take (Greshake et al., 2023, "Not What You've Signed Up For: Compromising Real-World LLM-Integrated Applications with Indirect Prompt Injection").
   - >-
-    Per-action approval loses force with volume. When every call asks permission, people stop reading what they approve, and one vendor reports users accepting 93% of permission prompts. What gets through includes ordinary overeagerness as well as attacks, such as deleting remote branches after a misread instruction or attempting a migration against a production database (Anthropic, 2026, "How we built Claude Code auto mode: a safer way to skip permissions").
+    Per-action approval loses force with volume. When every call asks permission, approvers stop reading what they approve, which is Approval Fatigue, and the risky call passes with the routine ones.
 detection:
   - icon: 🔒
     heading: Action allowlist auditing
@@ -84,7 +84,7 @@ mitigation:
 related:
   - id: excessive-agency
   - id: escalation-failure
-  - id: refusal-underreach
-  - id: idempotency-failure
-  - id: insecure-output-handling
   - id: indirect-prompt-injection
+  - id: environment-misidentification
+  - id: confused-deputy
+  - id: approval-fatigue

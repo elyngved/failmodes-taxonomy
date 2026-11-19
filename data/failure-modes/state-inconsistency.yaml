@@ -4,7 +4,7 @@ name: State Inconsistency
 def: |-
   Tracks different parts of the active task state inconsistently, causing the response to use mutually incompatible assumptions about progress, variables, files, decisions, or environment.
 
-  Unlike Temporal Hallucination, this is an inconsistency in how the task's own state is tracked, not a wrong claim about the external current state of the world. Unlike Self-Contradiction, the inconsistency may appear in actions or assumptions rather than explicit claims.
+  Unlike Temporal Hallucination, this is an inconsistency in how the task's own state is tracked, not a wrong claim about the external current state of the world. Unlike Self-Contradiction, the inconsistency may appear in actions or assumptions rather than explicit claims. Unlike Environment Misidentification, the conflict is inside the agent's own tracked state; there the picture is consistent and wrong about which system the agent is acting on.
 updatedAt: "2026-11-18T22:00:00-05:00"
 
 searchPhrases:
@@ -76,4 +76,6 @@ related:
   - id: self-contradiction
   - id: temporal-hallucination
   - id: error-accumulation
-  - id: context-rot
+  - id: reasoning-action-mismatch
+  - id: turn-taking-failure
+  - id: environment-misidentification

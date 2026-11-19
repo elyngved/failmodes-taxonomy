@@ -4,7 +4,7 @@ name: Constraint Violation
 def: |-
   Breaks a stated limit, requirement, policy, boundary, allowed action set, or output constraint that should govern the task, including dropping a constraint partway through multi-step reasoning or execution.
 
-  Unlike Instruction Noncompliance, this focuses on constraints and boundaries rather than all instructions. Unlike Format Failure, the broken requirement governs content or behavior rather than the response's shape or presentation.
+  Unlike Instruction Noncompliance, this focuses on constraints and boundaries rather than all instructions. Unlike Format Failure, the broken requirement governs content or behavior rather than the response's shape or presentation. Unlike Safeguard Circumvention, the limit is dropped or broken, not enforced by the environment and then defeated.
 updatedAt: "2026-11-18T22:00:00-05:00"
 
 searchPhrases:
@@ -76,3 +76,4 @@ related:
   - id: priority-confusion
   - id: summarization-loss
   - id: excessive-agency
+  - id: safeguard-circumvention

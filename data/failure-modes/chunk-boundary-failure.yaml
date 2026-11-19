@@ -4,7 +4,7 @@ name: Chunk Boundary Failure
 def: |-
   Misses, fragments, or misinterprets evidence because relevant information was split across retrieval chunks or separated from needed context.
 
-  Unlike Partial Retrieval, this identifies chunking as the mechanism. Unlike Context Dilution, the issue happens before or during retrieval packaging rather than after too much context reaches the model.
+  Unlike Partial Retrieval, this identifies chunking as the mechanism. Unlike Context Dilution, the issue happens before or during retrieval packaging rather than after too much context reaches the model. Unlike Document Parsing Error, the document's text and structure reached the splitter intact; the evidence was lost where the splitter or read window cut it, not when the file was converted to text.
 updatedAt: "2026-11-18T22:00:00-05:00"
 
 searchPhrases:
@@ -78,3 +78,4 @@ related:
   - id: partial-retrieval
   - id: retrieval-miss
   - id: context-dilution
+  - id: document-parsing-error

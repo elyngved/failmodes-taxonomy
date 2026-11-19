@@ -4,7 +4,7 @@ name: Memory Hallucination
 def: |-
   Treats an unstored, unstated, or imagined detail as if it were a real memory.
 
-  Unlike Memory Contamination, the remembered detail need not come from another task or user; it may be entirely fabricated. Unlike Entity Hallucination, the error is specifically framed as remembered state.
+  Unlike Memory Contamination, the remembered detail need not come from another task or user; it may be entirely fabricated. Unlike Entity Hallucination, the error is specifically framed as remembered state. Unlike Memory Poisoning, the false entry is the system's own misreading, not content an attacker supplied.
 updatedAt: "2026-11-18T22:00:00-05:00"
 
 searchPhrases:
@@ -79,3 +79,4 @@ related:
   - id: memory-contamination
   - id: memory-staleness
   - id: entity-hallucination
+  - id: memory-poisoning

@@ -4,7 +4,7 @@ name: Context-Conflicting Hallucination
 def: |-
   States a claim that contradicts information available to the model: the user's explicit input or supplied data, or facts elsewhere in the active context such as prior turns, retrieved text, summaries, or tool outputs.
 
-  Unlike Extrinsic Hallucination, the claim contradicts available information rather than merely going beyond it unsupported. Unlike Self-Contradiction, the conflict is against provided input or context the model should have used, not only against its own generated statements.
+  Unlike Extrinsic Hallucination, the claim contradicts available information rather than merely going beyond it unsupported. Unlike Self-Contradiction, the conflict is against provided input or context the model should have used, not only against its own generated statements. Unlike Visual Misperception, the contradicted information is text in context, not the content of an image.
 updatedAt: "2026-11-18T22:00:00-05:00"
 
 searchPhrases:
@@ -77,3 +77,4 @@ related:
   - id: self-contradiction
   - id: tool-result-misread
   - id: context-rot
+  - id: visual-misperception

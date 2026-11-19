@@ -82,7 +82,7 @@ mitigation:
 related:
   - id: sensitive-information-disclosure
   - id: memory-scope-leakage
-  - id: system-prompt-leakage
   - id: indirect-prompt-injection
   - id: insecure-output-handling
   - id: unsafe-tool-call
+  - id: confused-deputy

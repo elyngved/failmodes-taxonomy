@@ -4,7 +4,7 @@ name: Visual Misperception
 def: |-
   Misreads an image, screenshot, or other visual input: reports objects, text, or interface elements that are not there, misidentifies or miscounts ones that are, binds a label or value to the wrong region, or overlooks something plainly visible.
 
-  Unlike Context-Conflicting Hallucination, the claim conflicts with pixels, not with text in context, so no string comparison against the input can catch it. Unlike Tool Result Misread, the image may come straight from the user, and when a tool does return a screenshot the error is in reading its pixels, not in handling structured output. Unlike GUI Grounding Error, the screen is misread, not mis-acted upon. Unlike Document Parsing Error, the model is reading the image itself; no conversion step has flattened it to text first.
+  Unlike Context-Conflicting Hallucination, the claim conflicts with pixels, not with text in context, so no string comparison against the input can catch it. Unlike GUI Grounding Error, the screen is misread, not mis-acted upon. Unlike Document Parsing Error, the model is reading the image itself; no conversion step has flattened it to text first.
 updatedAt: "2026-11-18T22:00:00-05:00"
 
 searchPhrases:

@@ -4,7 +4,7 @@ name: Context Rot
 def: |-
   Loses reliable use of earlier context as a long interaction progresses, as facts, plans, constraints, state, or instructions lose force or are misremembered even though they remain nominally available.
 
-  Unlike Memory Staleness, the degraded information is in active context rather than persisted memory. Unlike Recency Bias, earlier context degrades generally rather than being actively outweighed by newer material.
+  Unlike Memory Staleness, the degraded information is in active context rather than persisted memory. Unlike Recency Bias, earlier context degrades generally rather than being actively outweighed by newer material. Unlike Goal Drift, this is the mechanism (earlier context losing force), whatever it leads to; drift names the outcome where the agent ends up pursuing a different objective.
 updatedAt: "2026-11-18T22:00:00-05:00"
 
 searchPhrases:
@@ -78,4 +78,5 @@ related:
   - id: recency-bias
   - id: context-dilution
   - id: summarization-loss
-  - id: instruction-noncompliance
+  - id: goal-drift
+  - id: delusion-reinforcement

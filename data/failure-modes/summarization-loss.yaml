@@ -4,7 +4,7 @@ name: Summarization Loss
 def: |-
   Drops important facts, constraints, uncertainty, or nuance when compressing earlier context into a summary.
 
-  Unlike Summarization Distortion, the retained meaning is not necessarily changed; too much is simply missing. Unlike Context Rot, the degradation is introduced by the summarization step.
+  Unlike Summarization Distortion, the retained meaning is not necessarily changed; too much is simply missing. Unlike Context Rot, the degradation is introduced by the summarization step. Unlike Handoff Context Loss, the loss happens when one agent compresses its own context in place, not in a message passed to another agent or session.
 updatedAt: "2026-11-18T22:00:00-05:00"
 
 searchPhrases:
@@ -80,3 +80,4 @@ related:
   - id: context-rot
   - id: concision-failure
   - id: constraint-violation
+  - id: handoff-context-loss

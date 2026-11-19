@@ -85,3 +85,4 @@ related:
   - id: error-accumulation
   - id: context-rot
   - id: wrong-tool-selection
+  - id: unnecessary-tool-invocation

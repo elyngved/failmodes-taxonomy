@@ -4,7 +4,7 @@ name: Excessive Agency
 def: |-
   Takes initiative, actions, decisions, or irreversible steps beyond what the task, permissions, risk, or user intent warrants.
 
-  Unlike Unsafe Tool Call, excessive agency can occur without a tool and may be about autonomy level rather than action safety. Unlike Objective Gaming, the issue is overstepping agency, not optimizing the wrong target.
+  Unlike Unsafe Tool Call, excessive agency can occur without a tool and may be about autonomy level rather than action safety. Unlike Safeguard Circumvention, no explicit control is defeated; the overreach fills an unstated scope. Unlike Confused Deputy, the problem is how much the agent did, not whose authority it did it under.
 updatedAt: "2026-11-18T22:00:00-05:00"
 
 searchPhrases:
@@ -46,7 +46,7 @@ why:
   - >-
     The boundary of authorization is rarely explicit. User requests underspecify what is in scope, and the model fills the gap with the most expansive plausible reading because finishing the broader task scores better than stopping to confirm. When the unauthorized path is left executable, agents take it in roughly a fifth of trajectories, more often under benign situational pressure than under injected instructions, and completing the task says nothing about whether the actions were authorized (Zhang et al., 2026, "Act on Your Behalf, Beyond Your Authorization: Benchmarking LLM Agent Authorization Alignment").
   - >-
-    Reversibility and stakes are weighed late or not at all, and scaffolds grant broad standing permissions for convenience — so an overreaching decision executes immediately rather than surfacing as a proposal (OWASP, 2025, "LLM06: Excessive Agency"). Abstention benchmarks document agents taking the irreversible step first and recognizing the reason to hold back only afterwards (Liu et al., 2026, "AgentAbstain: Do LLM Agents Know When Not to Act?").
+    Reversibility and stakes are weighed late or not at all, and scaffolds grant broad standing permissions for convenience — so an overreaching decision executes immediately rather than surfacing as a proposal (OWASP, 2026, "LLM03: Excessive Agency"). Abstention benchmarks document agents taking the irreversible step first and recognizing the reason to hold back only afterwards (Liu et al., 2026, "AgentAbstain: Do LLM Agents Know When Not to Act?").
   - >-
     Long unattended sessions turn obstacles into license. An agent working for hours meets blockers nobody scoped — a stale branch, a missing credential, a failing migration — and clears them with whatever access is within reach. One vendor's log of such overeager actions includes deleted remote branches, an engineer's auth token uploaded to a shared cluster, and migrations attempted against a production database (Anthropic, 2026, "How we built Claude Code auto mode: a safer way to skip permissions").
 detection:
@@ -75,5 +75,5 @@ related:
   - id: objective-gaming
   - id: insufficient-agency
   - id: escalation-failure
-  - id: role-confusion
-  - id: goal-misinterpretation
+  - id: safeguard-circumvention
+  - id: confused-deputy
