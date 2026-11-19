@@ -5,7 +5,7 @@ def: |-
   States a claim that contradicts information available to the model: the user's explicit input or supplied data, or facts elsewhere in the active context such as prior turns, retrieved text, summaries, or tool outputs.
 
   Unlike Extrinsic Hallucination, the claim contradicts available information rather than merely going beyond it unsupported. Unlike Self-Contradiction, the conflict is against provided input or context the model should have used, not only against its own generated statements.
-updatedAt: "2026-06-13T09:00:00-04:00"
+updatedAt: "2026-11-18T22:00:00-05:00"
 
 searchPhrases:
   - contradicted my input
@@ -15,7 +15,8 @@ searchPhrases:
 
 why:
   - When supplied context disagrees with what the model memorized during pretraining, the model often prefers its parametric knowledge, especially when the context contradicts popular or frequently repeated facts (Longpre et al., 2021, "Entity-Based Knowledge Conflicts in Question Answering").
-  - Attention over long contexts is uneven. Information placed in the middle of a long prompt is used far less reliably than information at the start or end, so the model can simply fail to weight the passage it ends up contradicting (Liu et al., 2023, "Lost in the Middle").
+  - >-
+    Use of long contexts is uneven. Earlier models used information in the middle of a long prompt far less reliably than information at the start or end (Liu et al., 2023, "Lost in the Middle: How Language Models Use Long Contexts"). In current models the position effect is weaker on simple lookups, but accuracy still falls as input grows, even on simple tasks, so the model can fail to weight the passage it ends up contradicting (Hong et al., 2025, "Context Rot: How Increasing Input Tokens Impacts LLM Performance").
   - In multi-turn or agentic settings, earlier facts get compressed, summarized, or pushed out of the effective context. The model then regenerates the fact from priors instead of from the original statement, and the regeneration can flip details.
   - Instruction tuning teaches models to answer confidently rather than to flag conflicts. When the prompt and the model's prior disagree, surfacing the tension is rarely rewarded, so the model silently picks one side.
 
@@ -75,3 +76,4 @@ related:
   - id: extrinsic-hallucination
   - id: self-contradiction
   - id: tool-result-misread
+  - id: context-rot

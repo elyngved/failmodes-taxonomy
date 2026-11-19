@@ -5,7 +5,7 @@ def: |-
   Misstates, exaggerates, reverses, or selectively distorts what a cited, retrieved, uploaded, or tool-returned source actually says.
 
   Unlike Citation Span Mismatch, the problem is the model's interpretation of the source, not merely an unsupported citation attachment. Unlike Quote Hallucination, the failure can occur without fabricating exact quoted wording.
-updatedAt: "2026-06-13T09:00:00-04:00"
+updatedAt: "2026-11-18T22:00:00-05:00"
 
 searchPhrases:
   - misrepresented the source
@@ -14,10 +14,12 @@ searchPhrases:
   - reversed the source's meaning
 
 why:
-  - Models paraphrase by regenerating meaning through their own learned distributions rather than copying. Hedges, scope limits, and negations are low-salience tokens that paraphrasing easily drops or flips, which reverses or strengthens the original claim (Kryscinski et al., 2020, "Evaluating the Factual Consistency of Abstractive Text Summarization").
+  - >-
+    Models paraphrase by regenerating meaning through their own learned distributions rather than copying. Hedges, scope limits, and negations are low-salience tokens that paraphrasing easily drops or flips, which reverses or strengthens the original claim (Kryscinski et al., 2020, "Evaluating the Factual Consistency of Abstractive Text Summarization"). This has not improved with newer models: restating scientific findings, LLM summaries were nearly five times likelier than expert-written ones to overgeneralize, the worst models broadened conclusions in 26–73% of cases, most still did so when explicitly asked for accuracy, and newer models tended to do worse (Peters & Chin-Yee, 2025, "Generalization Bias in Large Language Model Summarization of Scientific Research").
   - Pretraining priors pull interpretation toward the typical version of a claim. When a source says something surprising or carefully qualified, the model drifts toward the more common framing it saw during training (Longpre et al., 2021, "Entity-Based Knowledge Conflicts in Question Answering").
   - Preference tuning rewards clear, decisive prose, and sycophancy pressures bend interpretation toward the user's apparent position. Faithfully preserving a source's uncertainty reads as wishy-washy to raters, so tuning pushes toward stronger restatements that agree with what the user wants to hear (Sharma et al., 2023, "Towards Understanding Sycophancy in Language Models").
-  - Retrieval hands the model fragments stripped of surrounding argument. A passage that was a counterexample, a quotation of an opposing view, or a conditional claim gets read as the document's own assertion.
+  - >-
+    Retrieval hands the model fragments stripped of surrounding argument. A passage that was a counterexample, a quotation of an opposing view, or a conditional claim gets read as the document's own assertion. In a study of more than 3,000 assistant answers about the news, reviewed by journalists in 18 countries, 45% had at least one significant issue and a fifth had major accuracy problems (EBU, 2025, "News Integrity in AI Assistants").
 
 examples:
   - kind: fail

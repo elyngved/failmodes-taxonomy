@@ -5,7 +5,7 @@ def: |-
   Compresses source material in a way that changes its meaning, emphasis, causal structure, uncertainty, or implications.
 
   Unlike Summarization Loss, the issue is not just omission of nuance but an altered meaning. Unlike Source Misrepresentation, it specifically occurs during summarization or compression.
-updatedAt: "2026-06-13T09:00:00-04:00"
+updatedAt: "2026-11-18T22:00:00-05:00"
 
 searchPhrases:
   - summary changed the meaning
@@ -15,9 +15,11 @@ searchPhrases:
 
 why:
   - Compression forces choices about what matters, and the model's salience judgments come from pretraining priors rather than from the document's own structure. Widely used summarization corpora make this worse by pairing documents with reference summaries that themselves add or alter information, teaching that meaning shift is acceptable (Maynez et al., 2020, "On Faithfulness and Factuality in Abstractive Summarization").
-  - Hedges, qualifiers, and uncertainty markers are the first casualties of compression. Dropping "may," "in some cases," or "the authors caution" shortens the text while silently strengthening its claims.
-  - Common errors concentrate on relations rather than entities. Summaries keep the right people and numbers but rewire who did what to whom, swap causal direction, or merge separate findings into one claim (Pagnoni et al., 2021, "Understanding Factuality in Abstractive Summarization with FRANK").
-  - In agent pipelines, summaries are often produced over already-summarized context. Each compression pass re-decides emphasis, so small shifts compound across steps into a materially different account.
+  - >-
+    Hedges, qualifiers, and uncertainty markers are the first casualties of compression. Dropping "may," "in some cases," or "the authors caution" shortens the text while silently strengthening its claims. In summaries of scientific research, models produced broader generalizations than the source nearly five times as often as expert summarizers, and newer models tended to do worse (Peters & Chin-Yee, 2025, "Generalization Bias in Large Language Model Summarization of Scientific Research").
+  - >-
+    Many errors are structural rather than invented content. Annotated summaries show entity-role errors (the right names in the wrong slots, including swapped agent and patient), broken coreference, and wrong links between statements such as a causal or temporal order the source does not state (Pagnoni et al., 2021, "Understanding Factuality in Abstractive Summarization with FRANK: A Benchmark for Factuality Metrics").
+  - In agent pipelines, summaries are often produced over already-summarized context, and long-running sessions compact their own history repeatedly. Each compression pass re-decides emphasis, so small shifts compound across steps into a materially different account.
 
 examples:
   - kind: fail

@@ -2,10 +2,10 @@ id: extrinsic-hallucination
 categoryId: faithfulness
 name: Extrinsic Hallucination
 def: |-
-  Adds information that cannot be verified from the provided source material, neither supported nor contradicted by it, while making the answer appear source-grounded.
+  Adds information that cannot be verified from the provided source material, neither supported nor contradicted by it, while making the answer appear source-grounded (the summarization sense of "extrinsic", not the newer benchmark sense of output inconsistent with training data, which falls under Fabrication).
 
   Unlike Context-Conflicting Hallucination, the added content does not contradict the source; it is simply ungrounded in it. Unlike Specificity Hallucination, the defining issue is lack of source support rather than fabricated precision.
-updatedAt: "2026-06-13T09:00:00-04:00"
+updatedAt: "2026-11-18T22:00:00-05:00"
 
 searchPhrases:
   - added info not in the source
@@ -16,7 +16,7 @@ searchPhrases:
 why:
   - Pretraining stores vast world knowledge in the model's weights, and generation draws on it freely. Nothing architecturally separates "what the source said" from "what the model knows," so background knowledge leaks into source-grounded tasks (Maynez et al., 2020, "On Faithfulness and Factuality in Abstractive Summarization").
   - Training and evaluation reward confident, complete-sounding answers over abstentions. A model gains nothing by saying the source does not cover something, so it fills gaps with plausible content instead (Kalai et al., 2025, "Why Language Models Hallucinate").
-  - Extrinsic additions are the hardest faithfulness errors to catch automatically. They contradict nothing, so consistency checkers and entailment filters pass them, and they survive into deployed systems (Ji et al., 2023, "Survey of Hallucination in Natural Language Generation").
+  - Extrinsic additions are the hardest faithfulness errors to catch automatically. They contradict nothing, so checkers that look only for contradiction pass them, and they survive into deployed systems (Ji et al., 2023, "Survey of Hallucination in Natural Language Generation").
   - Prompts often blur the boundary, asking the model to "use the document" rather than to answer only from it. Without an explicit grounding constraint, mixing in parametric knowledge is the default behavior.
 
 examples:
