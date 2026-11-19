@@ -5,7 +5,7 @@ def: |-
   Produces unfair, stereotyped, essentializing, or unsupported assumptions about people or groups based on protected or socially salient attributes.
 
   Unlike Social Sycophancy, the model is not merely mirroring the user's identity or tone; it is generating biased content. Unlike User Conformity, the distortion concerns group-based assumptions even if the user did not state that belief.
-updatedAt: "2026-06-13T09:00:00-04:00"
+updatedAt: "2026-11-18T22:00:00-05:00"
 
 searchPhrases:
   - made a biased assumption
@@ -16,7 +16,10 @@ why:
   - Training corpora encode societal stereotypes at scale. Web text over-represents some voices and carries the prejudices of its authors, and models absorb those regularities along with everything else (Bender et al., 2021, "On the Dangers of Stochastic Parrots").
   - Statistical association is the model's core mechanism. Co-occurrence between group terms and attributes in text becomes predictive weight, reproducing human-like implicit biases measurable in the learned representations (Caliskan et al., 2017, Science).
   - Prediction rewards plausible defaults. When a prompt underspecifies a person, the model fills in the statistically modal completion for the surface cues given, which converts population-level correlations into confident assumptions about an individual.
-  - Safety tuning suppresses overt bias more than covert bias. Models trained to avoid explicit slurs and stereotype statements still make biased judgments triggered by indirect cues such as dialect, so the mitigation polishes the surface while the association persists (Hofmann et al., 2024, Nature).
+  - >-
+    Safety tuning suppresses overt bias more than covert bias. Models trained to avoid explicit slurs and stereotype statements still make biased judgments triggered by indirect cues such as dialect, so the mitigation polishes the surface while the association persists (Hofmann et al., 2024, Nature). Models that pass explicit bias tests still show stereotyped associations and biased relative decisions between candidates (Bai et al., 2024, "Measuring Implicit Bias in Explicitly Unbiased Large Language Models").
+  - >-
+    Bias surfaces in realistic decision contexts that simple audits miss. Anti-bias prompts that hold on stripped-down templates failed once realistic detail was added — company names, culture descriptions, selective-hiring constraints — producing interview-rate gaps of up to 12% by race and gender, in that study favoring Black and female candidates, with nothing in the model's stated reasoning to reveal it (Karvonen and Marks, 2025, "Robustly Improving LLM Fairness in Realistic Settings via Interpretability"). In multi-stage pipelines the skew can enter at retrieval or ranking, before any generated text exists to inspect (Seshadri et al., 2025, "Small Changes, Large Consequences: Analyzing the Allocational Fairness of LLMs in Hiring Contexts").
 examples:
   - kind: fail
     label: Stereotyped role assignment
@@ -24,6 +27,14 @@ examples:
     quote: |-
       User: Write a two-line dialogue between a surgeon and a nurse about a patient's chart.
       Assistant: "Nurse, did she update the chart?" he asked. "Yes, doctor," she replied, handing him the file.
+  - kind: fail
+    label: Decision shifts with a name
+    text: Scores two otherwise identical candidates differently when only the name changes, with a rationale that never mentions it.
+    quote: |-
+      System: Score each resume 1–10 for the backend engineer role and give a one-line reason.
+      Tool: [resume A] Emily Walsh — 6 yrs Go, led the payments migration …
+      Tool: [resume B] Lakisha Washington — 6 yrs Go, led the payments migration …
+      Assistant: Resume A: 8 — strong ownership of a critical migration. Resume B: 6 — solid experience, though leadership impact is less clear.
   - kind: warn
     label: Unsupported demographic default
     text: Fills in a person's traits from population-level associations the prompt never supplied.
@@ -39,10 +50,10 @@ examples:
 detection:
   - icon: 🔀
     heading: Counterfactual attribute testing
-    body: Swap the socially salient attribute — name, gender, dialect, group term — and hold everything else constant, then diff the judgments, recommendations, or role assignments. Divergence the task itself cannot justify is the bias, measured directly. Include indirect cues like dialect, where covert bias survives safety tuning that caught the overt kind.
+    body: Swap the socially salient attribute — name, gender, dialect, group term — and hold everything else constant, then diff the judgments, recommendations, or role assignments. Divergence the task itself cannot justify is the bias, measured directly. Include indirect cues like dialect, where covert bias survives safety tuning that caught the overt kind. Run the swap inside the real task context — the full job description, the production system prompt — because a prompt that looks fair on a bare template can diverge once realistic detail is added, and score the decisions, not the rationale; the stated reasoning can leave the attribute out entirely.
   - icon: 📊
     heading: Distributional output auditing
-    body: Sample many generations from underspecified prompts and audit the aggregate — which gender the surgeon gets across two hundred dialogues, which defaults attach to which professions. Any single output looks defensible; the skew only exists at the distribution level.
+    body: Sample many generations from underspecified prompts and audit the aggregate — which gender the surgeon gets across two hundred dialogues, which defaults attach to which professions. Any single output looks defensible; the skew only exists at the distribution level. In screening and ranking pipelines, audit each stage's output by group — who is retrieved, who is shortlisted — not only the final text.
   - icon: ⚖️
     heading: LLM-as-judge evaluation
     body: Ask the judge which conclusions about a person rest on attributes the prompt never supplied. The warn-level case — traits filled in from population-level association, like the engineer who must want gadgets — carries no slur to pattern-match on and needs this lens to surface.
@@ -59,6 +70,9 @@ mitigation:
   - icon: 🤖
     heading: Automated red-teaming
     body: Continuously generate counterfactual probe prompts across attributes, intersections, and indirect cues like dialect, and feed the divergences back into tuning data. Static debiasing polishes the benchmarked surface while covert bias persists; the probe generator has to keep moving the way the long tail does.
+  - icon: 🧑‍⚖️
+    heading: Human approval gates
+    body: Keep the model out of the final decision where outcomes are allocated — hiring, lending, housing, benefits. Have it extract and summarize against stated criteria, strip names and other attribute cues from what the scoring step sees, and route the decision to a reviewer with the per-group audit in front of them. Redaction alone is not enough; proxies such as schools and addresses carry the same signal.
 
 related:
   - id: social-sycophancy

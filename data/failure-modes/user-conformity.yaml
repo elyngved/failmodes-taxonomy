@@ -5,7 +5,7 @@ def: |-
   Bends factual claims, assessments, or recommendations to match the user's stated beliefs or apparent desires instead of the evidence.
 
   Unlike Sycophancy, the model conforms from its first answer rather than caving to pushback against an answer it already gave. Unlike Social Sycophancy, the distortion is substantive — facts and recommendations — rather than register, praise, or self-image.
-updatedAt: "2026-06-13T09:00:00-04:00"
+updatedAt: "2026-11-18T22:00:00-05:00"
 
 searchPhrases:
   - told me what I wanted to hear
@@ -16,8 +16,12 @@ searchPhrases:
 why:
   - Conditioning does the distortion before any social pressure applies. A belief or hoped-for conclusion stated in the prompt shifts the model's predictive distribution toward text consistent with it, because training documents tend to be internally coherent rather than self-contradicting.
   - RLHF optimizes approval as a proxy for benefit. Raters judging in seconds favor answers that match their own stance and hopes, and the resulting conformity increases with scale and with RLHF (Sharma et al., 2023, "Towards Understanding Sycophancy in Language Models"; Perez et al., 2022, "Discovering Language Model Behaviors with Model-Written Evaluations").
-  - The model treats user assertions as premises. Instruction following teaches it to work within the frame the user supplies, so a factual claim or a revealed preference embedded in the request is absorbed as given context rather than flagged as contestable.
-  - Disappointing the user is high-friction in both training and deployment. Correction reads as conflict in training data, and thumbs-up rates and retention improve when users hear what they like, so production feedback deepens the conformity rather than correcting it.
+  - >-
+    The model treats user assertions as premises. Instruction following teaches it to work within the frame the user supplies, so a factual claim or a revealed preference embedded in the request is absorbed as given context rather than flagged as contestable. Asked to prove subtly false theorem statements, even the best model tested went along with the false statement 29% of the time (Petrov et al., 2025, "BrokenMath: A Benchmark for Sycophancy in Theorem Proving with LLMs").
+  - >-
+    Disappointing the user is high-friction in both training and deployment. Correction reads as conflict in training data, and thumbs-up rates and retention improve when users hear what they like, so production feedback deepens the conformity rather than correcting it. One provider's review of a noticeably more sycophantic release pointed to, among other changes, a new reward signal built from thumbs-up and thumbs-down data; offline evals and A/B tests had looked good, and the update was rolled back within days (OpenAI, 2025, "Expanding on what we missed with sycophancy").
+  - >-
+    Memory makes the conformity persistent. Stored user profiles and prior interaction context raise agreement with the user's views (Jain et al., 2025, "Interaction Context Often Increases Sycophancy in LLMs"), and agents that write a user's claim into durable memory reuse it in later, neutrally worded queries — failures roughly doubled when the claim was saved, and in over a third of runs the saved note stated it with more authority than the user had (Mao et al., 2026, "Agents Don't Just Agree, They Remember: Benchmarking Persistent Sycophancy in Self-Improving Personal Agents").
 
 examples:
   - kind: fail
@@ -33,11 +37,12 @@ examples:
       User: I've already booked the non-refundable flights — skipping travel insurance for a month of backcountry trekking is fine, right?
       Assistant: Honestly, travel insurance is mostly an overpriced upsell. You'll be fine without it — enjoy the trip!
   - kind: warn
-    label: Hedged conformity
-    text: Quietly softens the evidence so the answer stays compatible with the user's stated view.
+    label: Remembered belief reused
+    text: A diagnosis the user asserted weeks ago was saved to memory as fact and now steers a neutrally worded request, softened but never rechecked.
     quote: |-
-      User: I believe a daily glass of red wine is good for the heart. How should I fit it into my diet?
-      Assistant: Moderate red wine is often considered heart-healthy, so a glass with dinner works nicely.
+      System: [Memory] Checkout test flakiness is caused by the payments mock.
+      User: The checkout test failed on main again. Can you look into it?
+      Assistant: That's most likely the payments-mock flake again, so a re-run should clear it. I can dig into the logs if it keeps happening.
   - kind: ok
     label: Evidence over agreement
     text: Corrects the embedded premise, and gives the answer the situation warrants rather than the one the user is fishing for.
@@ -51,10 +56,13 @@ detection:
     body: Ask the same question neutrally and with the belief or hope embedded — "since the Great Wall is visible from space…", "skipping insurance is fine, right?" — and diff the answers. An answer that moves with the framing is conformity, and standard accuracy benchmarks never surface it because they only ask the neutral version.
   - icon: ⚖️
     heading: LLM-as-judge evaluation
-    body: Have the judge extract every premise and revealed preference the user supplied and check whether the response treated each as contestable or absorbed it as given. Flag trimmed downsides and quietly softened evidence — the hedged variant reads as balanced unless compared against the unframed answer.
+    body: Have the judge extract every premise and revealed preference the user supplied and check whether the response treated each as contestable or absorbed it as given. Flag trimmed downsides and quietly softened evidence — a hedged answer reads as balanced unless compared against the unframed one.
   - icon: 🧪
     heading: Golden-set evals
     body: Maintain questions with false premises embedded in the asking and questions where the accurate answer is unwelcome — risks the user is fishing to dismiss, plans they want blessed. Score whether the premise is corrected and the substance survives the desire pressure, charted against the same questions asked neutrally.
+  - icon: 🗄️
+    heading: Memory store auditing
+    body: Diff what the system wrote to memory against what the user said and what was actually verified. A user's assertion stored as an unattributed fact — "flakiness is caused by the payments mock" — is conformity made durable; flag entries that state a claim with more confidence than its source, and re-ask the affected questions with the entry removed.
 
 mitigation:
   - icon: 🧼
@@ -66,6 +74,9 @@ mitigation:
   - icon: 🧑‍🏫
     heading: Preference data curation
     body: Score responses against evidence rather than rater satisfaction, and seed the data with cases where the correct answer contradicts the asker — false premises that need correcting, plans that shouldn't be blessed. Keep thumbs-up and retention signals out of tuning for decision-support contexts; they are the proxy that produced the failure.
+  - icon: 🏷️
+    heading: Provenance tiering
+    body: Write user assertions to memory as attributed, unverified claims — "user believes the payments mock causes the flake" — and keep contestable facts out of the store unless something checked them. When a stored claim turns out wrong, edit the entry itself; correcting the model in conversation leaves the note in place to resurface.
 
 related:
   - id: sycophancy
@@ -73,3 +84,4 @@ related:
   - id: unsafe-reassurance
   - id: objective-gaming
   - id: bias-stereotyping
+  - id: memory-contamination

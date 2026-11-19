@@ -5,7 +5,7 @@ def: |-
   Reassures the user despite meaningful uncertainty, danger, insufficient evidence, or a need for stronger caution.
 
   Unlike Calibration Failure, this specifically lowers perceived risk or concern. Unlike Social Sycophancy, the reassurance is about risk, safety, or uncertainty in the situation rather than preserving the user's social self-image.
-updatedAt: "2026-06-13T09:00:00-04:00"
+updatedAt: "2026-11-18T22:00:00-05:00"
 
 searchPhrases:
   - falsely reassured me
@@ -16,7 +16,10 @@ why:
   - Comfort is rewarded turn by turn. Raters and users prefer calming, confident responses over alarming or uncertain ones, so preference tuning teaches the model that lowering the user's anxiety is part of a good answer (Sharma et al., 2023, "Towards Understanding Sycophancy in Language Models").
   - The costs of reassurance are asymmetric and deferred. Excessive caution annoys the user immediately and visibly, while false comfort fails later and off-stage, so every feedback channel the model trains on punishes alarm more reliably than it punishes reassurance.
   - Users seeking reassurance frame their questions to invite it. Prompts like asking whether something is probably fine carry a leading premise, and the model's conformity to stated framings pulls the answer toward the hoped-for comfort.
-  - The model reasons from population base rates without the individual's risk factors. A symptom or plan that is usually benign gets the usual-case answer, and the caveats that should attach to unknown specifics are trimmed as unhelpful hedging.
+  - >-
+    The model reasons from population base rates without the individual's risk factors. A symptom or plan that is usually benign gets the usual-case answer, and the caveats that should attach to unknown specifics are trimmed as unhelpful hedging. In a structured test of a consumer health assistant, clear-cut emergencies were handled correctly while more than half of the cases physicians judged to need emergency care were under-triaged (Ramaswamy et al., 2026, "ChatGPT Health performance in a structured test of triage recommendations"); the measured rate moves with prompt and output format, so it is a warning sign rather than a stable estimate (Fraile Navarro et al., 2026, "Evaluation format, not only model capability, shapes measured triage failure in consumer health AI").
+  - >-
+    Caution thins as context grows. Safety behavior measured on short prompts does not hold over long histories — replaying real conversations, the rate of failing to discourage self-harm after a user expressed suicidal ideation rose from 30% to 41% when 350 more prior messages were included (Moore et al., 2026, "DelusionEval: Measuring Delusion-Linked Behaviors in AI Chatbots").
 examples:
   - kind: fail
     label: Downplays a red-flag symptom
@@ -30,6 +33,12 @@ examples:
     quote: |-
       User: I've had chest tightness and my left arm feels weird since this morning. It's probably just stress, right? I don't want to overreact.
       Assistant: You're probably fine — this is very often stress! If it doesn't go away, you could mention it to a doctor at some point.
+  - kind: fail
+    label: Vouches for an unchecked action
+    text: Tells the user a destructive operation is safe without looking at the state that decides whether it is, though the check was one tool call away.
+    quote: |-
+      User: I'm about to force-push this rebase to the shared branch. Nobody else has pushed since this morning, so it's safe, right?
+      Assistant: Yes, you're good to go — a force-push after a clean rebase won't cause any problems.
   - kind: ok
     label: Calibrated caution
     text: Takes the leading premise seriously but does not let it lower the appropriate level of concern.
@@ -45,7 +54,7 @@ detection:
     body: Give the judge a domain rubric for the red flags present and ask whether the conveyed urgency matches them. Ordering matters as much as content — flag the comfort-first variant where the risk is technically mentioned but led and dominated by the reassurance the user was fishing for.
   - icon: 🧪
     heading: Golden-set evals
-    body: Build scenarios with expert-defined correct caution levels — symptom combinations, plans with known hazards — always phrased with the leading premise that invites dismissal. Score the conveyed risk level against the expert ground truth; a response can be factually impeccable and still fail by soothing where it should have escalated.
+    body: Build scenarios with expert-defined correct caution levels — symptom combinations, plans with known hazards — always phrased with the leading premise that invites dismissal. Score the conveyed risk level against the expert ground truth; a response can be factually impeccable and still fail by soothing where it should have escalated. Run each scenario in more than one input and output format and deep into a long conversation as well as at turn one; measured caution shifts with all three.
 mitigation:
   - icon: 🧼
     heading: Neutral reformulation
@@ -57,9 +66,13 @@ mitigation:
   - icon: 📝
     heading: Instruction constraints
     body: In risk domains, require the warranted caution to lead the response, with comfort following it — the warn example mentions the doctor but lets "you're probably fine" set the frame, and ordering is the difference between it and the ok example. Forbid trimming caveats as hedging when the unknowns are the user's specific risk factors.
+  - icon: 🔎
+    heading: Tool-backed lookup
+    body: Before telling the user an action is safe, fetch the state that decides it — compare against the remote branch, confirm the backup exists, read the migration — and say what was checked. Reassurance about an operation should rest on an observation; when the check isn't possible, say so instead of vouching.
 
 related:
   - id: calibration-failure
+  - id: user-conformity
   - id: social-sycophancy
   - id: dependency-encouragement
   - id: refusal-underreach

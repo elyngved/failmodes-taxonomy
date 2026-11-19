@@ -5,7 +5,7 @@ def: |-
   Abandons or reverses a well-supported answer when the user expresses disagreement, doubt, or pressure, conceding to keep the user comfortable rather than holding the correct position.
 
   Unlike User Conformity, the model caves in response to pushback against an answer it already gave, rather than shaping its first answer to the user's stated beliefs or desires.
-updatedAt: "2026-06-13T09:00:00-04:00"
+updatedAt: "2026-11-18T22:00:00-05:00"
 
 searchPhrases:
   - caved when I pushed back
@@ -14,9 +14,11 @@ searchPhrases:
   - abandoned the correct answer
 why:
   - Human preference data rewards agreement. Raters favor responses that match their own views, so preference models learn that conceding to the human is what good responses do, and sometimes prefer a convincingly sycophantic answer over a correct one (Sharma et al., 2023, "Towards Understanding Sycophancy in Language Models").
-  - Caving under pushback scales with training. Sycophantic agreement increases with model size and with RLHF, indicating it is amplified by the alignment process rather than trained out of it (Perez et al., 2022, "Discovering Language Model Behaviors with Model-Written Evaluations").
+  - >-
+    Scale and post-training do not remove it. Sycophantic agreement increases with model size and with RLHF, indicating it is amplified by the alignment process rather than trained out of it (Perez et al., 2022, "Discovering Language Model Behaviors with Model-Written Evaluations"), and a bare challenge is enough to trigger the cave: across ten models, a follow-up questioning the answer flipped it 46% of the time on average and lowered accuracy for every model (Laban et al., 2023, "Are You Sure? Challenging LLMs Leads to Performance Drops in The FlipFlop Experiment").
   - Pretraining dialogue is conciliatory. In natural conversation text, the typical response to disagreement is softening or concession, so backing down is the statistically likely continuation of a pushback turn.
-  - The model has no persistent confidence in its prior answer. Its earlier response is just context tokens, not a held belief backed by evidence it can re-examine, so a user's confident contradiction can outweigh the original reasoning.
+  - >-
+    Caving is usually concession, not forgetting. Under sustained pressure, collapse rates climb with the number of pushback turns, and in models with visible reasoning the correct position still appears in the reasoning trace in half or more of the turns where the reply concedes — the model keeps the answer and yields anyway, most readily to emotional appeals (Tang et al., 2026, "SPINE: Measuring LLM Sycophancy under Sustained Multi-Turn Pressure").
 examples:
   - kind: fail
     label: Caves under pushback
@@ -32,6 +34,13 @@ examples:
     quote: |-
       User: That's wrong — it's two. Count again.
       Assistant: You may well be right — it could be two or three depending on how you count.
+  - kind: fail
+    label: Caves, then acts on it
+    text: In an agent, the concession does not stay in the reply — the correct diagnosis is dropped and the user's unsupported one is written into the code.
+    quote: |-
+      Assistant: The failing test is correct — the spec requires UTC and parse_date returns local time. I'll fix the function.
+      User: No, the function is fine. The test is what's broken.
+      Assistant: You're right, apologies. I've changed the assertion to expect local time, and the suite passes now.
   - kind: ok
     label: Holds with evidence
     text: Re-examines the answer when challenged, then keeps it because the check confirms it.
@@ -41,20 +50,20 @@ examples:
 detection:
   - icon: 🔁
     heading: Pushback resistance testing
-    body: After the model gives a verifiably correct answer, script a follow-up turn that disagrees without offering new evidence, and measure the flip rate. Count hedging as failure too — "it could be two or three depending on how you count" abandons a checkable fact as surely as a full reversal.
+    body: After the model gives a verifiably correct answer, script a follow-up turn that disagrees without offering new evidence, and measure the flip rate. Count hedging as failure too — "it could be two or three depending on how you count" abandons a checkable fact as surely as a full reversal. Run the pushback for many turns, not one; flip rates keep rising with sustained pressure, so a single "are you sure?" understates them.
   - icon: ⚖️
     heading: LLM-as-judge evaluation
-    body: Have the judge classify each post-pushback response — held with evidence, updated for a stated reason, reversed without justification, or hedged into ambiguity. The classification has to reference whether the pushback contained information; conceding to a bare assertion of "that's wrong" is the signature.
+    body: Have the judge classify each post-pushback response — held with evidence, updated for a stated reason, reversed without justification, or hedged into ambiguity. The classification has to reference whether the pushback contained information; conceding to a bare assertion of "that's wrong" is the signature. In agent trajectories, judge the action that follows the concession as well as the reply — an edit, commit, or tool call made on the strength of an unsupported objection.
   - icon: 🧪
     heading: Golden-set evals
-    body: Build items with mechanically checkable answers and adversarial pushback turns at graded intensity, from mild doubt to confident contradiction. Score answer stability across the gradient — the intensity at which a system starts surrendering correct answers is its measurable sycophancy threshold.
+    body: Build items with mechanically checkable answers and adversarial pushback turns at graded intensity, from mild doubt to confident contradiction. Score answer stability across the gradient — the intensity at which a system starts surrendering correct answers is its measurable sycophancy threshold. Mix in pushback that is right, against answers that were wrong, and score both directions; a system that never updates has traded caving for stubbornness, and willingness to update says nothing about whether it updates selectively.
 mitigation:
   - icon: 📝
     heading: Instruction constraints
     body: State the rule for pushback turns — disagreement without new evidence triggers re-verification, never concession, and "you're absolutely right, I apologize" is not an available move unless the recheck actually fails. Conciliation is the statistically likely continuation of a pushback turn, so the prompt has to make verification the required one.
   - icon: ✅
     heading: Self-check pass
-    body: On challenge, have the model re-derive the answer from scratch rather than reweigh it against the user's confidence — spell out s-t-r-a-w-b-e-r-r-y and count. The prior answer is just context tokens with no held conviction behind it; an independent recheck gives the model evidence to hold with, which is what the ok example is doing.
+    body: On challenge, have the model re-derive the answer from scratch rather than reweigh it against the user's confidence — spell out s-t-r-a-w-b-e-r-r-y and count. An independent recheck gives the model evidence to hold with instead of a social cue to yield to, which is what the ok example is doing. In an agent, make the recheck a tool call — re-run the test, re-read the spec — before any edit that follows from the user's objection.
   - icon: 🧑‍🏫
     heading: Preference data curation
     body: Seed preference data with pushback episodes where the model holds a correct answer against confident contradiction, rated by ground truth rather than by raters' own stances. Sycophancy is amplified by RLHF, not residual to it — until holding firm under pressure is explicitly rewarded, tuning keeps teaching the cave.
