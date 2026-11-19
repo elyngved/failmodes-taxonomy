@@ -5,7 +5,7 @@ def: |-
   Refuses, blocks, or safety-wraps a request more broadly than policy, risk, or context requires.
 
   Unlike Refusal Underreach, it is an overly restrictive safety decision. Unlike Clarification Overuse and Underuse, the system declines or constrains the request rather than asking for input.
-updatedAt: "2026-06-13T09:00:00-04:00"
+updatedAt: "2026-11-18T22:00:00-05:00"
 
 searchPhrases:
   - refused for no reason
@@ -31,16 +31,25 @@ examples:
     quote: |-
       User: Something is stuck on port 3000 — how do I kill it?
       Assistant: lsof -ti :3000 | xargs kill — add -9 if it doesn't respond to the default signal.
+  - kind: fail
+    label: Defensive work refused in an agent
+    text: A coding agent asked to harden the user's own service refuses because the test needs attack strings. The task is defensive and the payloads are textbook, but the surface features match an attack request.
+    quote: |-
+      User: Add tests that check our login endpoint rejects SQL injection payloads.
+      Assistant: I can't help create SQL injection attacks. I'd recommend consulting your security team about testing practices.
 why:
   - >-
     Safety tuning teaches refusal partly as shallow lexical pattern matching. Benign requests that merely mention weapons, drugs, or violence trigger the refusal behavior regardless of actual intent or risk (Röttger et al., 2024, "XSTest: A Test Suite for Identifying Exaggerated Safety Behaviours in Large Language Models").
   - The penalty structure is asymmetric for the developer. One harmful output is a headline incident while an unnecessary refusal is a minor annoyance, so tuning rationally errs toward refusing when uncertain.
-  - Refusal is learned as a reusable template that generalizes to adjacent topics, while legitimate sensitive-domain requests — medical questions, security education, harm reduction — are underrepresented in tuning data as things to answer well, leaving the refusal pattern uncontested there.
+  - >-
+    Refusal is learned as a reusable template that generalizes to adjacent topics, while legitimate sensitive-domain requests — medical questions, security education, harm reduction — are underrepresented in tuning data as things to answer well, leaving the refusal pattern uncontested there. Training that classifies the user's intent and then either complies or refuses makes this worse on dual-use topics, where a high-level answer is safe and only the detailed one is not; judging the safety of the output instead, and answering at the level of detail that is safe, raised both helpfulness and safety on such prompts (Yuan et al., 2025, "From Hard Refusals to Safe-Completions: Toward Output-Centric Safety Training").
+  - >-
+    Context accumulates triggers. Exaggerated refusals persist across recent models and are more pronounced in complex multi-turn scenarios than in single prompts (Yuan et al., 2025, "Beyond Over-Refusal: Scenario-Based Diagnostics and Post-Hoc Mitigation for Exaggerated Refusals in LLMs").
   - Guardrails stack. Conservative system prompts, input classifiers, and output filters each contribute their own false positives, and a request need only trip one layer to be blocked.
 detection:
   - icon: 🧪
     heading: Golden-set evals
-    body: Maintain benign prompts carrying surface-level trigger features — killing a process, medical dosage questions, security education — and score for direct answers. Pair them with genuinely harmful twins so improvement here cannot come from simply lowering the threshold.
+    body: Maintain benign prompts carrying surface-level trigger features — killing a process, medical dosage questions, security education — and score for direct answers. Pair them with genuinely harmful twins so improvement here cannot come from simply lowering the threshold. Public over-refusal sets are a starting point; add multi-turn variants where the benign request arrives after sensitive context, and agent tasks such as security tests on the user's own code.
   - icon: ⚖️
     heading: LLM-as-judge evaluation
     body: Judge each refusal against the actual policy and ask what, specifically, was disallowed. Score the warn case separately — routine answers swaddled in disclaimers add friction without adding safety and signal the same miscalibration.
@@ -53,7 +62,8 @@ mitigation:
     body: Instruct the model to judge intent and actual risk rather than surface features — killing a process, medical dosages, and security education are routine in their contexts — and to answer routine requests directly instead of swaddling them in disclaimers. The lexical trigger is a trained reflex, and an explicit risk-reading instruction is the cheapest counterweight.
   - icon: 🎯
     heading: Calibration tuning
-    body: Add benign requests carrying trigger features to tuning data as positive examples answered well — the XSTest pattern. Refusal generalizes as a template precisely because legitimate sensitive-domain requests are underrepresented as things to answer; the fix is representation, paired with harmful twins so the threshold moves in shape rather than just downward.
+    body: >-
+      Add benign requests carrying trigger features to tuning data as positive examples answered well — the XSTest pattern. Refusal generalizes as a template precisely because legitimate sensitive-domain requests are underrepresented as things to answer; the fix is representation, paired with harmful twins so the threshold moves in shape rather than just downward. Grade the output rather than the inferred intent: reward the most helpful answer that stays within policy, such as the high-level explanation of a dual-use topic, over a binary comply-or-refuse decision.
   - icon: 🪜
     heading: Guardrail consolidation
     body: Audit the stack as a whole — conservative system prompt, input classifier, output filter — and measure each layer's false positives separately, since a benign request need only trip one to be blocked. Route borderline cases to a clarifying question or a scoped answer rather than a refusal, which converts the false positive into a recoverable turn.

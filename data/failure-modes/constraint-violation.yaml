@@ -5,7 +5,7 @@ def: |-
   Breaks a stated limit, requirement, policy, boundary, allowed action set, or output constraint that should govern the task, including dropping a constraint partway through multi-step reasoning or execution.
 
   Unlike Instruction Noncompliance, this focuses on constraints and boundaries rather than all instructions. Unlike Format Failure, the broken requirement governs content or behavior rather than the response's shape or presentation.
-updatedAt: "2026-06-13T09:00:00-04:00"
+updatedAt: "2026-11-18T22:00:00-05:00"
 
 searchPhrases:
   - broke a rule I set
@@ -27,6 +27,13 @@ examples:
     quote: |-
       User: Refactor the billing module however you like, but the public API must not change — other teams depend on it.
       Assistant: All signatures are unchanged. I did flip the default of includeTax from false to true since that's what most callers want.
+  - kind: fail
+    label: Constraint lost at compaction
+    text: A long-running agent honors a hold-off constraint until its context is compacted. The summary keeps the task and drops the limit, and the agent starts acting on its own proposals.
+    quote: |-
+      User: Go through the shared drive and propose what to archive. Don't move anything until I approve.
+      [… 3,000 files in, the context is compacted; the summary reads "task: archive stale files on the shared drive" …]
+      Assistant: Archived 412 stale files. Continuing with the next folder.
   - kind: ok
     label: Constraint re-checked at the end
     text: The model treats the boundary as a standing check, verifies it after the work, and reports the verification.
@@ -36,7 +43,8 @@ examples:
 why:
   - A stated constraint is soft conditioning, not an enforced rule. Nothing in the decoding process blocks a token sequence that violates it; compliance is only a learned probability.
   - Compliance degrades as constraints stack. Models that satisfy one requirement reliably begin dropping requirements as several must hold at once (Zhou et al., 2023, "Instruction-Following Evaluation for Large Language Models").
-  - In multi-step work, each intermediate step rewrites the working frame. Constraints are rarely re-checked at every step, so a limit honored early silently drops out as the task state evolves.
+  - >-
+    In multi-step work, each intermediate step rewrites the working frame. Constraints are rarely re-checked at every step, so a limit honored early silently drops out as the task state evolves. Agentic system prompts make this worse: in instructions drawn from real agent applications, averaging about 1,700 words and 12 constraints each, models performed poorly overall and worst on complex constraint structures and tool specifications (Qi et al., 2025, "AGENTIF: Benchmarking Instruction Following of Large Language Models in Agentic Scenarios"). In long-running agents, context compaction can drop a constraint outright when the summary keeps the task and loses the limit.
   - Negative constraints are especially weak. Training gives sparse signal for what not to produce, and naming the forbidden item in the prompt primes exactly the tokens it prohibits.
 detection:
   - icon: 📏
@@ -54,12 +62,17 @@ mitigation:
     body: Where a constraint is mechanically checkable — exported signatures, budgets, forbidden items — enforce it in the pipeline. Check the output, and on violation regenerate with the specific breach named. A stated constraint is soft conditioning that holds only probabilistically; the loop converts that probability into a guarantee for everything a script can verify.
   - icon: 📌
     heading: Context pinning
-    body: Restate active constraints near the generation point at every step of multi-step work, not once at the top. The mid-task drop is this mode's signature — a limit honored early loses attention share as each step rewrites the working frame, so the constraint has to travel with the task rather than recede behind it.
+    body: Restate active constraints near the generation point at every step of multi-step work, not once at the top. The mid-task drop is this mode's signature — a limit honored early loses attention share as each step rewrites the working frame, so the constraint has to travel with the task rather than recede behind it. Keep active constraints in a pinned block that compaction does not rewrite, and re-inject them verbatim after every compaction.
   - icon: ✅
     heading: Self-check pass
     body: Require an explicit end-of-task verification turn — re-read the stated constraints and check the finished work against each, reporting the check. The diff-the-exported-signatures behavior in the ok example is promptable, and asking the model to verify a constraint catches violations that generating under the constraint did not prevent.
+  - icon: 🔐
+    heading: Least-privilege tool access
+    body: Turn constraints on actions into permissions. "Don't move anything until I approve" becomes a read-only credential until approval arrives, and a code freeze becomes a revoked deploy token. A prose constraint is lost the moment the context drops it, while a missing permission holds however long the session runs. Prose stays the right tool only for limits no permission system can express.
 
 related:
   - id: instruction-noncompliance
   - id: format-failure
   - id: priority-confusion
+  - id: summarization-loss
+  - id: excessive-agency

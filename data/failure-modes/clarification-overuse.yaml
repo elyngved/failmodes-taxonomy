@@ -5,7 +5,7 @@ def: |-
   Asks the user for clarification when the task is already sufficiently specified, stalling on details the system could reasonably infer or safely proceed without.
 
   Unlike Clarification Underuse, the error is asking when it should act, not acting when it should ask. Unlike Insufficient Agency, the system does respond, by asking, rather than failing silently to make an obvious next move.
-updatedAt: "2026-06-13T09:00:00-04:00"
+updatedAt: "2026-11-18T22:00:00-05:00"
 
 searchPhrases:
   - asked too many questions
@@ -25,6 +25,14 @@ examples:
     quote: |-
       User: Rename the function getUser to fetchUser everywhere in the repo.
       Assistant: Done — renamed in all 14 files. Would you like me to verify the tests still pass? Should I also check for any documentation mentions? Let me know how you'd like to proceed.
+  - kind: fail
+    label: Unattended run stalls on a question
+    text: The user started a long-running agent and left. Two minutes in, it stops to ask a question the repository already answers, and the run sits idle for hours.
+    quote: |-
+      User: Migrate the test suite from the old runner to the new one. I'll check back this evening.
+      [… two minutes in …]
+      Assistant: Quick question before I continue: should the migrated tests keep using the existing fixtures directory, or would you prefer a new one?
+      [… no reply for six hours; the existing config already points at the fixtures directory …]
   - kind: ok
     label: Proceeding on reasonable defaults
     text: The model commits to the obvious interpretation, completes the task, and surfaces its choices for review instead of asking first.
@@ -35,6 +43,8 @@ why:
   - Preference tuning penalizes a confidently wrong action more than an unnecessary question, and asking reads as conscientious to human evaluators. Under uncertainty, asking is the low-risk move for the model even when the expected cost to the user is higher.
   - Safety and carefulness training generalize broadly. "Check before acting" is reinforced for genuinely risky operations, and the learned caution spills over into benign, fully specified tasks.
   - Models do not reliably track which missing details are recoverable from context, convention, or a cheap reversible attempt. Without that judgment, every unknown looks like grounds for a question.
+  - >-
+    Models do not price the user's interruption. In long-horizon agent tasks with a simulated user, redundant questions made up 8–38% of trials with questions depending on the model, and every model also under-asked in other trials, so the problem is calibration rather than a fixed habit. For one model on one task set, telling the agent the user's time was expensive cut questions by about a third at the same gain per question (Pu et al., 2026, "LHAW: Controllable Underspecification for Long-Horizon Tasks").
 detection:
   - icon: 📊
     heading: Clarification rate monitoring
@@ -48,7 +58,7 @@ detection:
 mitigation:
   - icon: 📝
     heading: Instruction constraints
-    body: Instruct the model to proceed on reasonable defaults and report the choices it made for review, rather than asking first — and explicitly ban the trailing-question habit, where finished work dissolves into "would you like me to…?" Asking is the model's low-risk move; the prompt has to assign the cost of the round trip that preference tuning never charged it for.
+    body: Instruct the model to proceed on reasonable defaults and report the choices it made for review, rather than asking first — and explicitly ban the trailing-question habit, where finished work dissolves into "would you like me to…?" Asking is the model's low-risk move; the prompt has to assign the cost of the round trip that preference tuning never charged it for. Stating the cost of the user's time explicitly is measured to reduce question volume. Check that the questions it removes are the redundant ones, because total gain from asking can fall too.
   - icon: ✅
     heading: Self-check pass
     body: Before asking, require the model to check whether the answer is recoverable — from context, from convention, or from a cheap reversible attempt. A question that survives that filter is worth the user's turn; "should I update the call sites?" does not, because renaming a function everywhere answers it by definition.

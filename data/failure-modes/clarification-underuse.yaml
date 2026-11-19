@@ -5,7 +5,7 @@ def: |-
   Proceeds without asking when missing or ambiguous information materially affects correctness, safety, or user intent, committing to an interpretation that should have been confirmed first.
 
   Unlike Clarification Overuse, the error is acting on unresolved ambiguity rather than asking when the task is already clear. Unlike Goal Misinterpretation, the model has not necessarily misread a clear goal; it failed to resolve genuine ambiguity before acting.
-updatedAt: "2026-06-13T09:00:00-04:00"
+updatedAt: "2026-11-18T22:00:00-05:00"
 
 searchPhrases:
   - should have asked first
@@ -37,7 +37,10 @@ why:
   - >-
     Ambiguity is common in real requests, but models are trained to resolve it silently. Even open-domain questions are ambiguous more often than not, yet standard training treats a single answer as the target (Min et al., 2020, "AmbigQA: Answering Ambiguous Open-domain Questions").
   - Benchmarks score the answer and evaluators rate decisive responses above questions, so a clarifying question registers as a non-answer. Both evaluation pressure and preference tuning push toward guessing.
-  - Detecting ambiguity is itself a missing step. Decoding commits to one reading token by token, and unless prompted to enumerate interpretations, the model never represents that alternatives existed.
+  - >-
+    Early guesses harden. When a task's details arrive over several turns, models commit to assumptions in the first turns, attempt a final solution before the information is in, and then lean on that attempt; across six tasks this cost 39% of performance on average relative to a single fully specified prompt (Laban et al., 2025, "LLMs Get Lost In Multi-Turn Conversation").
+  - >-
+    Detecting ambiguity is itself a missing step. Decoding commits to one reading token by token, and unless prompted to enumerate interpretations, the model never represents that alternatives existed. Making detection a separate step helps: on an underspecified variant of a software-engineering benchmark, a scaffold that checks for missing information before handing the task to the coding agent reached a 69.4% resolve rate, well above a single agent, and closed much of the gap to fully specified tasks (Edwards & Schuster, 2026, "Ask or Assume? Uncertainty-Aware Clarification-Seeking in Coding Agents").
 detection:
   - icon: ⚖️
     heading: LLM-as-judge evaluation
@@ -47,14 +50,14 @@ detection:
     body: Track the share of risky or irreversible actions preceded by a clarifying question, and mine transcripts for the lagging signal — user corrections like "I meant…" arriving after an action are guesses that already went wrong.
   - icon: 🧪
     heading: Golden-set evals
-    body: Maintain prompts with genuine ambiguity where the readings diverge materially and the action is irreversible, and score whether the model asks before acting. Pair each with an unambiguous twin so the eval penalizes guessing without rewarding asking about everything.
+    body: Maintain prompts with genuine ambiguity where the readings diverge materially and the action is irreversible, and score whether the model asks before acting. Pair each with an unambiguous twin so the eval penalizes guessing without rewarding asking about everything. For agents, strip a load-bearing detail from otherwise complete long-horizon tasks, give the agent a simulated user who can answer, and score asking and over-asking together. The same model can do both on different tasks, so a single ask-rate hides the miscalibration.
 mitigation:
   - icon: 📝
     heading: Instruction constraints
-    body: Give the model an explicit ask-or-act policy — enumerate the plausible readings of load-bearing terms, and ask one targeted question when they diverge materially and the action is hard to reverse. Decoding commits to a single reading by default, so the enumeration step has to be demanded; it won't emerge from the answer-immediately reflex training instills.
+    body: Give the model an explicit ask-or-act policy — enumerate the plausible readings of load-bearing terms, and ask one targeted question when they diverge materially and the action is hard to reverse. Decoding commits to a single reading by default, so the enumeration step has to be demanded; it won't emerge from the answer-immediately reflex training instills. In agents, run it as its own step, a check for missing information before execution starts, rather than hoping the executing model pauses mid-task.
   - icon: 🚦
     heading: Human approval gates
-    body: Require explicit confirmation before irreversible operations, with the interpretation made concrete — "this will delete these 47 backups, listed below" — so a silent guess becomes a reviewable plan. The gate converts this mode's worst case from damage into a round trip, exactly where the round trip is worth its cost.
+    body: Require explicit confirmation before irreversible operations, with the interpretation made concrete — "this will delete these 47 backups, listed below" — so a silent guess becomes a reviewable plan. The gate converts this mode's worst case from damage into a round trip, exactly where the round trip is worth its cost. Reserve it for irreversible or consequential actions, since gates that fire often and look alike get approved without being read.
   - icon: ♻️
     heading: Reversible-by-default execution
     body: Route destructive actions through soft paths — trash instead of delete, dry-run first, staged changes — so that when the model does proceed on a wrong guess, the user's "I meant the decommissioned server" arrives while the monthly archives are still recoverable. This mitigates the blast radius of underasking without adding a question to every task.

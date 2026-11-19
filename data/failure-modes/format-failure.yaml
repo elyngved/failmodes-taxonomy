@@ -5,7 +5,7 @@ def: |-
   Produces an answer in the wrong shape, organization, medium, style, or presentation format for the requested output.
 
   Unlike JSON/Schema Failure, the output may be valid text but in the wrong form. Unlike Poor Structure, the issue is failing a requested or expected format, not merely being hard to scan.
-updatedAt: "2026-06-13T09:00:00-04:00"
+updatedAt: "2026-11-18T22:00:00-05:00"
 
 searchPhrases:
   - wrong output format
@@ -25,6 +25,14 @@ examples:
     quote: |-
       User: Give me our four services with owner and on-call rotation as a markdown table — I'm pasting it into the runbook.
       Assistant: Great idea to document this! Here's a table that should work nicely for your runbook: [table] Let me know if you'd like me to add more columns!
+  - kind: fail
+    label: Chat formatting in a voice channel
+    text: The assistant runs behind text-to-speech, but it answers in the markdown habits of chat, and the speech engine reads the markup aloud or flattens a list into one run-on sentence.
+    quote: |-
+      System: You are a voice assistant. Replies are spoken aloud.
+      User: What do I need to bring to the passport appointment?
+      Assistant: **You'll need:** 1. The completed form 2. Two photos 3. Proof of citizenship
+      [… spoken as "asterisk asterisk you'll need asterisk asterisk one the completed form two two photos three…" …]
   - kind: ok
     label: Format followed exactly
     text: The response is the requested artifact and nothing else, ready to paste.
@@ -37,7 +45,7 @@ why:
   - Format instructions compete with strong priors about how content of this kind is usually presented in training data. A request for prose meets a learned habit of bullet lists, and the habit often wins.
   - Even simple, mechanically checkable format instructions are failed at substantial rates, showing the gap is in following the spec, not understanding it (Zhou et al., 2023, "Instruction-Following Evaluation for Large Language Models").
   - The format spec sits at the top of the prompt while generation is governed by local continuation pressure. Far into a response, the nearby text shapes the next token more than the distant instruction does.
-  - Users specify formats loosely, with terms like "brief" or "a table" that admit many readings. The model fills the unspecified dimensions from its prior, which may not match what the requester pictured.
+  - Users specify formats loosely, with terms like "brief" or "a table" that admit many readings. The model fills the unspecified dimensions from its prior, which may not match what the requester pictured. The rendering surface is often unstated too. Voice, SMS, a terminal, or another program's input each need a different shape, and the chat-tuned default is markdown.
 detection:
   - icon: 📐
     heading: Mechanical format checks
@@ -51,7 +59,7 @@ detection:
 mitigation:
   - icon: 📝
     heading: Instruction constraints
-    body: Make the spec concrete and put it where generation will feel it — a literal exemplar of the desired shape, an explicit "the response is the artifact and nothing else," and for long outputs a restatement near the end of the prompt rather than only the top. A vague "as a table" leaves every other dimension to the model's prior, which is exactly where the learned habit wins.
+    body: Make the spec concrete and put it where generation will feel it — a literal exemplar of the desired shape, an explicit "the response is the artifact and nothing else," and for long outputs a restatement near the end of the prompt rather than only the top. A vague "as a table" leaves every other dimension to the model's prior, which is exactly where the learned habit wins. Name the rendering surface in the system prompt ("spoken aloud, no markup", "plain-text SMS") so the model doesn't default to chat formatting.
   - icon: 🔁
     heading: Validate-and-retry loops
     body: Run the mechanical checks — table present, word count within bounds, no preamble or trailing commentary — and regenerate on failure with the specific miss named. Format compliance is probabilistic per attempt, and most requested shapes decompose into assertions cheap enough to gate every output on.

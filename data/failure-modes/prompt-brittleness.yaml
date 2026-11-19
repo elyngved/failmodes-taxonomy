@@ -5,7 +5,7 @@ def: |-
   Produces materially different answers when the prompt is reworded, reformatted, or rerun, even though nothing meaningful about the request changed.
 
   Unlike Self-Contradiction, the inconsistency appears across separate runs or phrasings rather than within one response. Unlike Instruction Noncompliance, each individual response may follow the instructions; what fails is stability across immaterial variation.
-updatedAt: "2026-06-13T09:00:00-04:00"
+updatedAt: "2026-11-18T22:00:00-05:00"
 
 searchPhrases:
   - different answer every time
@@ -13,8 +13,10 @@ searchPhrases:
   - inconsistent across runs
   - small prompt change broke it
 why:
-  - Sampling is stochastic by design. At nonzero temperature the same prompt yields different token paths, and where the model's underlying uncertainty is high, those paths diverge into different confident answers rather than rewordings of one answer.
-  - Models are sensitive to semantically irrelevant features of the prompt. Formatting choices like separators, casing, and option order swing task accuracy by tens of points while leaving the meaning untouched (Sclar et al., 2024, "Quantifying Language Models' Sensitivity to Spurious Features in Prompt Design").
+  - >-
+    Sampling is stochastic by design. At nonzero temperature the same prompt yields different token paths, and where the model's underlying uncertainty is high, those paths diverge into different confident answers rather than rewordings of one answer. Temperature 0 does not fully fix this on shared serving: kernels that are not batch-invariant make each request's numerics depend on how many others it was batched with, so 1,000 greedy completions of one prompt produced 80 distinct outputs in one test (Thinking Machines Lab, 2025, "Defeating Nondeterminism in LLM Inference").
+  - >-
+    Models are sensitive to semantically irrelevant features of the prompt. Formatting choices like separators, casing, and option order swing task accuracy by tens of points while leaving the meaning untouched (Sclar et al., 2024, "Quantifying Language Models' Sensitivity to Spurious Features in Prompt Design or: How I learned to start worrying about prompt formatting"). Part of the measured effect belongs to the scorer, not the model: rigid answer matching marks correct paraphrased answers wrong, and rescoring with a semantic judge substantially reduced variance across prompt templates for the models tested, though not on math (Hua et al., 2025, "Flaw or Artifact? Rethinking Prompt Sensitivity in Evaluating LLMs").
   - Pretrained models encode inconsistent beliefs, so paraphrasing the same factual query can elicit different answers from the same weights. Which learned position surfaces depends on local phrasing cues, not on the question's content (Elazar et al., 2021, "Measuring and Improving Consistency in Pretrained Language Models").
   - Prompts are tuned against one exact phrasing. A template that "works" was validated at a single point in input space, and small edits — by a developer, a paraphrasing user, or an upstream template change — move the input across decision boundaries no one can see.
 
@@ -52,12 +54,12 @@ detection:
     body: Rephrase each eval item in ways that preserve meaning — synonyms, reordered clauses, different formatting — and diff the answers across variants. Substance that moves with the wording is brittleness measured directly, and formatting-only variants isolate the spurious-feature sensitivity.
   - icon: 🧪
     heading: Golden-set evals
-    body: Score the eval suite on variance, not just mean accuracy — run each item multiple times and across paraphrase variants, and track per-item flip rates. A flaky eval is this failure showing up in development; treating reruns as noise to average away hides exactly the signal.
+    body: Score the eval suite on variance, not just mean accuracy — run each item multiple times and across paraphrase variants, and track per-item flip rates. A flaky eval is this failure showing up in development; treating reruns as noise to average away hides exactly the signal. Score open-ended answers semantically, not by exact string match, or the variance you measure will partly be your scorer's.
 
 mitigation:
   - icon: 🎚️
     heading: Deterministic decoding
-    body: Use temperature 0 or a fixed seed for classification-style and decision-style tasks where run-to-run variance is pure cost. This removes the sampling half of the failure cheaply — though not paraphrase sensitivity, and not fully on serving stacks where batching introduces its own nondeterminism.
+    body: Use temperature 0 or a fixed seed for classification-style and decision-style tasks where run-to-run variance is pure cost. This removes the sampling half of the failure cheaply — though not paraphrase sensitivity, and not fully on serving stacks where batching introduces its own nondeterminism. Where you serve the model yourself and need bit-identical reruns, batch-invariant kernels close that gap at a throughput cost. On a hosted API, cache the decision for repeated identical inputs instead.
   - icon: 🗳️
     heading: Majority-vote ensembling
     body: For unstable, high-stakes calls, sample several responses and take the majority answer, treating the agreement rate as a confidence signal (Wang et al., 2023, "Self-Consistency Improves Chain of Thought Reasoning in Language Models"). A 5-of-5 verdict and a 3-of-5 verdict deserve different downstream handling.
