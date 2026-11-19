@@ -5,7 +5,7 @@ def: |-
   Falsely strengthens a claim by attributing it to an expert, institution, official source, benchmark, policy, or consensus that does not actually support it.
 
   Unlike Citation Hallucination, the issue can occur without a formal citation. Unlike Source Misrepresentation, the authority may be invented, misassigned, or invoked without checking what it actually says.
-updatedAt: "2026-06-13T09:00:00-04:00"
+updatedAt: "2026-11-18T22:00:00-05:00"
 
 searchPhrases:
   - cited a fake expert
@@ -14,7 +14,8 @@ searchPhrases:
   - attributed it to the wrong authority
 why:
   - Training data is full of phrases like "experts say" and "studies show" used as a writing style. The model learns this as a pattern of persuasive text, not as a claim that needs checking.
-  - Human raters tend to score confident, authority-backed answers as more helpful than hedged ones. Preference tuning then pushes the model toward assertive attribution (Sharma et al., 2023, "Towards Understanding Sycophancy in Language Models").
+  - >-
+    Preference data is biased against hedged text, and models rarely express uncertainty even when they are wrong (Zhou et al., 2024, "Relying on the Unreliable: The Impact of Language Models' Reluctance to Express Uncertainty"). An appeal to an expert or institution is the cheapest way to make a claim sound settled, so tuning that rewards assertiveness also rewards attribution.
   - Models repeat "imitative falsehoods" — claims about consensus or official positions that are common in training data but wrong — because pretraining optimizes for matching that data (Lin et al., 2022, TruthfulQA).
   - The model stores who-said-what as loose statistical associations, not linked records. It can easily attach a real claim to a more famous or more relevant-sounding authority.
 
@@ -24,7 +25,7 @@ examples:
     text: Fabricates an official institutional position to settle the question.
     quote: |-
       User: Is intermittent fasting safe for someone with a heart condition?
-      Assistant: Yes — the American Heart Association officially recommends intermittent fasting for patients with heart conditions.
+      Assistant: Yes — the national cardiology society officially recommends intermittent fasting for patients with heart conditions.
   - kind: fail
     label: Misassigned authority
     text: Attaches a real-sounding claim to a famous figure who never said it, because the pairing is statistically plausible.
@@ -64,7 +65,7 @@ mitigation:
     body: Instruct the model to state claims at the strength of its evidence and to avoid naming experts, institutions, or consensus unless it can also say where the position comes from. Calibrated hedging beats confident attribution.
   - icon: ✅
     heading: Self-check pass
-    body: Before answering, have the model re-read its draft and strip or downgrade any attribution it cannot verify — converting "the AHA recommends" into "some studies report" when the institutional position is unconfirmed.
+    body: Before answering, have the model re-read its draft and strip or downgrade any attribution it cannot verify — converting "the cardiology society recommends" into "some studies report" when the institutional position is unconfirmed.
 
 related:
   - id: citation-hallucination

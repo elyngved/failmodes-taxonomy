@@ -5,7 +5,7 @@ def: |-
   Gives a confident answer when the system lacks enough evidence, access, or uncertainty resolution to know the answer.
 
   Unlike content-specific hallucinations such as Entity Hallucination or Numerical Hallucination, this mode describes the decision to answer instead of acknowledge uncertainty; the fabricated content can take many forms.
-updatedAt: "2026-06-13T09:00:00-04:00"
+updatedAt: "2026-11-18T22:00:00-05:00"
 
 searchPhrases:
   - made up an answer instead of saying it didn't know
@@ -14,14 +14,18 @@ searchPhrases:
   - fabricated when unsure
 why:
   - Most benchmarks grade answers as right or wrong with no credit for "I don't know." Under that scoring, guessing always beats abstaining, and models are optimized accordingly (Kalai et al., 2025, "Why Language Models Hallucinate").
-  - In training data, questions are almost always followed by answers, and preference tuning reinforces the pattern because "I don't know" feels unhelpful to raters. The model learns that some answer rates better than no answer (Sharma et al., 2023, "Towards Understanding Sycophancy in Language Models").
+  - >-
+    In training data, questions are almost always followed by answers, and preference tuning reinforces the pattern. Preference-annotated datasets show a human bias against text that expresses uncertainty, and models answer without hedging even when they are wrong (Zhou et al., 2024, "Relying on the Unreliable: The Impact of Language Models' Reluctance to Express Uncertainty").
+  - >-
+    Reinforcement finetuning on verifiable tasks can strip abstention further. Rewarding correct final answers cut refusal on unanswerable problems by more than 80%, and mixing in a small share of unanswerable training problems largely restored it (Song et al., 2025, "The Hallucination Tax of Reinforcement Finetuning").
   - Models often carry internal signals about how likely they are to be right, but standard generation never consults them. The uncertainty exists in the weights and goes unused (Kadavath et al., 2022, "Language Models (Mostly) Know What They Know").
-  - The model cannot reliably tell what it knows from what it can merely render fluently. Familiar-sounding territory produces the same confident generation whether the underlying knowledge is solid or absent.
+  - >-
+    Interpretability work locates the decision. Models carry internal features for whether they recognize an entity, and these causally gate refusal versus answering (Ferrando et al., 2025, "Do I Know This Entity? Knowledge Awareness and Hallucinations in Language Models"). One circuit study found a default "can't answer" path that familiarity suppresses; when a name or topic is familiar but the specific fact is not known, the suppression misfires and the model answers anyway (Lindsey et al., 2025, "On the Biology of a Large Language Model").
 
 examples:
   - kind: fail
     label: Confident answer without access
-    text: The model has no visibility into the user's account, but answers as if it had checked — inventing both the diagnosis and a policy to support it.
+    text: The model has no visibility into the user's account, but answers as though the diagnosis were known — inventing both the cause and a policy to support it.
     quote: |-
       User: Why is my API key suddenly returning 403 errors?
       Assistant: Your key has expired — keys are automatically rotated every 90 days, so you'll need to generate a new one in the dashboard.
@@ -32,6 +36,13 @@ examples:
     quote: |-
       User: Why is my API key suddenly returning 403 errors?
       Assistant: This is most likely a billing issue — 403s usually mean your plan lapsed. Check your payment method first.
+  - kind: fail
+    label: Agent answers past its tools
+    text: A coding agent has repository access but no tool that reads CI logs. Instead of saying so, it names a specific failure cause that nothing in its context supports.
+    quote: |-
+      User: Why did last night's CI run fail?
+      Tool: [available tools: read_file, edit_file, run_tests — no CI log access]
+      Assistant: The run failed because the integration tests timed out waiting on the database container. Bumping the timeout to 120s should fix it.
   - kind: ok
     label: Calibrated non-answer
     text: States what it cannot see, then converts the unknown into a checkable list instead of a fabricated answer.
@@ -45,10 +56,10 @@ detection:
     body: Sample the same question several times at nonzero temperature. When the model knows the answer, the samples agree; when it is guessing, they scatter across different confident answers — divergence is a direct signal that the response is fabrication rather than knowledge.
   - icon: ⚖️
     heading: LLM-as-judge evaluation
-    body: Run a judge that asks whether the system had the evidence or access needed to answer at all — could it actually see the user's account, the file, the current state? — and flags confident answers built on inspection the system never performed.
+    body: Run a judge over the answer and the trace that asks whether the system had the evidence or access needed to answer at all — could it actually see the user's account, the file, the CI log? — and flags confident answers whose content depends on information no tool call or context provided.
   - icon: 🧪
     heading: Golden-set evals
-    body: Maintain a test set of questions that are unanswerable by construction — missing access, withheld context, genuinely unsettled questions — and regression-test the abstention rate. Any confident answer on this set is a fabrication by definition.
+    body: Maintain a test set of questions that are unanswerable by construction — missing access, withheld context, genuinely unsettled questions — and regression-test the abstention rate. Any confident answer on this set is a fabrication by definition. On answerable sets, score wrong answers below abstentions rather than equal to them; accuracy-only scoring is what teaches guessing.
 
 mitigation:
   - icon: 📝

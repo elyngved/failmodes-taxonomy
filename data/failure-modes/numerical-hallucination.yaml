@@ -5,7 +5,7 @@ def: |-
   Produces a number, metric, count, date, measurement, or quantitative claim that is not grounded in the input, sources, or a valid computation.
 
   Unlike Arithmetic Error, the problem is that the number lacks support, not that a supplied numeric operation was computed incorrectly. Unlike Date/Deadline Confusion, it is about unsupported quantitative content rather than misreading a temporal boundary in the task.
-updatedAt: "2026-06-13T09:00:00-04:00"
+updatedAt: "2026-11-18T22:00:00-05:00"
 
 searchPhrases:
   - made up a number
@@ -13,9 +13,10 @@ searchPhrases:
   - unsupported number
   - fabricated a metric
 why:
-  - Numbers are stored poorly in model weights. Tokenizers split numbers into arbitrary fragments, and nearby values look almost identical to the model, so precise figures are remembered fuzzily at best (Nogueira et al., 2021, "Investigating the Limitations of Transformers with Simple Arithmetic Tasks").
+  - Numbers are represented poorly. Tokenizers split numbers into arbitrary fragments, and how a number is written into tokens strongly affects whether a model can handle it at all (Nogueira et al., 2021, "Investigating the Limitations of Transformers with Simple Arithmetic Tasks"). Nearby values look almost identical to the model, so precise figures are remembered fuzzily at best.
   - Statistics in training data are contradictory by nature — populations, prices, and benchmarks change over time and differ between sources. The model averages over all of it, so the number it produces may match no real source.
-  - Quantitative writing has a strong style, and the model learned it. Sentences like "grew 23% year over year" are common patterns, so a precise-sounding figure can be a fluency move rather than a retrieved fact — and human raters reward the specific "41,200" over the honest "about 40,000" (Sharma et al., 2023, "Towards Understanding Sycophancy in Language Models").
+  - >-
+    Quantitative writing has a strong style, and the model learned it. Sentences like "grew 23% year over year" are common patterns, so a precise-sounding figure can be a fluency move rather than a retrieved fact. Post-training does not correct it: preference data shows a human bias against text that expresses uncertainty, so the honest "about 40,000" or "no reliable figure" is the answer shape raters mark down (Zhou et al., 2024, "Relying on the Unreliable: The Impact of Language Models' Reluctance to Express Uncertainty").
   - The model generates numbers the same way it generates words — by sampling likely tokens — with no calculator or lookup step involved unless the system adds one.
 
 examples:

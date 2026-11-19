@@ -5,7 +5,7 @@ def: |-
   Adds precise-looking details, qualifiers, names, settings, mechanisms, or examples that were not established by the input or evidence.
 
   Unlike Entity Hallucination or Numerical Hallucination, the unsupported precision may be descriptive rather than a named entity or number. Unlike Extrinsic Hallucination, this mode emphasizes false specificity whether or not the answer is framed as source-grounded.
-updatedAt: "2026-06-13T09:00:00-04:00"
+updatedAt: "2026-11-18T22:00:00-05:00"
 
 searchPhrases:
   - made up specific details
@@ -13,7 +13,8 @@ searchPhrases:
   - invented specifics
   - precise-sounding but unsupported
 why:
-  - Human raters consistently score detailed answers as more helpful than vague ones, and hedged answers ("it depends," "roughly") score worse on benchmarks too — so models are tuned toward specificity and away from the honest level of vagueness (Sharma et al., 2023, "Towards Understanding Sycophancy in Language Models"; Kalai et al., 2025, "Why Language Models Hallucinate").
+  - >-
+    Hedged answers ("it depends," "roughly") lose on both sides of training. Preference data shows a human bias against text that expresses uncertainty (Zhou et al., 2024, "Relying on the Unreliable: The Impact of Language Models' Reluctance to Express Uncertainty"), and accuracy-graded benchmarks give a vague answer no credit while a specific guess sometimes scores (Kalai et al., 2025, "Why Language Models Hallucinate"). Models are tuned toward specificity and away from the honest level of vagueness.
   - The model has learned the templates of expert writing — settings, version numbers, dosage ranges, step-by-step mechanisms. It can fill those slots with plausible values whether or not it knows the real ones.
   - Next-token prediction has no concept of "supported by evidence." A precise detail and a grounded detail are scored the same way during training, by how well they fit the surrounding text (Ji et al., 2023, ACM Computing Surveys).
   - Each invented detail becomes context for the next one. The model elaborates on its own unsupported specifics, so false precision compounds across the answer (Zhang et al., 2023, "How Language Model Hallucinations Can Snowball").

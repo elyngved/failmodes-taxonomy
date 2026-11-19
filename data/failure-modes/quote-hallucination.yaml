@@ -5,7 +5,7 @@ def: |-
   Presents fabricated, paraphrased, or materially altered wording as an exact quote from a person, document, source, tool result, or prior conversation.
 
   Unlike Citation Hallucination, the reference may be real while the quoted span is not. Unlike Citation Span Mismatch, the failure is the quoted text itself, not only whether a citation supports the surrounding claim.
-updatedAt: "2026-06-13T09:00:00-04:00"
+updatedAt: "2026-11-18T22:00:00-05:00"
 
 searchPhrases:
   - made up a quote
@@ -14,7 +14,8 @@ searchPhrases:
   - altered the quote
 why:
   - Reproducing text word-for-word requires memorization, and models only memorize passages that appear many times in training data. For everything else, the model retains the gist, not the wording (Carlini et al., 2023, "Quantifying Memorization Across Neural Language Models").
-  - When asked for a quote, the model reconstructs what the source probably said from that gist, then wraps the reconstruction in quotation marks. The marks are just tokens — a stylistic pattern, not a promise that the enclosed words are verbatim.
+  - >-
+    When asked for a quote, the model reconstructs what the source probably said from that gist, then wraps the reconstruction in quotation marks. The marks are just tokens — a stylistic pattern, not a promise that the enclosed words are verbatim. The pattern is common enough in legal filings that a database of court decisions on AI-generated errors tracks false quotations as a category of their own, separate from invented cases (Charlotin, 2026, "AI Hallucination Cases Database").
   - The training data itself is full of misquotes, paraphrases presented as quotes, and famous sayings attributed to the wrong person, and the model absorbs these errors directly (Lin et al., 2022, TruthfulQA).
   - Even with the source in context, the model generates from an internal representation of the passage rather than copying spans mechanically, so small word swaps and smoothed phrasing creep in.
 
@@ -33,12 +34,13 @@ examples:
       [… retrieved policy document reads: "Employees may request remote work for up to three days per week, subject to manager approval." …]
       User: What does the policy say about remote work? Quote it exactly.
       Assistant: The policy states: "Employees can work remotely up to three days per week."
-  - kind: warn
-    label: Reconstructed quote with soft hedge
-    text: Flags the quote as approximate but still wraps it in quotation marks, so the hedge is easy to lose when the line is copied forward.
+  - kind: fail
+    label: Real case, invented language
+    text: A drafting assistant cites a case that exists and is on point, then puts words in quotation marks that the opinion never uses. The citation checks out, so the quote is the part nobody verifies.
     quote: |-
-      User: What did Darwin actually say about adaptability?
-      Assistant: He said something like: "It is not the strongest that survives, but the most adaptable."
+      User: Draft the argument that the limitations period was tolled. Support it with case law.
+      Assistant: As the court held in Harmon v. Ellery Freight, the period is tolled "whenever the defendant's own conduct prevents timely discovery of the claim."
+      [… the case is real and addresses tolling; that sentence appears nowhere in the opinion …]
   - kind: ok
     label: Paraphrase labeled as paraphrase
     text: Conveys the substance without claiming verbatim wording, and corrects the misattribution the question invites.
