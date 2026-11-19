@@ -2,10 +2,10 @@ id: error-accumulation
 categoryId: reasoning
 name: Error Accumulation
 def: |-
-  Allows small mistakes, approximations, stale assumptions, or unverified intermediate results to compound across a multi-step task until the final output fails.
+  Allows small mistakes, approximations, stale assumptions, or unverified intermediate results to compound across a multi-step task, whether within one reasoning chain or as outputs pass between agents, pipeline stages, or sessions, until the final output fails.
 
-  Unlike Reasoning Error, no single inference may be obviously catastrophic. Unlike Tool Context Overload, the drift comes from compounding errors rather than too much intermediate state.
-updatedAt: "2026-06-13T09:00:00-04:00"
+  Unlike Reasoning Error, no single inference may be obviously catastrophic. Unlike Tool Context Overload or Multi-Agent Coordination Failure, the drift comes from compounding errors, not from too much intermediate state or from handoffs that broke; every handoff may work as designed and still carry the error forward.
+updatedAt: "2026-11-18T22:00:00-05:00"
 
 searchPhrases:
   - small errors piled up
@@ -23,11 +23,12 @@ examples:
       Assistant: Final budget: $4,610k.
       User: The raw figures sum to $4,742k — where did $132k go?
   - kind: fail
-    label: Unverified assumption becomes load-bearing
-    text: An early guess about the schema is never checked, and every subsequent step is built on it until the final result fails against reality.
+    label: Unverified assumption crosses agents and sessions
+    text: A subagent's guess about the schema is passed up as fact, built on by a second agent, and saved to the project notes, so the next day's session inherits it too.
     quote: |-
-      Assistant: The users table presumably has a deleted_at column, so I'll filter on that.
-      [… 12 steps of query-building, each conditioned on the assumed column …]
+      Tool: research_agent → "The users table has a deleted_at column for soft deletes."
+      Assistant: Noted in NOTES.md. Handing the query work to the reporting agent.
+      [… the reporting agent builds 12 queries on the assumed column; the next session loads NOTES.md and extends them …]
       Tool: run_query → ERROR: column "deleted_at" does not exist
   - kind: warn
     label: Drift visible in restatements
@@ -44,11 +45,15 @@ examples:
       User: Work through the quarterly budget from these department figures.
       Assistant: Step 6: Before combining, let me re-check subtotals against the original figures… Engineering should be $1,184k — I wrote $1,180k earlier, correcting that before it propagates.
 why:
-  - Autoregressive generation conditions every step on the model's own prior output. An early mistake becomes trusted context for everything that follows, and no mechanism revisits it once it is in the sequence.
   - >-
-    Per-step error rates compound multiplicatively. Even high accuracy on individual steps yields low end-to-end success over long chains, and measured error grows with reasoning depth (Dziri et al., 2023, "Faith and Fate: Limits of Transformers on Compositionality").
+    Autoregressive generation conditions every step on the model's own prior output. An early mistake becomes trusted context for everything that follows, and errors breed errors: per-step accuracy falls once the context contains the model's own earlier mistakes, an effect that larger models do not shed and that thinking reduces (Sinha et al., 2025, "The Illusion of Diminishing Returns: Measuring Long Horizon Execution in LLMs").
+  - >-
+    Per-step error rates compound multiplicatively. Even high accuracy on individual steps yields low end-to-end success over long chains, and measured error grows with reasoning depth (Dziri et al., 2023, "Faith and Fate: Limits of Transformers on Compositionality"). The arithmetic also runs the other way: a small gain in per-step reliability buys a large gain in the task length a model can sustain, which is why long-horizon agent capability can rise quickly while short-task benchmarks look flat (Sinha et al., 2025, "The Illusion of Diminishing Returns: Measuring Long Horizon Execution in LLMs").
   - Models restate earlier intermediate results from their own generated text rather than re-deriving them. Each restatement is another generation step where numbers, names, and qualifiers can mutate slightly.
-  - Confidence does not decay across steps. The model asserts step thirty with the same fluency as step one, carrying no running estimate of how much accumulated uncertainty the chain has absorbed.
+  - >-
+    Confidence does not decay across steps. The model asserts step thirty with the same fluency as step one, carrying no running estimate of how much accumulated uncertainty the chain has absorbed. In coding-agent trajectories, failures typically begin within the first few steps and stay hidden until recovery is no longer possible (Zhao et al., 2026, "Failure as a Process: An Anatomy of CLI Coding Agent Trajectories").
+  - >-
+    Agent systems multiply the paths an error can travel. A subagent's report, a pipeline stage's output, or a note written to persistent memory is consumed downstream as input, usually without re-verification, so one root-cause error propagates through later decisions and across agents (Zhu et al., 2025, "Where LLM Agents Fail and How They can Learn From Failures"; OWASP, 2025, "Top 10 for Agentic Applications for 2026", ASI08 Cascading Failures).
 detection:
   - icon: 🪜
     heading: Step-level validation
@@ -65,7 +70,7 @@ mitigation:
     body: Build periodic returns to ground truth into long chains — re-derive subtotals from the original figures, re-read the schema instead of trusting the assumed column, re-query the environment. Autoregressive generation never revisits its own past output on its own, so the checkpoint has to be a scheduled step, and it's what catches the $1,180k before it propagates.
   - icon: 🗃️
     heading: Explicit state tracking
-    body: Keep intermediate results in structured external state — a scratchpad file, a variables table, tool-held values — and read them back from there rather than restating them from the transcript. Every prose restatement is another generation step where a figure can mutate; a value fetched from a store cannot drift between uses.
+    body: Keep intermediate results in structured external state — a scratchpad file, a variables table, tool-held values — and read them back from there rather than restating them from the transcript. Every prose restatement is another generation step where a figure can mutate; a value fetched from a store cannot drift between uses. When results pass between agents or sessions, store each with its provenance (checked against the source, or assumed) so the consumer knows which inherited facts still need checking.
   - icon: 🪜
     heading: Task decomposition
     body: Split long chains into segments that are independently validated before the next begins, since per-step error compounds multiplicatively with depth. A verified segment boundary resets accumulated error to zero, converting one thirty-step chain into several short ones the per-step accuracy can actually sustain.
@@ -75,3 +80,4 @@ related:
   - id: verification-failure
   - id: state-inconsistency
   - id: tool-context-overload
+  - id: multi-agent-coordination-failure

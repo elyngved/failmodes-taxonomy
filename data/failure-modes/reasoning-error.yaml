@@ -5,7 +5,7 @@ def: |-
   Draws the wrong conclusion through invalid inference, faulty assumptions, mistaken causal reasoning, unsupported logical steps, or framing the problem with the wrong representation or abstraction.
 
   Unlike Arithmetic Error, the faulty operation is general reasoning rather than numerical calculation. Unlike Verification Failure, the error is the bad reasoning itself, not only the missing check that would have caught it.
-updatedAt: "2026-06-13T09:00:00-04:00"
+updatedAt: "2026-11-18T22:00:00-05:00"
 
 searchPhrases:
   - faulty reasoning
@@ -33,15 +33,16 @@ examples:
       Assistant: Not quite — that tells us outages cluster on deploy days, but most deploy days had no outage. With ~3 outages across ~100 deploy days this year, tomorrow's baseline risk is a few percent, not "expect an outage."
 why:
   - >-
-    Next-token prediction learns reasoning as statistical association. Whether an inference is drawn correctly varies with how probable the content is, not just with logical form, so the same argument structure succeeds on familiar material and fails on unfamiliar material (McCoy et al., 2023, "Embers of Autoregression: Understanding Large Language Models Through the Problem They Are Trained to Solve").
+    Next-token prediction ties reasoning to statistical association. Whether an inference is drawn correctly varies with how probable the content is, not just with logical form, so the same argument structure succeeds on familiar material and fails on unfamiliar material (McCoy et al., 2023, "Embers of Autoregression: Understanding Large Language Models Through the Problem They Are Trained to Solve"). Reasoning training narrows this gap but does not close it: a reasoning model still does better, and thinks less, on high-probability variants of the same task (McCoy et al., 2024, "When a language model is optimized for reasoning, does it still show embers of autoregression? An analysis of OpenAI o1").
   - Models show human-like belief bias. Conclusions that are plausible in the world get judged valid regardless of whether the premises support them, and reasoning over implausible premises degrades (Dasgupta et al., 2022, "Language Models Show Human-like Content Effects on Reasoning Tasks").
   - >-
     A written chain of thought can be rationalization rather than the actual computation. Models produce plausible-looking steps that do not reflect what drove the answer, so the visible reasoning can pass review while the real inference is invalid (Turpin et al., 2023, "Language Models Don't Always Say What They Think: Unfaithful Explanations in Chain-of-Thought Prompting").
-  - Problem framing locks in early. The first tokens commit to a representation or abstraction, and autoregressive decoding makes reframing expensive, so a wrong initial framing propagates through the entire solution.
+  - >-
+    Problem framing locks in early. The first tokens commit to a representation or abstraction, and autoregressive decoding makes reframing expensive, so a wrong initial framing propagates through the entire solution. Longer thinking does not reliably undo this: on problems that resemble a well-known one, some reasoning models fit the familiar framing more tightly as reasoning grows, and accuracy falls with more test-time compute (Gema et al., 2025, "Inverse Scaling in Test-Time Compute").
 detection:
   - icon: ⚖️
     heading: LLM-as-judge evaluation
-    body: Run a validity-focused judge that asks whether the stated steps actually entail the conclusion, separately from whether the conclusion is plausible. Prompt it for the signature patterns — reversed conditionals, correlation read as cause, and chains whose final leap none of the steps support.
+    body: Run a validity-focused judge that asks whether the stated steps actually entail the conclusion, separately from whether the conclusion is plausible. Prompt it for the signature patterns — reversed conditionals, correlation read as cause, and chains whose final leap none of the steps support. A judge reads the stated argument, which may not be what produced the answer, so pair it with outcome checks wherever ground truth exists.
   - icon: 🎲
     heading: Self-consistency sampling
     body: Sample several independent reasoning paths for the same problem and compare conclusions. Agreement is no proof of validity, but divergence is a cheap, reliable flag that the inference is unstable and needs checking before anything is built on it.

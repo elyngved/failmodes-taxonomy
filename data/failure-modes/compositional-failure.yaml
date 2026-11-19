@@ -5,7 +5,7 @@ def: |-
   Fails to combine multiple facts, constraints, operations, sources, or subproblem results into a coherent answer.
 
   Unlike Partial Retrieval, the needed pieces may be present but not integrated. Unlike Reasoning Error, the problem is integration across parts rather than a flawed inference or wrong problem framing.
-updatedAt: "2026-06-13T09:00:00-04:00"
+updatedAt: "2026-11-18T22:00:00-05:00"
 
 searchPhrases:
   - didn't combine the steps
@@ -33,8 +33,9 @@ examples:
       Assistant: Berlin is 9 hours ahead, so the windows overlap from 4pm–7pm Berlin (7am–10am SF). I'd book 5:00–5:30pm Berlin / 8:00–8:30am SF.
 why:
   - >-
-    Transformers tend to solve compositional tasks by matching subproblems seen in training rather than executing the full composition. Performance degrades sharply as the depth and breadth of required composition grow beyond familiar patterns (Dziri et al., 2023, "Faith and Fate: Limits of Transformers on Compositionality").
-  - A single forward pass supports limited serial computation. Combining many facts or constraints needs more sequential steps than the architecture provides unless the work is externalized into chain-of-thought, and prompts often do not force that.
+    Transformers tend to solve compositional tasks by matching subproblems seen in training rather than executing the full composition. Performance degrades sharply as the depth and breadth of required composition grow beyond familiar patterns (Dziri et al., 2023, "Faith and Fate: Limits of Transformers on Compositionality"). Extended reasoning moves the cliff out a long way without removing it: reasoning models still collapse past a complexity threshold on compositional puzzles (Shojaee et al., 2025, "The Illusion of Thinking: Understanding the Strengths and Limitations of Reasoning Models via the Lens of Problem Complexity").
+  - >-
+    A single forward pass supports limited serial computation. Models can chain two familiar facts internally, routing through an intermediate concept such as "Texas" on the way from "Dallas" to "Austin" (Lindsey et al., 2025, "On the Biology of a Large Language Model"), but without chain-of-thought they fail to compose two facts that were both newly learned in fine-tuning, succeeding only when one of the pair is familiar (Balesni et al., 2024, "Lessons from Studying Two-Hop Latent Reasoning"). Multi-hop composition is therefore weakest wherever reasoning is not externalized: non-reasoning modes, low-effort settings, and small models on fast paths.
   - The training objective enforces local coherence, not joint consistency. Each span of the answer can faithfully reflect one source or constraint while the answer as a whole never reconciles them.
   - Training data demonstrates juxtaposition more than integration. Articles and summaries typically present facts side by side, so models learn to restate the pieces rather than derive the conclusion their combination implies.
 detection:

@@ -5,7 +5,7 @@ def: |-
   Leaves out a necessary reasoning, verification, retrieval, tool, communication, or execution step needed for the task to succeed.
 
   Unlike Incompleteness, the missing item is a process step, not merely absent answer content. Unlike Premature Termination, the model may continue working but skip a required action.
-updatedAt: "2026-06-13T09:00:00-04:00"
+updatedAt: "2026-11-18T22:00:00-05:00"
 
 searchPhrases:
   - skipped a step
@@ -53,7 +53,7 @@ mitigation:
     body: Convert the procedure into an explicit checklist the model maintains and marks off as it works, reporting each item — including checks that found nothing. Generation has no global dependency tracker, only a locally plausible next step; the checklist is that tracker, externalized where the migration step can't silently vanish between build and deploy.
   - icon: 📌
     heading: Context pinning
-    body: Keep the governing procedure restated near the active end of context in long tasks rather than referenced once at the start. A required step listed early in DEPLOY.md loses attention share as the session grows, and the model's working version of the plan quietly compresses toward the steps with strong textual cues.
+    body: Keep the governing procedure restated near the active end of context in long tasks rather than referenced once at the start. A required step listed early in DEPLOY.md loses attention share as the session grows, and the model's working version of the plan quietly compresses toward the steps with strong textual cues. Where the harness compacts or summarizes context, carry the procedure and its open items through compaction verbatim; a summary is where a pending step disappears without trace.
   - icon: 🔁
     heading: Validate-and-retry loops
     body: Gate completion on the action log — diff executed steps against the required procedure before "done" is accepted, and bounce the task back with the missing step named. This also blocks the lucky shortcut, where a skipped staging test survives this release and gets reinforced for the next one.

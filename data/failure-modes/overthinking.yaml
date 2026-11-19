@@ -5,7 +5,7 @@ def: |-
   Spends far more reasoning than the problem warrants — long deliberation on trivial questions, redundant re-derivations, or second-guessing that talks the model out of a correct answer.
 
   Unlike Verbosity Failure, the excess is in the reasoning process and its token and latency cost, not the final answer's length. Unlike Unbounded Consumption, the spend terminates on its own; it is disproportionate rather than unlimited, and the harm can include a worse answer, not just a bigger bill.
-updatedAt: "2026-06-13T09:00:00-04:00"
+updatedAt: "2026-11-18T22:00:00-05:00"
 
 searchPhrases:
   - thought way too long
@@ -13,10 +13,12 @@ searchPhrases:
   - reasoned itself out of the right answer
   - burned tokens thinking
 why:
-  - Reasoning training rewards long chains. Test-time scaling teaches that more thinking improves hard-problem success, and the learned policy applies extended deliberation indiscriminately — including to problems solved correctly in the first hundred tokens (Chen et al., 2024, "Do NOT Think That Much for 2+3=?").
+  - Reasoning training rewards long chains. Test-time scaling teaches that more thinking improves hard-problem success, and the learned policy applies extended deliberation indiscriminately — including to problems solved correctly in the first hundred tokens (Chen et al., 2024, "Do NOT Think That Much for 2+3=? On the Overthinking of o1-Like LLMs").
   - Allocating a thinking budget requires estimating difficulty before solving, which is itself the judgment the thinking was supposed to produce. With no reliable difficulty signal, the trained default is to deliberate.
   - >-
-    Extended reasoning can make answers worse, not just slower. Models second-guess correct intermediate conclusions, drift to alternative framings, and in agentic settings substitute simulating outcomes for taking the one cheap action that would settle the question (Cuadron et al., 2025, "The Danger of Overthinking: Examining the Reasoning-Action Dilemma in Agentic Tasks").
+    Extended reasoning can make answers worse, not just slower. Models second-guess correct intermediate conclusions, drift to alternative framings, and in agentic settings substitute simulating outcomes for taking the one cheap action that would settle the question (Cuadron et al., 2025, "The Danger of Overthinking: Examining the Reasoning-Action Dilemma in Agentic Tasks"). Purpose-built tasks show accuracy falling as test-time compute rises, through distraction by irrelevant detail, drift from sound priors to spurious correlations, and lost focus on long deductions (Gema et al., 2025, "Inverse Scaling in Test-Time Compute").
+  - >-
+    Much of the extra budget re-checks an answer already reached. Reflection after the first candidate answer mostly confirms it and rarely changes it, so truncating reasoning once a candidate appears cut tokens by about a quarter at a small accuracy cost (Kang et al., 2025, "First Try Matters: Revisiting the Role of Reflection in Reasoning Models").
   - Reasoning traces are often hidden or unread, so the cost is invisible in the feedback loop. Raters and evals score the final answer, and nothing charges the 2,400 tokens it took to get there.
 
 examples:

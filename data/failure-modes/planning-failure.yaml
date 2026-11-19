@@ -5,7 +5,7 @@ def: |-
   Builds an ineffective, unsafe, incomplete, or poorly ordered plan for achieving the user's goal.
 
   Unlike Step Omission, the whole sequence or strategy is flawed, not only one missing step. Unlike Workflow Misalignment, the plan may be logically poor even if it follows the expected process style.
-updatedAt: "2026-06-13T09:00:00-04:00"
+updatedAt: "2026-11-18T22:00:00-05:00"
 
 searchPhrases:
   - bad plan
@@ -25,6 +25,13 @@ examples:
     quote: |-
       User: Plan the zero-downtime migration to the new schema.
       Assistant: 1. Add the new columns. 2. Deploy code that writes to both. 3. Backfill. 4. Switch reads to the new columns. 5. Drop the legacy columns.
+  - kind: fail
+    label: Plan built on an action the environment lacks
+    text: A browser agent plans around an export option it assumed would exist, then burns its step budget hunting for it instead of replanning.
+    quote: |-
+      User: Export last month's invoices from the billing portal as one PDF.
+      Assistant: Plan: 1. Open Invoices. 2. Filter to October. 3. Select all. 4. Click "Export as single PDF".
+      [… the portal only exports one PDF per invoice; the agent spends 30 steps searching menus for step 4 …]
   - kind: ok
     label: Dependencies and failure handling planned in
     text: The plan sequences around its dependencies and makes each phase verifiable and reversible before the irreversible step runs.
@@ -32,9 +39,12 @@ examples:
       User: Plan the zero-downtime migration to the new schema.
       Assistant: 1. Add new columns (reversible). 2. Deploy dual-write code; verify write parity on a sample. 3. Backfill in batches with a resume checkpoint. 4. Switch reads behind a flag; monitor for a day, flip back if error rates move. 5. Only then drop legacy columns, after a final row-count audit.
 why:
-  - Models generate plans as plausible text, not as searched and validated action sequences. On benchmarks where plan correctness can be checked mechanically, success rates are low even for simple domains (Valmeekam et al., 2023, "On the Planning Abilities of Large Language Models").
-  - Sound planning requires a world model of action preconditions and effects. The model approximates these from text, where preconditions are usually left implicit, so plans assume states that will not hold when a step actually runs.
-  - A plan is emitted linearly in one decode. There is no backtracking, so a dependency problem the model only becomes able to see at step seven cannot revise the already-committed ordering of steps one through six.
+  - >-
+    Plans are generated, not searched and validated, so nothing guarantees they are correct. The size of the gap has changed: GPT-4-era models solved about 12% of mechanically checkable planning tasks (Valmeekam et al., 2023, "On the Planning Abilities of Large Language Models: A Critical Investigation"), while frontier reasoning models now rival classical planners on standard benchmark domains, losing ground when action and object names are stripped of meaning (Corrêa et al., 2025, "Frontier Large Language Models Rival State-of-the-Art Planners"). Planning ability is no longer the bottleneck it was; the absence of a soundness check is.
+  - >-
+    Sound planning requires a world model of action preconditions and effects. The model approximates these from text, where preconditions are usually left implicit, so plans assume states that will not hold when a step actually runs. In agents this is where plans now break most: among genuine computer-use failures, planning and verification errors outnumber execution and grounding errors (Dong et al., 2026, "How Benchmarks Mis-Score Computer-Use Agents").
+  - >-
+    A plan written without extended reasoning is emitted linearly in one decode, so a dependency problem visible only at step seven cannot revise steps one through six. Reasoning models can backtrack while thinking, but their accuracy on puzzle-style planning still collapses past a complexity threshold (Shojaee et al., 2025, "The Illusion of Thinking: Understanding the Strengths and Limitations of Reasoning Models via the Lens of Problem Complexity"). Part of that collapse is an artefact of output-length limits and unsolvable test instances (Lawsen, 2025, "Comment on The Illusion of Thinking: Understanding the Strengths and Limitations of Reasoning Models via the Lens of Problem Complexity"); the practical reading is that plans long enough to strain the output or thinking budget are where to expect failure.
   - Training data consists of finished, idealized procedures. Tutorials and writeups omit dead ends, failure handling, and recovery, so generated plans inherit a happy-path shape with no contingencies.
 detection:
   - icon: 🔗
@@ -49,7 +59,7 @@ detection:
 mitigation:
   - icon: 🔁
     heading: Validate-and-retry loops
-    body: Before any step executes, check the plan's precondition-effect graph mechanically and send it back with the broken dependency named — "step 3 reads legacy data that step 1 dropped." A plan is emitted linearly with no backtracking, so revision has to come from outside the decode; the validator supplies the second pass the architecture doesn't.
+    body: Before any step executes, check the plan's precondition-effect graph mechanically and send it back with the broken dependency named — "step 3 reads legacy data that step 1 dropped." Backtracking inside the model's thinking catches some of this, but nothing there checks the plan against the environment's actual preconditions; the validator does. In agents, re-run the check whenever an observation contradicts a precondition the plan assumed.
   - icon: ⚔️
     heading: Adversarial plan critique
     body: Run a separate critique pass prompted to attack the plan before it's accepted — what happens when the backfill dies halfway, where are the rollback points, which step is the first irreversible one. Training data is finished, idealized procedures, so contingencies don't appear unless a step demands them; the critic is that step.
