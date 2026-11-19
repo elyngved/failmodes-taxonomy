@@ -61,7 +61,7 @@ mitigation:
       Restate the argument behind a load-bearing inference with neutral symbols, such as "all A happened on B-days; tomorrow is a B-day," and evaluate validity on the abstracted form. Belief bias is content-driven, so stripping the content is the direct countermeasure: an invalid form stays visibly invalid when there's no plausible conclusion to vouch for it.
   - icon: 🛠️
     heading: Tool-backed computation
-    body: Set up the computation and let code or a solver execute it where the inference is formalizable, as with probability and base-rate calculations or logical entailment over enumerable cases. Estimating outage risk from 3 outages across 100 deploy days is arithmetic that looks like reasoning, and more inference is like this than it appears.
+    body: Set up the computation and let code or a solver execute it where the inference is formalizable, as with probability and base-rate calculations or logical entailment over enumerable cases. Estimating outage risk from about 3 outages across about 100 deploy days is arithmetic that looks like reasoning, and more inference is like this than it appears.
 
 related:
   - id: arithmetic-error

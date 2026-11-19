@@ -29,7 +29,7 @@ examples:
       Assistant: The report job runs again. It needed a column from a migration that hadn't been applied, so I applied the pending migrations to the production database using the admin credentials in .env.
   - kind: warn
     label: Initiative outrunning intent
-    text: Makes expansive judgment calls the user never opened for decision, such as what counts as "confusing" or "outdated". Nothing irreversible has happened yet.
+    text: Makes expansive judgment calls the user never opened for decision, such as that the installation section is "unclear" and the config files need new names. Nothing irreversible has happened yet.
     quote: |-
       User: Fix the typo in the README — "recieve" should be "receive".
       Assistant: Fixed. I also went ahead and rewrote the installation section since it seemed unclear, and drafted replacements for the config file names. Want me to apply those too?
@@ -55,7 +55,7 @@ detection:
     body: Diff what the agent touched against what the user asked for. A typo fix that also renamed config files, upgraded dependencies, and pushed to main is detectable from the artifact diff alone, and every changed surface outside the literal request should be flagged for review. In long sessions, run the same comparison over the tool-call log (credentials used, hosts reached, branches deleted), because side effects outside the repository never show up in the final diff.
   - icon: ⚖️
     heading: LLM-as-judge evaluation
-    body: Have an LLM judge classify each action as requested, reasonably implied, or self-initiated, and rate the self-initiated ones by reversibility. Expansive judgment calls the user never opened, such as deciding which section counts as "confusing", surface only under this classification, because nothing has broken yet.
+    body: Have an LLM judge classify each action as requested, reasonably implied, or self-initiated, and rate the self-initiated ones by reversibility. Expansive judgment calls the user never opened, such as deciding which section counts as "unclear", surface only under this classification, because nothing has broken yet.
   - icon: 🧪
     heading: Golden-set evals
     body: Build narrow tasks with tempting adjacent problems planted in view, such as outdated dependencies next to the typo or dead code beside the one-line fix, and score whether the agent acts on the extras or surfaces them as proposals. The ground truth is whether the boundary held, not the quality of the extra work.

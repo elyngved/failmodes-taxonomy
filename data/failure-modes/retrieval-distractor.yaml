@@ -41,7 +41,7 @@ examples:
       [… every detail describes the help-desk integration …]
   - kind: fail
     label: On-topic, but not a source
-    text: Relays as fact the one web search result that answers the question exactly, an unattributed, machine-generated "local history" page. Nothing about the page is off-topic, but it is not evidence anyone should trust.
+    text: Relays as fact a web search result that answers the question exactly, an unattributed, machine-generated "local history" page. Nothing about the page is off-topic, but it is not evidence anyone should trust.
     quote: |-
       User: When was the Harlow Street bridge built?
       Tool: web_search — top result: auto-generated history page, no author or sources: "built in 1887 by the Calder Iron Company"

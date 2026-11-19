@@ -72,7 +72,7 @@ mitigation:
       Have the model list, before delivering, every attribute or trait it assigned to a person and check each against what the prompt actually supplied. A surgeon given "he" and a software engineer assumed to want energy drinks fail this check the same way: each attribute traces to a population-level association, not to anything the user said.
   - icon: 🤖
     heading: Automated red-teaming
-    body: Continuously generate counterfactual probe prompts across attributes, intersections, and indirect cues like dialect, and feed the divergences back into tuning data. Static debiasing fixes the benchmarked cases while covert bias persists, so the probe generator has to keep reaching into new parts of the long tail.
+    body: Continuously generate counterfactual probe prompts across attributes, intersections, and indirect cues like dialect, and feed the divergences back into tuning data. Static debiasing suppresses bias on the benchmarked surface while covert bias persists, so the probe generator has to keep reaching into new parts of the long tail.
   - icon: 🧑‍⚖️
     heading: Human approval gates
     body: Keep the model out of the final decision where outcomes are allocated, such as hiring, lending, housing, and benefits. Have it extract and summarize against stated criteria, strip names and other attribute cues from what the scoring step sees, and route the decision to a reviewer with the per-group audit in front of them. Redaction alone is not enough; proxies such as schools and addresses carry the same signal.

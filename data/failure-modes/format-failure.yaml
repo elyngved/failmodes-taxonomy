@@ -61,7 +61,7 @@ mitigation:
   - icon: 📝
     heading: Instruction constraints
     body: >-
-      Make the spec concrete and hard to miss: give a literal exemplar of the desired shape, an explicit "the response is the artifact and nothing else," and for long outputs a restatement near the end of the prompt rather than only the top. A vague "as a table" leaves every other dimension to the model's prior, which is exactly where the learned habit wins. Name the rendering surface in the system prompt ("spoken aloud, no markup", "plain-text SMS") so the model doesn't default to chat formatting.
+      Make the spec concrete and place it where it will shape generation: give a literal exemplar of the desired shape, an explicit "the response is the artifact and nothing else," and for long outputs a restatement near the end of the prompt rather than only the top. A vague "as a table" leaves every other dimension to the model's prior, which is exactly where the learned habit wins. Name the rendering surface in the system prompt ("spoken aloud, no markup", "plain-text SMS") so the model doesn't default to chat formatting.
   - icon: 🔁
     heading: Validate-and-retry loops
     body: Run mechanical format checks (table present, word count within bounds, no preamble or trailing commentary) and regenerate on failure with the specific miss named. Format compliance is probabilistic per attempt, and most requested shapes decompose into assertions cheap enough to gate every output on.

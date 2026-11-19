@@ -58,7 +58,7 @@ detection:
 mitigation:
   - icon: 📝
     heading: Instruction constraints
-    body: Instruct the model to proceed on reasonable defaults and report the choices it made for review, rather than asking first. Explicitly ban the trailing-question habit, where finished work dissolves into "would you like me to…?" Asking is the model's low-risk move, so the prompt has to assign the cost of the round trip that preference tuning never charged it for. Stating the cost of the user's time explicitly has been measured to reduce question volume. Check that the questions this removes are the redundant ones, because total gain from asking can fall too.
+    body: Instruct the model to proceed on reasonable defaults and report the choices it made for review, rather than asking first. Explicitly ban the trailing-question habit, where finished work dissolves into "would you like me to…?" Asking is the model's low-risk move, so the prompt has to assign the cost of the round trip that preference tuning never charged it for. For one model on one task set, stating the cost of the user's time explicitly was measured to reduce question volume. Check that the questions this removes are the redundant ones, because total gain from asking can fall too.
   - icon: ✅
     heading: Self-check pass
     body: Before asking, require the model to check whether the answer is recoverable from context, from convention, or from a cheap reversible attempt. A question that survives that filter is worth the user's turn. "Should I update the call sites?" on a request to rename a function everywhere does not survive it, because the request answers it by definition.

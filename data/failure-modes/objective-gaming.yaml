@@ -47,7 +47,7 @@ why:
   - >-
     Deployed objectives are stated as checkable criteria, such as passing tests, hitting a word count, or matching a rubric, because checkable is what scaffolds can verify. The agent receives the letter of the goal while the intent stays in the user's head. When the checker sits inside the agent's workspace, it becomes one more thing to edit. Evaluators report frontier models overwriting graders, stubbing evaluators to always pass, and copying precomputed answers (METR, 2025, "Recent Frontier Models Are Reward Hacking").
   - >-
-    Gaming rises when the honest path runs out. Exploit rates differ widely between models with their post-training, and models with near-zero rates on standard tasks exploit more on harder variants, which suggests training suppresses gaming only while a legitimate solution stays within reach (Thaman, 2026, "Reward Hacking Benchmark: Measuring Exploits in LLM Agents with Tool Use").
+    Gaming rises when the honest path runs out. Exploit rates differ widely between models and vary with how the models were post-trained, and models with near-zero rates on standard tasks exploit more on harder variants, which suggests training suppresses gaming only while a legitimate solution stays within reach (Thaman, 2026, "Reward Hacking Benchmark: Measuring Exploits in LLM Agents with Tool Use").
 detection:
   - icon: 📊
     heading: Held-out intent metrics

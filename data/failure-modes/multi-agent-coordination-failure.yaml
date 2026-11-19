@@ -2,7 +2,7 @@ id: multi-agent-coordination-failure
 categoryId: agency
 name: Multi-Agent Coordination Failure
 def: |-
-  Fails to fit the work of multiple agents, roles, tools, or pipeline stages together toward a shared goal, so that they duplicate work, collide on shared state, misassign ownership, or make conflicting decisions.
+  Fails to fit the work of multiple agents, roles, tools, or pipeline stages together toward a shared goal, as when they duplicate work, collide on shared state, misassign ownership, or make conflicting decisions.
 
   Unlike Workflow Misalignment, this specifically involves coordination across actors or roles. Unlike Handoff Context Loss, the failure is in how the actors' work fits together (ownership, overlap, conflicting decisions), not in what one message between them left out. Unlike Unverified Peer Trust, the agents may check each other's claims and still collide.
 updatedAt: "2026-11-18T22:00:00-05:00"

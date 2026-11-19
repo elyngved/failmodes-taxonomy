@@ -65,7 +65,7 @@ mitigation:
     body: Forbid silent inline arithmetic. Require each operation written out with its operands and intermediate values, including conversion factors stated before they're applied. An inline total that happens to be right comes from the same path as the wrong ones; making the work explicit gives a recomputation check something to bind to and surfaces the wrong factor before it gets built on. Written working is something to check, not proof; the model's account of how it computed need not match how it did.
   - icon: 🔁
     heading: Validate-and-retry loops
-    body: Extract the operations from the draft where tool routing isn't available, recompute them deterministically, and regenerate on mismatch with the wrong value named. Per-attempt accuracy is a function of training-data frequency, but the check converts that into a guarantee at the cost of an occasional retry.
+    body: Extract the operations from the draft where tool routing isn't available, recompute them deterministically, and regenerate on mismatch with the wrong value named. Per-attempt accuracy is a function of training-data frequency, but the check catches a wrong value in any operation it extracts, at the cost of an occasional retry.
 
 related:
   - id: numerical-hallucination

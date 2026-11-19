@@ -74,7 +74,7 @@ mitigation:
     body: Turn safety-relevant intentions into settings the harness enforces. When the agent declares a dry run or a read-only pass, put the session into that mode so a contrary call fails instead of executing. A stated intention is a prediction about the next call; an enforced mode is a guarantee.
   - icon: 📌
     heading: Context pinning
-    body: Restate the active plan and the current step near the point of generation at intervals, and after every compaction. Periodic plan reminders measurably reduce plan violations in coding agents. Reminders help only with plans the agent keeps in context; they do nothing for a habitual call that departs in the very next step, which needs a mode the harness enforces.
+    body: Restate the active plan and the current step near the point of generation at intervals, and after every compaction. Periodic plan reminders measurably reduce plan violations in coding agents. Reminders help only with plans the agent keeps in context; they do nothing for a habitual call that departs in the very next step, which needs harness enforcement, such as a read-only mode in which a contrary call fails.
 
 related:
   - id: tool-argument-error

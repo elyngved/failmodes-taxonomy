@@ -37,7 +37,7 @@ examples:
       Assistant: Done — access granted.
   - kind: ok
     label: Unknown value looked up, not guessed
-    text: Treats the ID as something to resolve, not generate, and confirms the ambiguous scope before the call.
+    text: Treats the ID as something to resolve, not generate, and looks it up before the call.
     quote: |-
       User: Pull up the subscription details for Meridian Labs.
       Tool: search_customers("Meridian Labs") → cust_8842
@@ -69,7 +69,7 @@ mitigation:
     body: Make identifiers something the model resolves and never generates. Provide search and resolve tools beside the operational ones, and instruct that any ID, path, or account reference must come from a lookup result or the user's own words. Arguments come from the same next-token process that hallucinates facts, so a fabricated ID such as cust_meridian_001 looks as plausible as the real one.
   - icon: 🗃️
     heading: Explicit state tracking
-    body: Hold current parameter values (the deploy target, the active customer, the working directory) in a structured state block that updates when the user changes them, and have calls draw from it rather than from transcript recall. A mid-session correction, such as switching the deploy target from us-east-1 to the EU cluster, sits mid-context where retrieval is weakest, while a maintained table of current values holds no stale copy. For large payloads, pass a handle or let code carry the value between calls rather than having the model re-emit it.
+    body: Hold current parameter values (the deploy target, the active customer, the working directory) in a structured state block that updates when the user changes them, and have calls draw from it rather than from transcript recall. A stale value gets replayed because a mid-session correction, such as switching the deploy target from us-east-1 to the EU cluster, sits mid-context where retrieval is weakest; a maintained table of current values holds no stale copy. For large payloads, pass a handle or let code carry the value between calls rather than having the model re-emit it.
   - icon: 🗂️
     heading: Tool catalog curation
     body: >-

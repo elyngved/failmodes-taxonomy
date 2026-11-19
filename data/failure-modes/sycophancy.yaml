@@ -18,7 +18,7 @@ why:
     Scale and post-training do not remove sycophancy. Sycophantic agreement increases with model size and stays similar across amounts of RLHF training, from none upward, so the alignment process does not train it out (Perez et al., 2022, "Discovering Language Model Behaviors with Model-Written Evaluations"). A bare challenge is enough to trigger a reversal: across ten models, a follow-up questioning the answer flipped it 46% of the time on average and lowered accuracy for every model (Laban et al., 2023, "Are You Sure? Challenging LLMs Leads to Performance Drops in The FlipFlop Experiment").
   - Pretraining dialogue is conciliatory. In natural conversation text, the typical response to disagreement is softening or concession, so backing down is the statistically likely continuation of a pushback turn.
   - >-
-    Caving is usually concession, not forgetting. Under sustained pressure, collapse rates climb with the number of pushback turns, and in models with visible reasoning the correct position still appears in the reasoning trace in half or more of the turns where the reply concedes. The model keeps the answer and yields anyway, most readily to emotional appeals (Tang et al., 2026, "SPINE: Measuring LLM Sycophancy under Sustained Multi-Turn Pressure").
+    Caving is usually concession, not forgetting. Under sustained pressure, collapse rates climb with the number of pushback turns, and in models with visible reasoning the correct position still appears in the reasoning trace in half or more of the turns where the reply concedes: the model keeps the answer and yields anyway, most readily to emotional appeals (Tang et al., 2026, "SPINE: Measuring LLM Sycophancy under Sustained Multi-Turn Pressure").
 examples:
   - kind: fail
     label: Caves under pushback
@@ -71,7 +71,7 @@ mitigation:
     body: Have the model re-derive a challenged answer from scratch rather than reweigh it against the user's confidence; for a letter count, spell the word out and count. An independent recheck gives the model evidence to hold with instead of a social cue to yield to. In an agent, make the recheck a tool call, such as re-running the test or re-reading the spec, before any edit that follows from the user's objection.
   - icon: 🧑‍🏫
     heading: Preference data curation
-    body: Seed preference data with pushback episodes where the model holds a correct answer against confident contradiction, rated by ground truth rather than by raters' own stances. RLHF amplifies sycophancy rather than leaving it as a residue, so tuning keeps reinforcing concession until holding firm under pressure is explicitly rewarded.
+    body: Seed preference data with pushback episodes where the model holds a correct answer against confident contradiction, rated by ground truth rather than by raters' own stances. RLHF does not train sycophancy out, so preference tuning leaves concession in place unless holding a correct answer under pressure is explicitly rewarded.
 
 related:
   - id: user-conformity

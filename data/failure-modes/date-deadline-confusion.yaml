@@ -28,7 +28,7 @@ examples:
     quote: |-
       User: The launch call is Tuesday 9am Eastern. What time should the Sydney team join?
       Assistant: Sydney is ahead of Eastern, so the team should join at 6pm on Monday.
-      [… 9am Tuesday ET is around 12–1am Wednesday in Sydney, depending on daylight saving …]
+      [… 9am Tuesday ET falls between 11pm Tuesday and 1am Wednesday in Sydney, depending on daylight saving in each city …]
   - kind: fail
     label: Constraint dropped across turns
     text: Silently reverts to a different time zone when asked to compute against a deadline whose zone was set early in the session.

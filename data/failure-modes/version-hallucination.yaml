@@ -24,11 +24,11 @@ why:
 examples:
   - kind: fail
     label: Superseded API recommended as current
-    text: Confidently recommends an API that was removed two major versions ago, because years of older-version content outweigh the current docs.
+    text: Confidently recommends an API that was removed in the previous major version, because years of older-version content outweigh the current docs.
     quote: |-
       User: How do I define URL routes in Django 5?
       Assistant: Use the url() function from django.conf.urls with a regex pattern for each route.
-      [… url() was deprecated in Django 2 and removed in Django 4; Django 5 uses path() and re_path() …]
+      [… url() was superseded by path() and re_path() in Django 2.0, deprecated in 3.1, and removed in 4.0 …]
   - kind: fail
     label: Extrapolated version
     text: Extrapolates from the version sequence and fluently describes the next release, features and migration notes included, though that version does not exist.
@@ -67,7 +67,7 @@ detection:
 mitigation:
   - icon: 📌
     heading: Context pinning
-    body: Put the user's actual version in context (from the lockfile, pip show, or an explicit question) before answering anything version-sensitive, and use it to select what goes into context. A version number alone barely changes what the model generates; its value is in fetching that release's docs and checking APIs against that release's changelog. Coding agents can read the version straight from the lockfile instead of asking.
+    body: Put the user's actual version in context (from the lockfile, pip show, or an explicit question) before answering anything version-sensitive, and use it to select what goes into context. In one benchmark, a version number alone gave no measurable benefit; its value is in fetching that release's docs and checking APIs against that release's changelog. Coding agents can read the version straight from the lockfile instead of asking.
   - icon: 📚
     heading: Retrieval grounding
     body: Ground answers in documentation retrieved for the pinned version specifically, not the blended interface in the weights. Docs scoped to the release in use let the model choose Django's path() over the url() function that years of older tutorials make statistically dominant.

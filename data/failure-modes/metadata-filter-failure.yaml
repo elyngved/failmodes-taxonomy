@@ -64,7 +64,7 @@ detection:
 mitigation:
   - icon: 🔒
     heading: Fail-closed enforcement
-    body: Apply tenancy and permission filters in the infrastructure layer, not as model-generated predicates, and make a malformed or missing security clause an error rather than an unfiltered query. Cross-tenant leaks, such as another customer's invoice appearing in a user's results, happen when a broken clause is dropped instead of refused.
+    body: Apply tenancy and permission filters in the infrastructure layer, not as model-generated predicates, and make a malformed or missing security clause an error rather than an unfiltered query. A cross-tenant leak such as another customer's invoice appearing in a user's results happens precisely because a broken clause is dropped instead of refused.
   - icon: 🧰
     heading: Filter schema validation
     body: Validate every generated predicate against the live taxonomy before execution (field names, enum values, date formats). A filter referencing a tag that has since been renamed, such as "security_audit", should fail loudly at validation, not execute cleanly against zero records and masquerade as an empty corpus.

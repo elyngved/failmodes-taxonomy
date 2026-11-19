@@ -49,7 +49,7 @@ examples:
 detection:
   - icon: 📏
     heading: Compression testing
-    body: Have a model compress the response to its minimal sufficient form and measure what fraction survives. An answer that reduces from 150 words to one with nothing lost was padding by construction, so compressibility is a direct, mechanical measure of the overhead.
+    body: Have a model compress the response to its minimal sufficient form and measure what fraction survives. An answer that reduces from about 50 words to one with nothing lost was padding by construction, so compressibility is a direct, mechanical measure of the overhead.
   - icon: ⚖️
     heading: LLM-as-judge evaluation
     body: >-
@@ -61,11 +61,11 @@ mitigation:
   - icon: 📝
     heading: Instruction constraints
     body: >-
-      Size the answer to the question and the medium, and ban the fixed overhead by name: no restating the question, no announcing the structure, no closing summary, no "great question". For agents, require a report of the result and anything the user must check, not the process; for voice, allow one to three spoken sentences per turn. Where the API offers a verbosity or effort setting, set it per route rather than in prose. Prefer targets scaled to the task over hard word caps, which cut load-bearing detail along with the padding.
+      Size the answer to the question and the medium, and ban the fixed overhead by name: no restating the question, no announcing the structure, no closing summary, no "great question". For agents, require a report of the result and anything the user must check, not the process; for voice, require one to three spoken sentences per turn. Where the API offers a verbosity or effort setting, set it per route rather than in prose. Prefer targets scaled to the task over hard word caps, which cut load-bearing detail along with the padding.
   - icon: 🧹
     heading: Output post-processing
     body: >-
-      Run the compression test as a fix instead of a metric: reduce the draft to its minimal sufficient form and ship that version. Padding, such as 150 words wrapped around the one-word answer "Canberra", survives because generation has no revision pass. A compression pass supplies that revision, and whatever it cannot remove without losing information is the actual answer.
+      Run the compression test as a fix instead of a metric: reduce the draft to its minimal sufficient form and ship that version. Padding, such as about 50 words wrapped around the one-word answer "Canberra", survives because generation has no revision pass. A compression pass supplies that revision, and whatever it cannot remove without losing information is the actual answer.
   - icon: 🧑‍🏫
     heading: Preference data curation
     body: Break the length-reward correlation at its source by penalizing length in the reward model, scoring information per token rather than coverage, and checking judge models for the same bias before trusting their ratings. Optimization against length-biased signals produces verbosity, and any loop that keeps the bias keeps producing it.

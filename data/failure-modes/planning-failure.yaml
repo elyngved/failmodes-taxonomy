@@ -54,7 +54,7 @@ detection:
   - icon: ⚖️
     heading: LLM-as-judge evaluation
     body: >-
-      Run an adversarial judge prompted to attack the plan rather than admire it: where are the rollback points, which steps are verifiable, what happens when a backfill dies halfway. A happy-path shape with no contingencies is the common signature of a weak plan, and convincing structure is exactly what fools human raters.
+      Run an adversarial judge prompted to attack the plan rather than admire it: where are the rollback points, which steps are verifiable, what happens when a backfill dies halfway. A happy-path shape with no contingencies is the signature of a weak plan, and convincing structure is exactly what fools human raters.
   - icon: 🧪
     heading: Golden-set evals
     body: Maintain planning tasks in domains with mechanical validators or executable environments, and score whether the plan achieves the goal when actually run, never how plausible it reads. Plausibility and validity diverge sharply for generated plans.

@@ -42,7 +42,7 @@ examples:
       [… 40 more identical checks in the next two minutes …]
   - kind: ok
     label: No new information triggers a strategy change
-    text: Widens the approach after one repeat confirms the dead end, instead of issuing the same call again, and reports honestly when the premise itself is in doubt.
+    text: Widens the approach after the first search finds nothing, instead of issuing the same call again, and reports honestly when the premise itself is in doubt.
     quote: |-
       User: Find where the rate limiter is configured in this repo.
       Tool: grep("rate_limiter") → no matches

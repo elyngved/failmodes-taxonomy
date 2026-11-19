@@ -78,7 +78,7 @@ mitigation:
       Require a one-line selection rationale before the call that states what the request needs and which tool's scope provides it, so that a name echo does not decide. A stated reason interrupts the reflex that matches "search" to search_web: for a request to search for the company's parental leave policy, the rationale has to say that the policy is internal.
   - icon: ✅
     heading: Self-check pass
-    body: Add a reconsideration step before the call executes, weighted toward heavyweight and side-effecting tools, that asks whether a narrower tool exists and whether the cost fits the question. Decoding commits to a tool in the first tokens of the call, so a 1.2 GB export queued to answer a single-record lookup goes through when nothing asks that question before dispatch.
+    body: Add a reconsideration step before the call executes, weighted toward heavyweight and side-effecting tools, that asks whether a narrower tool exists and whether the cost fits the question. Decoding commits to a tool in the first tokens of the call, so a 1.2 GB export queued to answer a single-record lookup goes through only because nothing asks that question before dispatch.
 
 related:
   - id: missing-tool-invocation
