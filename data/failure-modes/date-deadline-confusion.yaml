@@ -5,7 +5,7 @@ def: |-
   Misreads or mixes up dates, deadlines, time zones, relative dates, durations, recency windows, or scheduling boundaries in a task.
 
   Unlike Temporal Hallucination, the failure is tied to interpreting or applying temporal constraints for the task. Unlike Numerical Hallucination, the date or duration may be present but used incorrectly.
-updatedAt: "2026-06-13T09:00:00-04:00"
+updatedAt: "2026-11-18T22:00:00-05:00"
 
 searchPhrases:
   - mixed up the dates
@@ -14,9 +14,11 @@ searchPhrases:
   - miscalculated the duration
 
 why:
-  - Date arithmetic is symbolic computation performed in a text-prediction system. Benchmarks of temporal reasoning show models doing markedly worse on duration, ordering, and calendar arithmetic than on retrieving temporal facts, because nothing in next-token prediction enforces calendar rules (Fatemi et al., 2024, "Test of Time").
-  - Relative expressions like "next Friday" or "by end of quarter" only resolve against an anchor date. Models often have no reliable anchor — the system clock may be absent from the prompt, or the model defaults to dates frequent in its training data rather than today.
-  - Time zones, daylight saving transitions, leap years, and business-day rules are sparse, inconsistently stated, and frequently wrong in web text, so the learned prior for these edge cases is weak exactly where precision matters most.
+  - >-
+    Date arithmetic is symbolic computation performed in a text-prediction system, and nothing in next-token prediction enforces calendar rules. On a synthetic temporal-reasoning benchmark, duration questions were the hardest category for the frontier models tested, with off-by-one-day and leap-year errors recurring (Fatemi et al., 2024, "Test of Time: A Benchmark for Evaluating LLMs on Temporal Reasoning"). Tokenization adds to it: tokenizers split dates into fragments, and heavier fragmentation goes with accuracy drops of up to 10 points on uncommon historical and future dates (Bhatia et al., 2025, "Date Fragments: A Hidden Bottleneck of Tokenization for Temporal Reasoning").
+  - >-
+    Relative expressions like "next Friday" or "by end of quarter" only resolve against an anchor date. Models often have no reliable anchor — the system clock may be absent from the prompt, or the model defaults to dates frequent in its training data rather than today. In long agent sessions the anchor also moves, and models largely ignore real time elapsed between messages even when timestamps are present (Cheng et al., 2025, "Your LLM Agents are Temporally Blind: The Misalignment Between Tool Use Decisions and Human Time Perception").
+  - Plain time-zone offsets were the easiest category on the same benchmark, but daylight saving transitions, leap years, and business-day rules are sparse, inconsistently stated, and frequently wrong in web text, so the learned prior for these edge cases is weak exactly where precision matters most.
   - Long tasks scatter temporal constraints across the context — a deadline in one message, a time zone in another, a duration in a tool result. Uneven attention over long contexts means one constraint silently drops out when they must be combined.
 
 examples:
@@ -66,7 +68,7 @@ mitigation:
     body: Route date conversions, durations, and deadline arithmetic to a datetime library instead of computing inline. Time zones, daylight saving transitions, and business-day rules are exactly the cases where the learned prior is weakest and a library is exact.
   - icon: 📌
     heading: Context pinning
-    body: Keep the temporal anchors — today's date, the deadline's time zone, stated durations — pinned in the system prompt or restated near the active end of context, so a constraint set 25 turns ago isn't silently swapped for a default when the arithmetic finally happens.
+    body: Keep the temporal anchors — today's date, the deadline's time zone, stated durations — pinned in the system prompt or restated near the active end of context, so a constraint set 25 turns ago isn't silently swapped for a default when the arithmetic finally happens. In long-running agent sessions, stamp each turn and tool result with the current time, so "how many hours are left" is computed from the actual clock and not from the time the session began.
   - icon: 📝
     heading: Instruction constraints
     body: Require the model to state its anchor date and time zones before computing — "anchoring on Tuesday June 9, 9am ET" — and to ask rather than assume when no current date is available, so every resolution of "next Friday" is checkable instead of a guess.

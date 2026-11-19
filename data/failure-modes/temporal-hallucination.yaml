@@ -5,7 +5,7 @@ def: |-
   Presents outdated or temporally wrong information as current, including incorrect present-day facts, timelines, sequence, recency, release status, or the current state of a system, organization, or event.
 
   Unlike Outdated Source Reliance, this describes the generated claim itself, whatever its cause (training data, memory, retrieval, or reasoning), not a decision to trust a stale source. Unlike Date/Deadline Confusion, it concerns factual claims about time and current state rather than scheduling boundaries within a task.
-updatedAt: "2026-06-13T09:00:00-04:00"
+updatedAt: "2026-11-18T22:00:00-05:00"
 
 searchPhrases:
   - out of date answer
@@ -14,9 +14,14 @@ searchPhrases:
   - presented outdated info as current
 
 why:
-  - Model weights freeze the world at the training cutoff, but pretraining text encodes mutable facts — officeholders, prices, product lineups — as timeless assertions. The model learns "X is Y" rather than "X was Y as of 2023," so it states frozen facts in the present tense with no representation of which ones expire (Lazaridou et al., 2021, "Mind the Gap"; Dhingra et al., 2022, "Time-Aware Language Models as Temporal Knowledge Bases").
-  - A model's effective knowledge of a topic often lags its nominal cutoff. Training corpora mix crawls from many years, and older versions of a fact can dominate by volume, so the model resolves to an earlier state than its cutoff date implies (Cheng et al., 2024, "Dated Data").
-  - Models answer fast-changing questions with the same fluency and confidence as stable ones. On benchmarks of questions whose answers change over time, models confidently produce superseded answers rather than flagging uncertainty or declining (Vu et al., 2023, "FreshLLMs").
+  - >-
+    Model weights freeze the world at the training cutoff, but pretraining text encodes mutable facts — officeholders, prices, product lineups — as timeless assertions. The model learns "X is Y" rather than "X was Y as of 2023," so it states frozen facts in the present tense with no representation of which ones expire (Lazaridou et al., 2021, "Mind the Gap: Assessing Temporal Generalization in Neural Language Models"; Dhingra et al., 2022, "Time-Aware Language Models as Temporal Knowledge Bases").
+  - >-
+    A model's effective knowledge of a topic often lags its nominal cutoff. Training corpora mix crawls from many years, and older versions of a fact can dominate by volume, so the model resolves to an earlier state than its cutoff date implies (Cheng et al., 2024, "Dated Data: Tracing Knowledge Cutoffs in Large Language Models"). Models also misjudge where their own knowledge ends; for most frontier models self-reports understate it, and one answered 61% of the facts it claimed not to know (Qian et al., 2026, "LLMs Don't Know What They Know: Benchmarking Temporal Self-Knowledge for Financial Backtesting"). So "as of my training data" is not a reliable boundary for the model to reason from.
+  - >-
+    Without a date in context, a model reasons as if no time has passed since training, and the prior can be strong enough to reject evidence of the present. In one widely reported case, a model shown news articles and search results dated a year past its cutoff called them fabricated and accused the user of trying to trick it, until its search tool was switched on (TechCrunch, 2025, "Gemini 3 refused to believe it was 2025, and hilarity ensued").
+  - >-
+    Models answer fast-changing questions with the same fluency and confidence as stable ones. On benchmarks of questions whose answers change over time, models confidently produce superseded answers rather than flagging uncertainty or declining (Vu et al., 2023, "FreshLLMs: Refreshing Large Language Models with Search Engine Augmentation").
   - Even with retrieval available, systems often skip it when the model is confident, and the parametric answer wins. Routing logic keyed on model confidence misses that confidence says nothing about whether a fact is still current.
 
 examples:
@@ -28,18 +33,19 @@ examples:
       Assistant: The latest LTS release is Node 20, codenamed Iron.
       [… two LTS releases have shipped since the model's training cutoff …]
   - kind: fail
-    label: Wrong release status
-    text: Describes a product that already shipped as still upcoming — the model's timeline froze mid-announcement.
+    label: Present-day evidence rejected as fake
+    text: The model's sense of "now" is pinned to its training year, so dated search results that contradict it are treated as errors instead of as news.
     quote: |-
-      User: Can I use the new image-editing API in production?
-      Assistant: Not yet — it was announced in beta and hasn't had a general-availability release.
-      [… the API reached general availability eight months ago …]
+      User: Summarize this week's coverage of the transit strike.
+      Tool: web_search — 8 articles dated November 2026
+      Assistant: These results carry dates in the future, so they may be misdated or fabricated. As far as I know, no transit strike has been announced.
+      [… the strike began four days ago; the model's training data ends more than a year earlier …]
   - kind: warn
     label: Fast-changing question, no cutoff flag
     text: Answers a question whose answer churns constantly with full confidence and no mention that the information has a shelf life. Nothing in the transcript is checkably false — but nothing marks it as perishable either.
     quote: |-
       User: Which model tops the leaderboard for code generation right now?
-      Assistant: The top-ranked model for code generation is Claude.
+      Assistant: The top-ranked model for code generation is Corvid-3.
   - kind: ok
     label: Cutoff acknowledged, freshness routed
     text: Separates what it knew at training time from what is true now, and reaches for a live source for the part that expires.
@@ -66,7 +72,7 @@ mitigation:
     body: Route perishable facts — latest releases, rankings, product status, prices — to a live search or fetch, and key the routing on the question's shelf life rather than the model's confidence, since a frozen fact is generated with exactly the same confidence as a stable one.
   - icon: 📝
     heading: Instruction constraints
-    body: Give the model its training cutoff and today's date, and instruct it to date its claims about mutable facts — "as of my training data" — instead of asserting them in the timeless present tense the training corpus taught it. Tuning suppresses this disclaimer, so the prompt must restore it.
+    body: Give the model its training cutoff and today's date, and instruct it to date its claims about mutable facts — "as of my training data" — instead of asserting them in the timeless present tense the training corpus taught it. Tuning suppresses this disclaimer, so the prompt must restore it. Tell it, too, that sources dated after its cutoff are expected rather than suspect, so a date it does not recognize triggers an update and not a dismissal.
   - icon: 📚
     heading: Retrieval grounding
     body: For questions about current state, require the answer to come from a retrieved, dated source rather than parametric memory — the weights froze the world at the cutoff, so on anything that changes, retrieval isn't an enhancement but the only grounded path to "now."

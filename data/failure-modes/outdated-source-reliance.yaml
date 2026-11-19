@@ -5,7 +5,7 @@ def: |-
   Bases an answer on sources that are too old for the user's freshness requirement or for the domain's rate of change.
 
   Unlike Temporal Hallucination, this names the grounding failure — the system selected or trusted a stale source — rather than the temporally wrong claim itself. Unlike Index Drift, the stale source may be retrieved correctly from an index that is itself functioning as designed.
-updatedAt: "2026-06-13T09:00:00-04:00"
+updatedAt: "2026-11-18T22:00:00-05:00"
 
 searchPhrases:
   - used an outdated source
@@ -14,9 +14,12 @@ searchPhrases:
   - source too old
 
 why:
-  - Retrieval rankers score topical relevance, not recency, and older content dominates the web by volume and accumulated links. A well-written stale page often outranks a terse current one because embedding similarity and lexical overlap carry no notion of time (Vu et al., 2023, "FreshLLMs").
+  - >-
+    Retrieval rankers score topical relevance, not recency, and older content dominates the web by volume and accumulated links. A well-written stale page often outranks a terse current one because embedding similarity and lexical overlap carry no notion of time. How evidence is presented matters too: on fast-changing questions, the number and order of retrieved passages measurably change whether answers are correct (Vu et al., 2023, "FreshLLMs: Refreshing Large Language Models with Search Engine Augmentation").
   - Document age is frequently invisible to the system. Many pages lack reliable timestamps, chunking strips publication metadata, and the model receives passages with no signal of when they were written.
   - The model cannot judge staleness it cannot see. Knowing that a source is "too old" requires knowing the domain's rate of change, and nothing in training teaches a model that package docs decay in months while geography decays in decades.
+  - >-
+    In long-running agent sessions the stale source is often the agent's own earlier tool result. Agents treat the context as stationary and do not account for real time elapsed between messages, so they reuse old results where a re-check was needed, or re-check needlessly. Even with timestamps in context, no model tested exceeded 65% normalized alignment with human judgments of when to call the tool again (Cheng et al., 2025, "Your LLM Agents are Temporally Blind: The Misalignment Between Tool Use Decisions and Human Time Perception").
   - Freshness requirements are usually implicit. Users ask "what is the best X" without saying "as of now," and prompts rarely instruct the system to prefer or demand recent sources, so the system optimizes for answer quality over currency.
 
 examples:
@@ -28,12 +31,14 @@ examples:
       [… retrieval returns a well-matched 2022 pricing page; pricing changed in 2024 …]
       Assistant: The Pro plan costs $12 per user per month, billed annually.
   - kind: fail
-    label: Fast-decay domain, slow source
-    text: Answers a package-setup question from a years-old tutorial in a domain where docs decay in months, walking the user into a deprecated workflow.
+    label: The agent's own result gone stale
+    text: Hours into a session, the agent answers from a status it fetched that morning instead of re-checking, because nothing in its context marks the result as old.
     quote: |-
-      User: How do I set up authentication with this SDK?
-      [… top retrieved source is a 2021 blog post; the SDK replaced its auth flow in v3 …]
-      Assistant: First, generate a legacy API token from the settings page and pass it as the `auth_token` parameter.
+      Tool: [09:02] deploy_status — staging: healthy
+      [… five hours of unrelated work …]
+      User: [14:10] Is staging still healthy? I want to promote the build.
+      Assistant: Yes, staging is healthy. Go ahead and promote.
+      [… staging went down at 12:40; the agent never re-called deploy_status …]
   - kind: warn
     label: Undated source, unflagged
     text: The retrieved passage carries no timestamp, and the answer passes its content along without acknowledging that its currency is unknown.
@@ -70,9 +75,10 @@ mitigation:
     body: Instruct the model to check source dates against the question's rate of change before trusting them, to flag undated passages as unknown-currency rather than passing them along, and to treat "this source is too old for this question" as a valid reason to keep looking.
   - icon: 🛠️
     heading: Tool-backed lookup
-    body: For fast-decay questions — prices, current plans, recommended setups — route to a live fetch or search instead of answering from the corpus. The ok-grade behavior is exactly this — noticing the 2022 page and checking the live pricing page before answering.
+    body: For fast-decay questions — prices, current plans, recommended setups — route to a live fetch or search instead of answering from the corpus. The ok-grade behavior is exactly this — noticing the 2022 page and checking the live pricing page before answering. In agent sessions, timestamp every tool result and give each tool a maximum reuse age, after which the result must be fetched again before it is relied on. Timestamps alone do not get models to re-check reliably, so the reuse age has to be enforced in the harness.
 
 related:
   - id: temporal-hallucination
   - id: index-drift
   - id: memory-staleness
+  - id: missing-tool-invocation

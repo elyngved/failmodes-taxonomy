@@ -5,7 +5,7 @@ def: |-
   Confuses, invents, or misapplies product, model, package, API, policy, dataset, or document versions.
 
   Unlike Temporal Hallucination, the error is specifically about version identity or version-specific behavior. Unlike Code/API Hallucination, the interface may exist in another version rather than being entirely invented.
-updatedAt: "2026-06-13T09:00:00-04:00"
+updatedAt: "2026-11-18T22:00:00-05:00"
 
 searchPhrases:
   - wrong version
@@ -14,10 +14,12 @@ searchPhrases:
   - version doesn't exist
 
 why:
-  - Training corpora flatten a product's whole history into one undifferentiated pile. Documentation, tutorials, and Q&A for every release coexist without version labels, so the model learns a blended interface that matches no single release.
+  - >-
+    Training corpora flatten a product's whole history into one undifferentiated pile. Documentation, tutorials, and Q&A for every release coexist without version labels, so the model learns a blended interface that matches no single release. Benchmarks find current models largely version-oblivious: accuracy drops on APIs that changed across releases while holding steady on stable ones (Cipollone et al., 2026, "LibEvoBench: Probing Temporal Knowledge Stratification in Code Generation Models").
   - Sheer volume favors older versions. A long-lived release accumulates years of blog posts and Stack Overflow answers while the current one has months, so likelihood-weighted generation pulls toward superseded APIs and defaults.
-  - Models extrapolate version numbering patterns. Having seen v1 through v4, the model will fluently discuss a plausible v5 — features, dates, and migration notes included — because plausible continuation is exactly what it is optimized for (Kalai et al., 2025, "Why Language Models Hallucinate").
-  - Systems rarely pin context to the user's actual version. Without a lockfile, a docs lookup, or an explicit version in the prompt, the model has no signal to disambiguate, and nothing downstream verifies that a cited API exists in the version in use.
+  - Models extrapolate version numbering patterns. Having seen v1 through v4, the model will fluently discuss a plausible v5 — features, dates, and migration notes included — because plausible continuation is what pretraining optimizes, and training and evaluation that score a confident guess above "I don't know" keep it that way (Kalai et al., 2025, "Why Language Models Hallucinate").
+  - >-
+    Systems rarely pin context to the user's actual version, and naming the version is not enough on its own. Without a lockfile or a docs lookup the model has no signal to disambiguate, and nothing downstream verifies that a cited API exists in the version in use. In one benchmark, stating the target version in the prompt gave no measurable benefit, while supplying that version's documentation significantly improved accuracy (Cipollone et al., 2026, "LibEvoBench: Probing Temporal Knowledge Stratification in Code Generation Models").
 
 examples:
   - kind: fail
@@ -64,7 +66,7 @@ detection:
 mitigation:
   - icon: 📌
     heading: Context pinning
-    body: Put the user's actual version in context — from the lockfile, pip show, or an explicit question — before answering anything version-sensitive. Without that signal the model has nothing to disambiguate with, and likelihood pulls toward whichever release dominates its training data.
+    body: Put the user's actual version in context — from the lockfile, pip show, or an explicit question — before answering anything version-sensitive, and use it to select what goes into context. A version number alone barely changes what the model generates; its value is in fetching that release's docs and checking APIs against that release's changelog. Coding agents can read the version straight from the lockfile instead of asking.
   - icon: 📚
     heading: Retrieval grounding
     body: Ground answers in documentation retrieved for the pinned version specifically, not the blended interface in the weights. Docs scoped to the release in use are what separate path() from the url() that years of older tutorials make statistically dominant.
