@@ -5,7 +5,7 @@ def: |-
   Lets excess surrounding material weaken the influence of the most relevant context, causing important signals to be underweighted.
 
   Unlike Midsequence Neglect, the issue is crowding and low signal-to-noise rather than position alone. Unlike Tool Context Overload, the excessive material need not come from tools.
-updatedAt: "2026-06-13T09:00:00-04:00"
+updatedAt: "2026-11-18T22:00:00-05:00"
 
 searchPhrases:
   - lost the point in too much text
@@ -35,11 +35,13 @@ examples:
       [… 9,000 words of runbook and wiki pages …]
       Assistant: Since staging is read-only, the plan dry-runs the migration against a local copy and only applies writes in production during the release window.
 why:
-  - Attention is a normalized distribution over all tokens in context. As more material is added, the share of attention available to any one passage shrinks, so relevant signals are mechanically diluted by everything around them.
+  - >-
+    Attention is a normalized distribution over all tokens in context. As more material is added, the share of attention available to any one passage shrinks, so relevant signals are diluted by everything around them. That is part of the mechanism, not all of it: it does not explain why length hurts even when the extra tokens carry nothing.
   - Models are demonstrably distracted by irrelevant content. Inserting unrelated material into a problem measurably degrades performance even when the needed information is still present and unambiguous (Shi et al., 2023, "Large Language Models Can Be Easily Distracted by Irrelevant Context").
   - >-
-    Reported context window sizes describe what a model can ingest, not what it uses reliably. Performance degrades as input length grows even when the task is held constant, well before the nominal limit (Levy et al., 2024, "Same Task, More Tokens"; Hsieh et al., 2024, "RULER: What's the Real Context Size of Your Long-Context Language Models?").
-  - Common system designs stuff context defensively. RAG pipelines over-retrieve, agent frameworks append every tool result, and prompt templates accumulate boilerplate, so the relevant material arrives pre-buried in low-value text.
+    Reported context window sizes describe what a model can ingest, not what it uses reliably. Performance degrades as input length grows even when the task is held constant, well before the nominal limit (Levy et al., 2024, "Same Task, More Tokens"; Hsieh et al., 2024, "RULER: What's the Real Context Size of Your Long-Context Language Models?"). Volume costs accuracy even with no distracting content at all: with retrieval guaranteed, padding replaced by whitespace, or the padding masked out of attention, accuracy still fell 13.9–85% as inputs grew (Du et al., 2025, "Context Length Alone Hurts LLM Performance Despite Perfect Retrieval").
+  - >-
+    Common system designs stuff context defensively. RAG pipelines over-retrieve, agent frameworks append every tool result, and prompt templates accumulate boilerplate, so the relevant material arrives pre-buried in low-value text. Always-loaded instruction files for coding agents are the newest instance: across several agents and models they did not generally improve task success and raised inference cost by over 20% (Gloaguen et al., 2026, "Evaluating AGENTS.md: Are Repository-Level Context Files Helpful for Coding Agents?").
 detection:
   - icon: 📏
     heading: Constraint preservation checks
@@ -57,13 +59,13 @@ detection:
 mitigation:
   - icon: 🧹
     heading: Context curation
-    body: Stop stuffing defensively — trim over-retrieved RAG results, accumulated tool output, and boilerplate down to what the task needs. Ablation shows the lean prompt honors constraints the full dump misses, so volume is a cost to budget, not a free safety margin.
+    body: Stop stuffing defensively — trim over-retrieved RAG results, accumulated tool output, and boilerplate down to what the task needs. Ablation shows the lean prompt honors constraints the full dump misses, so volume is a cost to budget, not a free safety margin. Load by reference where you can — pass a file path or URL and let the agent open it when needed — and clear old tool results once their content is no longer in use, so the material can come back if it turns out to matter.
   - icon: 📌
     heading: Context pinning
     body: Pull load-bearing facts out of the dump and restate them where they can't be buried — a short constraints block in the system prompt or beside the question — so a one-line "staging is read-only" isn't competing for attention with 9,000 words of wiki export.
   - icon: 🚪
     heading: Relevance gating
-    body: Gate material before it enters the prompt — judge each retrieved passage, tool result, and pasted document for whether it bears on the task, and exclude what doesn't. Irrelevant content measurably degrades answers even when the model is told it may ignore it.
+    body: Gate material before it enters the prompt — judge each retrieved passage, tool result, and pasted document for whether it bears on the task, and exclude what doesn't. Irrelevant content degrades answers merely by being present, and length costs accuracy on its own, so an instruction to ignore the noise is a weaker fix than keeping it out.
 
 related:
   - id: midsequence-neglect

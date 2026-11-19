@@ -5,7 +5,7 @@ def: |-
   Overweights newer context while underweighting earlier information that remains valid and important.
 
   Unlike Context Rot, the model actively favors recent material rather than generally degrading earlier context. Unlike Memory Conflict, this happens within active context rather than across stored memories.
-updatedAt: "2026-06-13T09:00:00-04:00"
+updatedAt: "2026-11-18T22:00:00-05:00"
 
 searchPhrases:
   - overweighted the latest info
@@ -40,7 +40,8 @@ examples:
 why:
   - >-
     Common positional encoding schemes such as RoPE are explicitly designed to weight nearby tokens more heavily, building a structural preference for recent context into the architecture itself (Su et al., 2021, "RoFormer: Enhanced Transformer with Rotary Position Embedding").
-  - Long-context models attend disproportionately to material near the end of the input, and reordering documents by recency measurably changes which ones the model uses (Peysakhovich & Lerer, 2023, "Attention Sorting Combats Recency Bias in Long Context Language Models").
+  - >-
+    Long-context models attend disproportionately to material near the end of the input, and reordering documents by recency measurably changes which ones the model uses (Peysakhovich & Lerer, 2023, "Attention Sorting Combats Recency Bias in Long Context Language Models"). The bias outlasts the others as windows fill: near a model's context limit the advantage of early material fades while the advantage of late material holds, so the end of the input beats both the middle and the start (Veseli et al., 2025, "Positional Biases Shift as Inputs Approach Context Window Limits").
   - Recency is a good prior in natural text. In most training documents and conversations, the latest statement is the operative one, so models learn to treat "last mentioned" as "currently true" even when older information still applies.
   - Chat-style fine-tuning concentrates the reward signal on responding to the final user message, and following the newest input reads as responsiveness to human evaluators. Deference to the latest turn is therefore a trained behavior, not just an architectural artifact.
 detection:
@@ -57,7 +58,7 @@ detection:
 mitigation:
   - icon: 📌
     heading: Context pinning
-    body: Keep standing constraints restated in the system prompt or a maintained notes block near the generation point, so the $500 cap competes with the latest message on equal positional footing instead of from twenty turns back, where the architecture itself discounts it.
+    body: Keep standing constraints restated in the system prompt or a maintained notes block near the generation point, so the $500 cap competes with the latest message on equal positional footing instead of from twenty turns back, where the architecture itself discounts it. Long-running agents can do this for themselves by rewriting a short goals-and-constraints list at the end of context every few steps, turning the bias toward the latest tokens into a way of keeping old constraints current.
   - icon: 📝
     heading: Instruction constraints
     body: Instruct the model that standing constraints hold until explicitly revoked, and that a casual remark is not a revocation — enthusiasm about enterprise dashboards changes the conversation's topic, not its budget, unless the user actually lifts the cap.

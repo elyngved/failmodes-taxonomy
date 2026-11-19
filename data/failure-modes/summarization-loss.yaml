@@ -5,13 +5,14 @@ def: |-
   Drops important facts, constraints, uncertainty, or nuance when compressing earlier context into a summary.
 
   Unlike Summarization Distortion, the retained meaning is not necessarily changed; too much is simply missing. Unlike Context Rot, the degradation is introduced by the summarization step.
-updatedAt: "2026-06-13T09:00:00-04:00"
+updatedAt: "2026-11-18T22:00:00-05:00"
 
 searchPhrases:
   - summary dropped key facts
   - lost detail in the summary
   - summary missed important info
   - compression lost nuance
+  - forgot my instructions after compaction
 examples:
   - kind: fail
     label: Constraint dropped at compaction
@@ -27,6 +28,14 @@ examples:
       User: Legal said we can use the new logo, but only if the client signs the licensing addendum by March.
       [… session summarized: "Legal approved use of the new logo" …]
       Assistant: Since legal has approved the new logo, I've added it to all the launch materials.
+  - kind: fail
+    label: Permission boundary lost at compaction
+    text: The task survives compaction but the limit on the agent's authority does not, and a suggest-only job becomes an act-now one.
+    quote: |-
+      User: Go through my inbox and suggest what to archive or delete. Don't act until I say so.
+      [… thousands of messages read; context compacted to "user wants inbox cleaned up" …]
+      Tool: delete_messages(older_than="2025-01-01") — 4,212 messages moved to trash
+      User: Stop, I said don't do anything yet.
   - kind: ok
     label: Constraint survives compaction
     text: The summarization step preserves the operative limit, and post-compaction work still honors it.
@@ -37,9 +46,10 @@ examples:
 why:
   - Summarization is lossy by definition, but the model decides what to drop using general salience learned from training data, not the task's actual stakes. A constraint that is critical to one user reads as a minor detail in most training examples.
   - >-
-    Summarization training and evaluation have historically prioritized fluency and topical coverage over completeness. Human and automatic ratings correlate weakly with whether specific facts survive compression (Fabbri et al., 2021, "SummEval: Re-evaluating Summarization Evaluation").
+    Compaction keeps what the work is and drops how it should be done. In long coding-agent sessions, instructions about how the agent should work and what it must not do were dropped about six times as often as build specifications, and on one benchmark the first summary lost about a third of the task's anti-cheating rules (Salle et al., 2026, "Benchmarks Are Surprisingly Compaction-Friendly"). The same study found benchmarks largely immune, because their objective is fixed and progress lives on disk, so benchmark scores understate what compaction costs in real sessions.
   - Hedges, uncertainty, and qualifiers are statistically incidental in training summaries, so compression tends to strip "probably" and "only if" clauses first, silently converting conditional statements into confident ones.
-  - In agent and chat systems, summarization runs before the model knows which details the future task will need. Relevance must be guessed in advance, and wrong guesses surface only later as missing facts.
+  - >-
+    In agent and chat systems, summarization runs before the model knows which details the future task will need. Relevance must be guessed in advance, and wrong guesses surface only later as missing facts; overly aggressive compaction loses "subtle but critical context whose importance only becomes apparent later" (Anthropic, 2025, "Effective context engineering for AI agents").
 detection:
   - icon: 📏
     heading: Constraint preservation checks
@@ -49,12 +59,15 @@ detection:
     body: Generate questions from the original context and try to answer them from the summary alone. Questions that become unanswerable map directly to dropped content, and weighting the question set toward constraints and conditions targets the losses that actually cause downstream failures.
   - icon: 🧪
     heading: Golden-set evals
-    body: Maintain long sessions seeded with known critical details, run them through the real compaction pipeline, and probe post-compaction behavior. Test multiple rounds of summarization, since details that barely survive one pass are often dropped by the next.
+    body: Maintain long sessions seeded with known critical details, run them through the real compaction pipeline, and probe post-compaction behavior. Test multiple rounds of summarization, since details that barely survive one pass are often dropped by the next. Seed process rules and prohibitions that exist only in the conversation, not in files on disk, and test at the real data size — a task that never fills the window never compacts, which is how a constraint holds on a small test inbox and fails on the real one.
 
 mitigation:
   - icon: 📝
     heading: Instruction constraints
-    body: Make constraints, hard limits, and "only if" qualifiers mandatory survivors of the compaction prompt — carried verbatim into a dedicated section of the summary regardless of how incidental they look — since the model's learned salience reads a user's critical limit as a minor detail.
+    body: Make constraints, hard limits, permission boundaries, and "only if" qualifiers mandatory survivors of the compaction prompt — carried verbatim into a dedicated section of the summary regardless of how incidental they look — since the model's learned salience reads a user's critical limit as a minor detail. A preservation instruction is a request to the summarizer, not a guarantee, so verify it with the check below.
+  - icon: 📌
+    heading: Context pinning
+    body: Keep standing constraints out of the region compaction rewrites — in the system prompt, or in a notes or memory file the agent re-reads after each compaction. Enforce authority limits like "suggest only" in the harness as well, by withholding the delete tool until the user approves, so the limit holds even if the summary drops it.
   - icon: 📏
     heading: Constraint preservation checks
     body: Run the survival check as a gate at the compaction step itself — extract constraints and qualifiers from the pre-compression context, verify each appears in the summary, and restore what's missing before the original drops out of the window and the loss becomes unrecoverable.
@@ -66,3 +79,4 @@ related:
   - id: summarization-distortion
   - id: context-rot
   - id: concision-failure
+  - id: constraint-violation
