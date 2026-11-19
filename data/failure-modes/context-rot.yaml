@@ -45,7 +45,7 @@ examples:
 
 why:
   - >-
-    Model performance degrades nonuniformly as input length grows. Even simple retrieval and reasoning tasks become less reliable at long context, so facts that were used correctly early in a session stop being used correctly later (Hong et al., 2025, "Context Rot: How Increasing Input Tokens Impacts LLM Performance"; Levy et al., 2024, "Same Task, More Tokens").
+    Model performance degrades nonuniformly as input length grows. Even simple retrieval and reasoning tasks become less reliable at long context, so facts that were used correctly early in a session stop being used correctly later (Hong et al., 2025, "Context Rot: How Increasing Input Tokens Impacts LLM Performance"; Levy et al., 2024, "Same Task, More Tokens: the Impact of Input Length on the Reasoning Performance of Large Language Models").
   - >-
     Multi-turn conversation costs more than length alone. When the same task is revealed over several turns, top models lose 39% on average, while the same pieces given together in one prompt keep about 95% of full performance. The loss is mostly unreliability rather than lost capability: models commit to assumptions in early turns, attempt answers before the information is in, and then lean on their own early attempts over what the user adds later (Laban et al., 2025, "LLMs Get Lost In Multi-Turn Conversation").
   - Long-context training data is scarce relative to short exchanges. Models see far fewer examples of honoring an instruction issued tens of thousands of tokens ago, so that behavior is weakly reinforced.

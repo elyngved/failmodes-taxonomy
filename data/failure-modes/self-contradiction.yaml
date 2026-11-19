@@ -16,8 +16,8 @@ searchPhrases:
 why:
   - >-
     Generation is local. Each token is sampled from a distribution conditioned on the text so far, with no global consistency constraint over the whole response. Two passages can each be locally plausible while jointly contradictory (Mündler et al., 2023, "Self-contradictory Hallucinations of Large Language Models: Evaluation, Detection and Mitigation").
-  - Pretrained models encode inconsistent beliefs to begin with — the corpus contains contradictory statements from many authors, and next-token prediction learns all of them. Which one the model asserts depends on local phrasing cues, so different sections of a response can draw on different learned positions (Elazar et al., 2021, "Measuring and Improving Consistency in Pretrained Language Models").
-  - Once a model commits to an early claim, it tends to justify rather than retract it; later reasoning can then arrive at conclusions that conflict with the earlier commitment instead of cleanly correcting it (Zhang et al., 2023, "How Language Model Hallucinations Can Snowball").
+  - Pretrained models encode inconsistent beliefs to begin with — the corpus contains contradictory statements from many authors, and next-token prediction learns all of them. Factual consistency across paraphrases of the same query is poor in every pretrained model tested (Elazar et al., 2021, "Measuring and Improving Consistency in Pretrained Language Models"). If phrasing decides which answer surfaces, different sections of a response can draw on different learned positions.
+  - Once a model commits to an early claim, it tends to justify rather than retract it, going on to state further claims it can separately recognize as wrong (Zhang et al., 2023, "How Language Model Hallucinations Can Snowball"). Later reasoning can then arrive at conclusions that conflict with the earlier commitment instead of cleanly correcting it.
   - In long responses and multi-turn exchanges, earlier statements lose effective influence on generation, so the model re-derives facts it already stated and the re-derivation does not always match.
 
 examples:

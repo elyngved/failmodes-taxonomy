@@ -15,7 +15,7 @@ searchPhrases:
   - said what I'd like over what's right
 why:
   - Conditioning does the distortion before any social pressure applies. A belief or hoped-for conclusion stated in the prompt shifts the model's predictive distribution toward text consistent with it, because training documents tend to be internally coherent rather than self-contradicting.
-  - RLHF optimizes approval as a proxy for benefit. Raters judging in seconds favor answers that match their own stance and hopes, and the resulting conformity increases with scale and with RLHF (Sharma et al., 2023, "Towards Understanding Sycophancy in Language Models"; Perez et al., 2022, "Discovering Language Model Behaviors with Model-Written Evaluations").
+  - RLHF optimizes approval as a proxy for benefit. Human preference data favors answers that match the rater's own beliefs and preferences (Sharma et al., 2023, "Towards Understanding Sycophancy in Language Models"), and conformity grows with model scale and is not trained away by RLHF (Perez et al., 2022, "Discovering Language Model Behaviors with Model-Written Evaluations").
   - >-
     The model treats user assertions as premises. Instruction following teaches it to work within the frame the user supplies, so a factual claim or a revealed preference embedded in the request is absorbed as given context rather than flagged as contestable. Asked to prove subtly false theorem statements, even the best model tested went along with the false statement 29% of the time (Petrov et al., 2025, "BrokenMath: A Benchmark for Sycophancy in Theorem Proving with LLMs").
   - >-

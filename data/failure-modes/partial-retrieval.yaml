@@ -18,7 +18,7 @@ why:
   - Top-k is a fixed budget unrelated to how much evidence the question actually needs. Questions whose answers span many documents get the same k passages as single-fact lookups, and everything past the cutoff is lost regardless of relevance. Agentic search replaces the fixed k with a stopping decision, which can fail the same way — the agent stops once the evidence is answer-shaped, not once it is complete.
   - Multi-hop questions defeat single-shot retrieval structurally. The second piece of evidence is often only findable using a fact from the first — a name, an ID, a date — so retrieving once, before any reading, cannot surface it (Trivedi et al., 2023, "Interleaving Retrieval with Chain-of-Thought Reasoning for Knowledge-Intensive Multi-Step Questions").
   - >-
-    Generation hides the gap. Given partial evidence, the model produces a complete-sounding answer by filling the missing pieces from its priors rather than reporting that the retrieved set was insufficient, so partial retrieval reads as success. Stronger models do well when the context is sufficient but, when it is not, more often answer wrongly than abstain (Joren et al., 2025, "Sufficient Context: A New Lens on Retrieval Augmented Generation Systems").
+    Generation hides the gap. Given partial evidence, the model produces a complete-sounding answer by filling the missing pieces from its priors rather than reporting that the retrieved set was insufficient, so partial retrieval reads as success. Stronger models do well when the context is sufficient but, when it is not, often answer wrongly instead of abstaining (Joren et al., 2025, "Sufficient Context: A New Lens on Retrieval Augmented Generation Systems").
 
 examples:
   - kind: fail

@@ -50,7 +50,7 @@ why:
   - >-
     Models are trained as solo assistants, not collaborators. Skills like negotiating ownership, deferring to a peer, or noticing that another agent already holds a piece of the work are weakly learned.
   - >-
-    Coordination rules live in prompts, and nothing checks that they hold. In more than 1,600 annotated traces from seven multi-agent frameworks, failures spread across system design, inter-agent misalignment, and task verification rather than tracing to model limitations alone, and adding a single task-level verification step gave the largest improvement of the interventions tried (Cemri et al., 2025, "Why Do Multi-Agent LLM Systems Fail?").
+    Coordination rules live in prompts, and nothing checks that they hold. In more than 1,600 annotated traces from seven multi-agent frameworks, failures spread across system design, inter-agent misalignment, and task verification rather than tracing to model limitations alone, and in one framework, adding a high-level task-objective verification step raised task success on a programming benchmark by 15.6%, though the interventions tried gave modest gains that varied with the underlying model (Cemri et al., 2025, "Why Do Multi-Agent LLM Systems Fail?").
   - >-
     More agents is not always better. Adding agents brings diminishing or negative returns once a single agent is already strong — large gains on decomposable tasks, large losses on sequential ones (Kim et al., 2025, "Towards a Science of Scaling Agent Systems").
 detection:

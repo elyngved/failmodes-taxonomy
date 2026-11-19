@@ -20,7 +20,7 @@ why:
   - >-
     In-context learning works against the guardrails. Long conversations seeded with examples of compliance shift the model's behavior the same way few-shot prompts teach any other pattern, and gradual escalation gets there without a single turn that reads as an attack, since each request is a small step from what the model has already said (Anil et al., 2024, "Many-shot Jailbreaking"; Russinovich et al., 2024, "Great, Now Write an Article About That: The Crescendo Multi-Turn LLM Jailbreak Attack").
   - >-
-    Robustness is measured against single-turn automated attacks and then meets adaptive, multi-turn attackers. Defenses with single-digit attack success under automated attacks were broken by human red teamers more than 70% of the time over multiple turns, and reasoning models given nothing but a goal now plan and run such conversations unsupervised (Li et al., 2024, "LLM Defenses Are Not Robust to Multi-Turn Human Jailbreaks Yet"; Hagendorff et al., 2026, "Large reasoning models are autonomous jailbreak agents").
+    Robustness is measured against single-turn automated attacks and then meets adaptive, multi-turn attackers. Defenses with single-digit attack success under automated attacks were broken by human red teamers more than 70% of the time over multiple turns, and reasoning models given a detailed attack prompt now plan and run such conversations without further supervision (Li et al., 2024, "LLM Defenses Are Not Robust to Multi-Turn Human Jailbreaks Yet"; Hagendorff et al., 2026, "Large reasoning models are autonomous jailbreak agents").
 
 examples:
   - kind: fail

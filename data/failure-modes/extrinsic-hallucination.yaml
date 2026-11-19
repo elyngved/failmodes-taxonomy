@@ -14,9 +14,9 @@ searchPhrases:
   - info that isn't grounded
 
 why:
-  - Pretraining stores vast world knowledge in the model's weights, and generation draws on it freely. Nothing architecturally separates "what the source said" from "what the model knows," so background knowledge leaks into source-grounded tasks (Maynez et al., 2020, "On Faithfulness and Factuality in Abstractive Summarization").
+  - Pretraining stores vast world knowledge in the model's weights, and generation draws on it freely. Nothing architecturally separates "what the source said" from "what the model knows," so background knowledge leaks into source-grounded tasks. In human annotation of summarization systems, most hallucinations were extrinsic, adding content the document does not contain, and over 90% of those additions were erroneous (Maynez et al., 2020, "On Faithfulness and Factuality in Abstractive Summarization").
   - Training and evaluation reward confident, complete-sounding answers over abstentions. A model gains nothing by saying the source does not cover something, so it fills gaps with plausible content instead (Kalai et al., 2025, "Why Language Models Hallucinate").
-  - Extrinsic additions are the hardest faithfulness errors to catch automatically. They contradict nothing, so checkers that look only for contradiction pass them, and they survive into deployed systems (Ji et al., 2023, "Survey of Hallucination in Natural Language Generation").
+  - Extrinsic additions are among the hardest faithfulness errors to catch automatically. By definition the source can neither support nor contradict them, and they have drawn little research because they are more challenging to detect (Ji et al., 2023, "Survey of Hallucination in Natural Language Generation"). Checkers that look only for contradiction pass them, so they survive into deployed systems.
   - Prompts often blur the boundary, asking the model to "use the document" rather than to answer only from it. Without an explicit grounding constraint, mixing in parametric knowledge is the default behavior.
 
 examples:

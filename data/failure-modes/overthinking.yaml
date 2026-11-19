@@ -13,7 +13,7 @@ searchPhrases:
   - reasoned itself out of the right answer
   - burned tokens thinking
 why:
-  - Reasoning training rewards long chains. Test-time scaling teaches that more thinking improves hard-problem success, and the learned policy applies extended deliberation indiscriminately — including to problems solved correctly in the first hundred tokens (Chen et al., 2024, "Do NOT Think That Much for 2+3=? On the Overthinking of o1-Like LLMs").
+  - Reasoning training rewards long chains. Test-time scaling teaches that more thinking improves hard-problem success, and the learned policy applies extended deliberation indiscriminately — including to simple problems where the first solution attempt is already correct more than 92% of the time (Chen et al., 2024, "Do NOT Think That Much for 2+3=? On the Overthinking of o1-Like LLMs").
   - Allocating a thinking budget requires estimating difficulty before solving, which is itself the judgment the thinking was supposed to produce. With no reliable difficulty signal, the trained default is to deliberate.
   - >-
     Extended reasoning can make answers worse, not just slower. Models second-guess correct intermediate conclusions, drift to alternative framings, and in agentic settings substitute simulating outcomes for taking the one cheap action that would settle the question (Cuadron et al., 2025, "The Danger of Overthinking: Examining the Reasoning-Action Dilemma in Agentic Tasks"). Purpose-built tasks show accuracy falling as test-time compute rises, through distraction by irrelevant detail, drift from sound priors to spurious correlations, and lost focus on long deductions (Gema et al., 2025, "Inverse Scaling in Test-Time Compute").

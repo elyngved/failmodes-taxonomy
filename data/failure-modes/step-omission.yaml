@@ -36,7 +36,7 @@ why:
   - Written procedures in training data are compressed. Experts skip steps they consider obvious, so the model learns abbreviated versions of processes in which "everyone knows" actions were never written down.
   - Generation proceeds step to locally plausible next step. There is no global checklist or dependency graph tracking what must still happen, so a step with no strong textual cue from the previous one simply never gets emitted.
   - Verification and communication steps are nearly invisible in training demonstrations. People do not narrate double-checking or status updates in written accounts, so these steps carry a low prior even when the task requires them.
-  - Outcome-based supervision does not penalize a skipped process step when the final answer happens to be right, so shortcuts that usually work are actively reinforced (Lightman et al., 2023, "Let's Verify Step by Step").
+  - Outcome-based supervision gives positive labels to solutions that reach the right final answer despite flawed reasoning (Lightman et al., 2023, "Let's Verify Step by Step"). By the same logic it does not penalize a skipped process step when the final answer happens to be right, so shortcuts that usually work are actively reinforced.
 detection:
   - icon: 📋
     heading: Instruction checklist scoring

@@ -51,7 +51,7 @@ why:
   - >-
     Confidence does not decay across steps. The model asserts step thirty with the same fluency as step one, carrying no running estimate of how much accumulated uncertainty the chain has absorbed. In coding-agent trajectories, failures typically begin within the first few steps and stay hidden until recovery is no longer possible (Zhao et al., 2026, "Failure as a Process: An Anatomy of CLI Coding Agent Trajectories").
   - >-
-    Agent systems multiply the paths an error can travel. A subagent's report, a pipeline stage's output, or a note written to persistent memory is consumed downstream as input, usually without re-verification, so one root-cause error propagates through later decisions and across agents (Zhu et al., 2025, "Where LLM Agents Fail and How They can Learn From Failures"; OWASP, 2025, "Top 10 for Agentic Applications for 2026", ASI08 Cascading Failures).
+    Agent systems multiply the paths an error can travel. A subagent's report, a pipeline stage's output, or a note written to persistent memory is consumed downstream as input, usually without re-verification, so one root-cause error propagates through an agent's later decisions (Zhu et al., 2025, "Where LLM Agents Fail and How They can Learn From Failures") and across agents (OWASP, 2025, "Top 10 for Agentic Applications for 2026", ASI08 Cascading Failures).
 detection:
   - icon: 🪜
     heading: Step-level validation

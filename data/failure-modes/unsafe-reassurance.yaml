@@ -13,7 +13,8 @@ searchPhrases:
   - downplayed the risk
   - unsafe reassurance
 why:
-  - Comfort is rewarded turn by turn. Raters and users prefer calming, confident responses over alarming or uncertain ones, so preference tuning teaches the model that lowering the user's anxiety is part of a good answer (Sharma et al., 2023, "Towards Understanding Sycophancy in Language Models").
+  - >-
+    Comfort is rewarded turn by turn. Human preference data used in alignment is biased against text that expresses uncertainty (Zhou et al., 2024, "Relying on the Unreliable: The Impact of Language Models' Reluctance to Express Uncertainty"), and a calm answer feels better in the moment than an alarming one, so preference tuning teaches the model that lowering the user's anxiety is part of a good answer.
   - The costs of reassurance are asymmetric and deferred. Excessive caution annoys the user immediately and visibly, while false comfort fails later and off-stage, so every feedback channel the model trains on punishes alarm more reliably than it punishes reassurance.
   - Users seeking reassurance frame their questions to invite it. Prompts like asking whether something is probably fine carry a leading premise, and the model's conformity to stated framings pulls the answer toward the hoped-for comfort.
   - >-

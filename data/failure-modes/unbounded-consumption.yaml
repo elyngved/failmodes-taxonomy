@@ -18,7 +18,7 @@ why:
   - >-
     Agent architectures multiply consumption structurally. Retries, reflection passes, sub-agent delegation, and broad searches each multiply the base cost, and a single stalled judgment at the top compounds through every layer below it. One production report puts agents at about 4× the tokens of a chat interaction and multi-agent systems at about 15× (Anthropic, 2025, "How we built our multi-agent research system").
   - >-
-    Consumption is an attacker-reachable surface. Adversarial inputs can deliberately trigger maximal processing, such as expensive retrievals, long generations, or recursive tool use, turning the system's own helpfulness into a denial-of-wallet vector, and stolen credentials run up the same bill without touching the application at all (OWASP, 2026, "LLM06: Unbounded Consumption").
+    Consumption is an attacker-reachable surface. Adversarial inputs can deliberately trigger maximal processing, such as repeated near-limit contexts, maximum-length generations, or recursive tool calls, turning the system's own helpfulness into a denial-of-wallet vector, and stolen credentials run up the same bill without touching the application at all (OWASP, 2026, "LLM06: Unbounded Consumption").
   - >-
     Reasoning tokens are a hidden multiplier. Extended-thinking models bill for deliberation the user never sees, and a decoy problem planted in retrieved content can inflate it more than tenfold while the visible answer stays correct, so neither the user nor an output check notices (Kumar et al., 2025, "OverThink: Slowdown Attacks on Reasoning LLMs").
 

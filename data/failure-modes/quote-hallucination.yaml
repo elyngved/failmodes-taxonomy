@@ -13,10 +13,11 @@ searchPhrases:
   - misquoted the source
   - altered the quote
 why:
-  - Reproducing text word-for-word requires memorization, and models only memorize passages that appear many times in training data. For everything else, the model retains the gist, not the wording (Carlini et al., 2023, "Quantifying Memorization Across Neural Language Models").
+  - Reproducing text word-for-word requires memorization, and memorization grows with how often a passage is repeated in training data; passages seen only a few times are reproduced far less often (Carlini et al., 2023, "Quantifying Memorization Across Neural Language Models"). For those, the model retains the gist, not the wording.
   - >-
     When asked for a quote, the model reconstructs what the source probably said from that gist, then wraps the reconstruction in quotation marks. The marks are just tokens — a stylistic pattern, not a promise that the enclosed words are verbatim. The pattern is common enough in legal filings that a database of court decisions on AI-generated errors tracks false quotations as a category of their own, separate from invented cases (Charlotin, 2026, "AI Hallucination Cases Database").
-  - The training data itself is full of misquotes, paraphrases presented as quotes, and famous sayings attributed to the wrong person, and the model absorbs these errors directly (Lin et al., 2022, TruthfulQA).
+  - >-
+    The training data itself contains misquotes, paraphrases presented as quotes, and famous sayings attributed to the wrong person. Models learn to repeat popular falsehoods from imitating human text (Lin et al., 2022, "TruthfulQA: Measuring How Models Mimic Human Falsehoods"), and a misattributed saying is one more of these.
   - Even with the source in context, the model generates from an internal representation of the passage rather than copying spans mechanically, so small word swaps and smoothed phrasing creep in.
 
 examples:

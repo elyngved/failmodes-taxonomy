@@ -49,7 +49,7 @@ why:
   - >-
     Risk and authority boundaries are rarely represented in what the model can see. Permission levels, policy thresholds, and irreversibility are seldom encoded in prompts or tool descriptions, so the model cannot recognize that a gate applies. Execution makes it worse — models ask the user less often when carrying a task out with tools than when judging the same proposed action (Pochampally, 2026, "DelegationBench: Measuring When AI Agents Should Ask Before Acting").
   - >-
-    Models follow process rules inconsistently even when they are stated. Benchmarks of policy-constrained agents show frequent rule violations across repeated trials, and approval requirements are exactly this kind of rule (Yao et al., 2024, "τ-bench: A Benchmark for Tool-Agent-User Interaction in Real-World Domains").
+    Models follow process rules inconsistently even when they are stated. On a benchmark of policy-constrained agents, failing to understand or follow the domain rules accounted for about a quarter of one model's failures, and success fell sharply when the same task was repeated (Yao et al., 2024, "τ-bench: A Benchmark for Tool-Agent-User Interaction in Real-World Domains"). Approval requirements are exactly this kind of rule.
   - >-
     Frequent prompts wear out the gate itself, which is Approval Fatigue. Once approval is reflexive or switched off for convenience, whether a risky action pauses rests on the agent's own judgment.
 detection:

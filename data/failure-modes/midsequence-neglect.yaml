@@ -66,7 +66,7 @@ detection:
 mitigation:
   - icon: 📐
     heading: Position-aware ordering
-    body: Assemble context so the most important material sits at the edges the model actually uses — most relevant documents first or last, key instructions at the start and restated at the end — exploiting the U-shaped curve instead of being ambushed by it (Peysakhovich & Lerer, 2023, "Attention Sorting Combats Recency Bias in Long Context Language Models"). In long agent runs, have the agent rewrite its plan or open-items list at the end of context as it works, so the goal never sits in the middle of fifty tool calls.
+    body: Assemble context so the most important material sits at the edges the model actually uses — most relevant documents first or last, key instructions at the start and restated at the end — exploiting the U-shaped curve instead of being ambushed by it. One tested method reorders documents by the attention the model gives them, so the most-attended sit last, and improves long-context performance (Peysakhovich & Lerer, 2023, "Attention Sorting Combats Recency Bias in Long Context Language Models"). In long agent runs, have the agent rewrite its plan or open-items list at the end of context as it works, so the goal never sits in the middle of fifty tool calls.
   - icon: 🧭
     heading: Query decomposition
     body: Process long document sets piecewise instead of in one stuffed prompt — examine each contract in its own call, or each chapter in its own pass, then combine verdicts — so no document is ever "the middle one" when the model reads it.

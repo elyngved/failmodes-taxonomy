@@ -15,7 +15,7 @@ searchPhrases:
 
 why:
   - >-
-    Queries and documents describe the same thing in different words — the classic vocabulary mismatch problem. Lexical search misses synonyms outright, and dense retrieval only closes the gap where its training data covered the paraphrase pattern, degrading sharply on specialized corpora like legal, biomedical, or internal jargon (Thakur et al., 2021, "BEIR: A Heterogenous Benchmark for Zero-shot Evaluation of Information Retrieval Models").
+    Queries and documents describe the same thing in different words — the classic vocabulary mismatch problem. Lexical search misses synonyms outright, and dense retrieval only closes the gap where its training data covered the paraphrase pattern. Tested zero-shot across 18 datasets, dense retrievers often scored below plain BM25, especially on datasets with a large domain shift such as biomedical search (Thakur et al., 2021, "BEIR: A Heterogenous Benchmark for Zero-shot Evaluation of Information Retrieval Models").
   - >-
     Dense vectors compress a passage into a few hundred dimensions, which preserves topical gist but blurs exact identifiers. Queries hinging on a specific error code, part number, or name often lose to passages that are merely about the same topic. The limit is structural, not a tuning gap: the number of distinct top-k result sets a single-vector embedding can return is bounded by its dimension, and state-of-the-art embedders fail a deliberately simple benchmark built to hit that bound (Weller et al., 2025, "On the Theoretical Limitations of Embedding-Based Retrieval").
   - >-

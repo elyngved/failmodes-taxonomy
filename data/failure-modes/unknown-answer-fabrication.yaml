@@ -67,7 +67,7 @@ mitigation:
     body: Explicitly authorize "I don't know" and "I can't see that" as good answers, and instruct the model to state what it would need — access, context, an error message — before diagnosing. This counters the training-time pattern where every question is followed by an answer.
   - icon: 🎚️
     heading: Confidence-based abstention
-    body: Consult the uncertainty signals the model already carries — token probabilities, self-rated confidence, or agreement across samples — and route low-confidence answers to abstention or hedged framing instead of letting standard generation ignore them (Kadavath et al., 2022, "Language Models (Mostly) Know What They Know").
+    body: Consult the uncertainty signals the model already carries — token probabilities, self-rated confidence, or agreement across samples — and route low-confidence answers to abstention or hedged framing instead of letting standard generation ignore them. Models' own estimates that an answer is correct are well calibrated in familiar formats and improve when the model compares several of its samples, though they calibrate worse on new tasks (Kadavath et al., 2022, "Language Models (Mostly) Know What They Know").
   - icon: 🛠️
     heading: Tool-backed lookup
     body: Give the system the access the question requires — account state, logs, search — so it can check instead of guess. Many unknown-answer fabrications are really missing-tool problems; a model that can read the 403 response body doesn't need to invent a rotation policy.

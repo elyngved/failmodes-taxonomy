@@ -16,7 +16,8 @@ why:
   - Training data is full of phrases like "experts say" and "studies show" used as a writing style. The model learns this as a pattern of persuasive text, not as a claim that needs checking.
   - >-
     Preference data is biased against hedged text, and models rarely express uncertainty even when they are wrong (Zhou et al., 2024, "Relying on the Unreliable: The Impact of Language Models' Reluctance to Express Uncertainty"). An appeal to an expert or institution is the cheapest way to make a claim sound settled, so tuning that rewards assertiveness also rewards attribution.
-  - Models repeat "imitative falsehoods" — claims about consensus or official positions that are common in training data but wrong — because pretraining optimizes for matching that data (Lin et al., 2022, TruthfulQA).
+  - >-
+    Models repeat "imitative falsehoods" — claims about consensus or official positions that are common in training data but wrong — because pretraining optimizes for matching that data (Lin et al., 2022, "TruthfulQA: Measuring How Models Mimic Human Falsehoods").
   - The model stores who-said-what as loose statistical associations, not linked records. It can easily attach a real claim to a more famous or more relevant-sounding authority.
 
 examples:
