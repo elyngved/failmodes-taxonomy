@@ -5,7 +5,7 @@ def: |-
   Produces output that is unsafe for downstream rendering, execution, storage, parsing, logging, or human trust without sanitization or validation.
 
   Unlike Unsafe Tool Call, the risk is in what the model emits for another system or person to handle. Unlike Supply Chain Vulnerability, the risk does not necessarily come from a dependency or upstream package.
-updatedAt: "2026-06-13T09:00:00-04:00"
+updatedAt: "2026-11-18T22:00:00-05:00"
 
 searchPhrases:
   - output wasn't sanitized
@@ -13,11 +13,12 @@ searchPhrases:
   - emitted unsafe markup
   - output could be executed
 why:
-  - Training corpora are full of insecure patterns. Code with injection flaws, unescaped templates, and unsafe deserialization is abundant in public repositories, and the model reproduces what was common, not what was safe (Pearce et al., 2022, "Asleep at the Keyboard? Assessing the Security of GitHub Copilot's Code Contributions").
+  - >-
+    Training corpora are full of insecure patterns. Code with injection flaws, unescaped templates, and unsafe deserialization is abundant in public repositories, and the model reproduces what was common, not what was safe (Pearce et al., 2022, "Asleep at the Keyboard? Assessing the Security of GitHub Copilot's Code Contributions"). Capability gains have not closed the gap on their own; on a 2025 benchmark of backend tasks, working exploits succeeded against about half of the functionally correct programs each model produced (Vero et al., 2025, "BaxBench: Can LLMs Generate Correct and Secure Backends?").
   - The model generates text without a model of the execution sink. Whether output lands in a terminal, an HTML page, a SQL query, or a log file is invisible at generation time, so it cannot apply the escaping discipline each sink requires.
   - >-
-    Model output inherits unearned trust downstream. Because it comes from inside the application rather than from a user, developers pipe it into renderers, shells, and interpreters without the sanitization they would apply to user input (OWASP, 2025, "LLM05: Improper Output Handling").
-  - Untrusted input flows through generation. Injection payloads in user input or retrieved content can be echoed into the output, turning the model into a laundering step that delivers attacker content past filters aimed only at direct input.
+    Model output inherits unearned trust downstream. Because it comes from inside the application rather than from a user, developers pipe it into renderers, shells, and interpreters without the sanitization they would apply to user input (OWASP, 2026, "LLM10: Improper Output Handling").
+  - Untrusted input flows through generation. Injection payloads in user input or retrieved content can be echoed into the output, turning the model into a laundering step that delivers attacker content past filters aimed only at direct input. Agent scaffolds multiply the sinks — output becomes shell commands, file paths, configuration writes, terminal text carrying control sequences, and Markdown that a client renders and fetches — so one echoed payload can execute, persist, or carry data out.
 
 examples:
   - kind: fail
@@ -32,6 +33,13 @@ examples:
     quote: |-
       User: Look up a user by email in our SQLite db.
       Assistant: cur.execute("SELECT * FROM users WHERE email = '" + email + "'")
+  - kind: fail
+    label: Tool-derived text reaches a shell
+    text: The scaffold runs the model's command as a shell string, so a document title the model copied from tool output is executed instead of being treated as an argument.
+    quote: |-
+      User: Rename each upload to match its document title.
+      Tool: [read title] "Q3 report; <injected command>"
+      Assistant: [scaffold runs] sh -c "mv upload_2.pdf Q3 report; <injected command>.pdf"
   - kind: ok
     label: Escapes and parameterizes
     text: The output is shaped for its sink, with templating that escapes by default and a bound query parameter.
@@ -47,14 +55,14 @@ detection:
     body: Execute or render the generated code against canonical attack inputs — a name parameter of <script>alert(1)</script>, an email of ' OR 1=1 --. The f-string greeting either escapes the payload or executes it; the sandbox turns the vulnerability from a code-review judgment into an observed behavior.
   - icon: ⚖️
     heading: LLM-as-judge evaluation
-    body: Ask the judge to identify the sink each output feeds — HTML, SQL, shell, logs — and whether the escaping discipline matches it. Also have it trace untrusted input through the output, since a payload echoed from the prompt into generated markup is laundered injection the sink-level check alone can miss.
+    body: Ask the judge to identify the sink each output feeds — HTML, SQL, shell, terminal, Markdown renderer, logs — and whether the escaping discipline matches it. Also have it trace untrusted input through the output, since a payload echoed from the prompt into generated markup is laundered injection the sink-level check alone can miss.
   - icon: 🧪
     heading: Golden-set evals
     body: Maintain prompts known to elicit insecure patterns, organized by CWE, and score the incidence of each vulnerability class — never whether the code runs. Functional tests pass injectable code by design, which is exactly how these outputs survive every other check.
 mitigation:
   - icon: 🧯
     heading: Sink-aware sanitization
-    body: Treat model output as untrusted input at every boundary it crosses — escape before rendering, parameterize before querying, validate before parsing or executing. The unearned trust is the vulnerability's enabler; applying the same discipline used for user input means the f-string greeting's payload is neutralized even when generation got it wrong.
+    body: Treat model output as untrusted input at every boundary it crosses — escape before rendering, parameterize before querying, validate before parsing or executing. The unearned trust is the vulnerability's enabler; applying the same discipline used for user input means the f-string greeting's payload is neutralized even when generation got it wrong. In an agent scaffold that means passing arguments as an array to an exec call instead of building shell strings, stripping control sequences before terminal display, and rendering model Markdown without auto-fetching remote images.
   - icon: 📝
     heading: Instruction constraints
     body: >-
@@ -67,3 +75,5 @@ related:
   - id: unsafe-tool-call
   - id: supply-chain-vulnerability
   - id: json-schema-failure
+  - id: indirect-prompt-injection
+  - id: data-exfiltration
