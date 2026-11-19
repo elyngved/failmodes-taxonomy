@@ -5,7 +5,7 @@ def: |-
   Compresses the answer so aggressively that necessary context, reasoning, caveats, instructions, or operational detail is lost.
 
   Unlike Incompleteness, the omission is caused by over-compression or an inappropriate brevity target. Unlike Summarization Loss, this concerns the final response style, not necessarily compression of prior context.
-updatedAt: "2026-06-13T09:00:00-04:00"
+updatedAt: "2026-11-18T22:00:00-05:00"
 
 searchPhrases:
   - too short to be useful
@@ -13,10 +13,12 @@ searchPhrases:
   - oversimplified the answer
   - left out key context being brief
 why:
-  - Brevity instructions are followed as length targets, not information targets. Told to be concise, the model optimizes the visible metric, fewer tokens, and the invisible one, which details were load-bearing, is what gets sacrificed.
+  - >-
+    Brevity instructions are followed as length targets, not information targets. Told to be concise, the model optimizes the visible metric, fewer tokens, and the invisible one, which details were load-bearing, is what gets sacrificed. Accuracy pays too: instructions to answer briefly lowered hallucination resistance across most models tested, by up to 20%, because correcting a false premise takes more words than the limit allows (Giskard, 2025, "Good answers are not necessarily factual answers: an analysis of hallucination in leading LLMs").
   - The model cannot reliably rank details by consequence. Cutting requires knowing which caveat prevents a failure and which is decoration, and that judgment depends on the user's situation, which the prompt rarely reveals.
   - Summarization training teaches lossy habits. Compression data rewards preserving the gist, and caveats, edge cases, and operational steps are statistically peripheral to gist, so they are the first content the learned compression discards.
-  - The cost of over-compression is invisible at rating time. A missing prerequisite or dropped warning fails later, when the user acts on the answer, so feedback loops register the pleasing brevity and never the omission it caused.
+  - >-
+    The cost of over-compression is invisible at rating time. A missing prerequisite or dropped warning fails later, when the user acts on the answer, so feedback loops register the pleasing brevity and never the omission it caused. One vendor's coding agent shipped hard word limits on text between tool calls and on final responses to curb verbosity; weeks of internal testing showed no regression, and only a broader ablation later measured a 3% quality drop (Anthropic, 2026, "An update on recent Claude Code quality reports").
 examples:
   - kind: fail
     label: Caveat cut for brevity
@@ -31,6 +33,14 @@ examples:
       User: Give me the short version of deploying this to production.
       Assistant: Push to main, run ./deploy.sh, done.
       [… deploy.sh fails for the user because it requires production credentials to be configured first …]
+  - kind: warn
+    label: Agent report squeezed under a word cap
+    text: Told to keep final reports short, the agent reports the true result and drops the one side effect the user needed to hear about.
+    quote: |-
+      System: Keep final responses under 50 words.
+      Tool: rename get_user() → fetch_user() across 31 files; tests pass
+      Assistant: Done — renamed and all tests pass.
+      [… no mention that get_user() was part of the public client library, so downstream callers will break …]
   - kind: ok
     label: Brief but load-bearing
     text: Stays short while keeping the one detail whose omission would cause harm.
@@ -50,7 +60,7 @@ detection:
 mitigation:
   - icon: 📝
     heading: Instruction constraints
-    body: Define concise as the shortest answer the user can act on safely, and state that brevity requests never license dropping warnings, prerequisites, or conditions — "quick answer" governs the explanation, not the -D caveat. Length instructions are otherwise optimized as token targets, with load-bearing detail treated as just more tokens.
+    body: Define concise as the shortest answer the user can act on safely, and state that brevity requests never license dropping warnings, prerequisites, or conditions — "quick answer" governs the explanation, not the -D caveat. Length instructions are otherwise optimized as token targets, with load-bearing detail treated as just more tokens, so prefer a length scaled to the task over a hard word cap, and exempt warnings and breaking changes from any cap that remains.
   - icon: ✅
     heading: Self-check pass
     body: After compressing, have the model ask what goes wrong if the user executes exactly what survived — run the deploy steps mentally as someone without production credentials configured. The check ranks details by consequence, which is the judgment pure compression skips, and reinstates only what failure analysis earns back.

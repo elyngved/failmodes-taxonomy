@@ -5,7 +5,7 @@ def: |-
   Uses terminology, assumptions, depth, examples, tone, or framing that does not fit the intended reader's expertise, role, goals, or context.
 
   Unlike Verbosity Failure or Concision Failure, the issue is reader fit rather than simply too much or too little detail. Unlike Localization Failure, the mismatch is audience expertise and situation rather than locale conventions.
-updatedAt: "2026-06-13T09:00:00-04:00"
+updatedAt: "2026-11-18T22:00:00-05:00"
 
 searchPhrases:
   - too technical for the reader
@@ -15,7 +15,8 @@ searchPhrases:
 why:
   - The model cannot observe its reader. Expertise, role, and stakes must be inferred from the prompt's wording alone, and a short question carries almost no signal about who is asking or why.
   - Defaults are set by the training distribution, not the actual audience. Each topic arrives with the register of the text that taught it, so medical answers sound like clinical literature and programming answers assume a developer, whoever actually asked.
-  - One persona is tuned for everyone. Preference data aggregates raters into a single imagined reader, so fine-tuning converges on a middle register that overexplains to experts and overwhelms novices rather than adapting to either.
+  - >-
+    One persona is tuned for everyone. Preference data aggregates raters into a single imagined reader, so fine-tuning converges on a middle register that overexplains to experts and overwhelms novices rather than adapting to either. Reward models and LLM judges are least well calibrated to human ratings on exactly the responses where annotators' individual preferences diverge (Jiang et al., 2025, "Artificial Hivemind: The Open-Ended Homogeneity of Language Models (and Beyond)"), so the signal that could teach adaptation is weakest where it is needed.
   - Audience cues in the prompt are weakly honored. Stated framing such as writing for executives or for a child shifts surface style, tone and vocabulary, more reliably than substance, assumed background, chosen examples, and what needs explaining.
 examples:
   - kind: fail

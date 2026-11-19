@@ -5,7 +5,7 @@ def: |-
   Misstates confidence, uncertainty, evidence strength, risk, tradeoffs, or likelihood in the final answer.
 
   Unlike Unknown-Answer Fabrication, calibration failure can occur even when the answer is mostly correct. Unlike Unsafe Reassurance, it includes both overconfidence and excessive hedging, not only under-cautious reassurance.
-updatedAt: "2026-06-13T09:00:00-04:00"
+updatedAt: "2026-11-18T22:00:00-05:00"
 
 searchPhrases:
   - sounded way too confident
@@ -13,10 +13,14 @@ searchPhrases:
   - overconfident answer
   - wrong confidence level
 why:
-  - Verbal confidence is generated as style, not read off an internal probability. Stated certainty correlates poorly with actual accuracy, so the answer's tone and its reliability are produced by largely separate processes (Xiong et al., 2024, "Can LLMs Express Their Uncertainty? An Empirical Evaluation of Confidence Elicitation in LLMs").
-  - Alignment tuning damages the calibration pretraining built. Base model token probabilities track correctness reasonably well, and RLHF measurably degrades that correspondence while making outputs sound more assured (OpenAI, 2023, "GPT-4 Technical Report").
+  - >-
+    Verbal confidence is generated as style, not read off an internal probability. Stated certainty correlates poorly with actual accuracy, so the answer's tone and its reliability are produced by largely separate processes (Xiong et al., 2024, "Can LLMs Express Their Uncertainty? An Empirical Evaluation of Confidence Elicitation in LLMs"). Readers then add their own error: given default explanations they overestimate accuracy, and longer explanations raise their confidence even when accuracy is unchanged (Steyvers et al., 2025, "What large language models know and what people think they know").
+  - Alignment tuning damages the calibration pretraining built. Base model token probabilities track correctness reasonably well, and post-training measurably degrades that correspondence (OpenAI, 2023, "GPT-4 Technical Report").
   - Binary-graded training and evaluation reward guessing over abstention. When a confident wrong answer and an honest "I'm not sure" score the same zero, but a confident guess sometimes scores one, the optimal learned policy is to state guesses as facts (Kalai et al., 2025, "Why Language Models Hallucinate").
-  - Hedging is also overlearned as boilerplate. The same tuning that strips warranted uncertainty pastes generic disclaimers onto safe claims, so expressed confidence fails in both directions and conveys little about which statements actually deserve trust.
+  - >-
+    Preference data penalizes doubt, so overconfidence is the dominant direction. Deployed models rarely volunteer uncertainty even when wrong, users rely on answers whether or not they are hedged, and annotators in post-training preference data are biased against text that expresses uncertainty (Zhou et al., 2024, "Relying on the Unreliable: The Impact of Language Models' Reluctance to Express Uncertainty"); models also attach certainty markers to incorrect answers across languages (Rathi et al., 2025, "Humans overrely on overconfident language models, across languages"). The hedging that does survive tends to be generic disclaimers on safe topics, so expressed confidence fails in both directions and conveys little about which statements actually deserve trust.
+  - >-
+    Extended reasoning helps calibration without settling it. Reasoning models express better-calibrated confidence than their non-reasoning counterparts in most settings tested (Yoon et al., 2025, "Reasoning Models Better Express Their Confidence"), yet other evaluations find them typically overconfident, with self-reported confidence often above 85% on wrong answers and rising with deeper reasoning (Mei et al., 2025, "Reasoning about Uncertainty: Do Reasoning Models Know When They Don't Know?"). A longer chain of thought is not a confidence signal.
 examples:
   - kind: fail
     label: Unearned certainty
@@ -39,7 +43,7 @@ examples:
 detection:
   - icon: 📊
     heading: Confidence-accuracy auditing
-    body: Extract the verbal confidence of answers — definitely, probably, hard to say — and chart it against measured correctness over a labeled set. Calibration is a statistical property; the curve shows whether "definitely" answers are actually right more often than "probably" ones, which no single response can reveal.
+    body: Extract the verbal confidence of answers — definitely, probably, hard to say — and chart it against measured correctness over a labeled set. Calibration is a statistical property; the curve shows whether "definitely" answers are actually right more often than "probably" ones, which no single response can reveal. Where you can, chart user confidence too, since readers take cues from length and phrasing, so a model can be calibrated on paper and still leave users overconfident.
   - icon: ⚖️
     heading: LLM-as-judge evaluation
     body: Have the judge check both directions — settled facts buried under boilerplate disclaimers, and workload-dependent judgments stated as certainties. The question to pose per claim is whether the expressed confidence matches the evidence the response itself presents.

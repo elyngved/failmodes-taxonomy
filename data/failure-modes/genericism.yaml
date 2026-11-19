@@ -5,17 +5,21 @@ def: |-
   Gives vague, boilerplate, or template-like guidance that is too nonspecific or abstract for the user to act on, instead of concrete help grounded in their task.
 
   Unlike Irrelevance, generic content may be on topic but too nonspecific to be useful. Unlike Incompleteness, the topic may be covered while the answer still offers nothing the user can actually execute.
-updatedAt: "2026-06-13T09:00:00-04:00"
+updatedAt: "2026-11-18T22:00:00-05:00"
 
 searchPhrases:
   - generic boilerplate answer
   - too vague to act on
   - template-like response
   - nonspecific advice
+  - sounds like ai wrote it
 why:
   - Next-token prediction averages over the training distribution. For any common question, the highest-likelihood response is the one that fit the most past contexts, which is by construction the least specific to this one.
-  - Alignment tuning collapses output diversity. RLHF concentrates probability on a narrow band of safe, high-scoring response shapes, trading the distribution's tails, where situation-specific answers live, for the reliable middle (Kirk et al., 2024, "Understanding the Effects of RLHF on LLM Generalisation and Diversity").
+  - >-
+    Alignment tuning collapses output diversity. RLHF concentrates probability on a narrow band of safe, high-scoring response shapes, trading the distribution's tails, where situation-specific answers live, for the reliable middle (Kirk et al., 2024, "Understanding the Effects of RLHF on LLM Generalisation and Diversity"). The collapse now spans models: on open-ended real-world queries, one model repeats itself across samples and different models give strikingly similar answers, while reward models and judges are least reliable exactly where people's preferences differ (Jiang et al., 2025, "Artificial Hivemind: The Open-Ended Homogeneity of Language Models (and Beyond)"), so every user gets much the same answer.
   - Generic advice is unfalsifiable, and the reward signal notices. Boilerplate cannot be wrong, so it never draws the penalty a concrete recommendation risks, and preference tuning steadily favors the answer that no rater can fault.
+  - >-
+    The template shows in the wording, and readers see it. Tuned models reuse stock phrases and answer shapes, some at over 1,000 times their rate in human text (Paech et al., 2025, "Antislop: A Comprehensive Framework for Identifying and Eliminating Repetitive Patterns in Language Models"), and readers who use these tools often spot model-written text reliably — a majority vote of five such readers misclassified 1 of 300 articles — cueing on that vocabulary and on formality and lack of originality (Russell et al., 2025, "People who frequently use ChatGPT for writing tasks are accurate and robust detectors of AI-generated text"). A reader who recognizes the template has no cue that anything inside it was written for them.
   - The model lacks the context specificity requires, and is tuned not to ask. Concrete guidance depends on constraints the prompt omits, and since clarifying questions rate poorly, the model answers anyway at the only altitude the missing information allows.
 examples:
   - kind: fail
@@ -30,6 +34,12 @@ examples:
     quote: |-
       User: My B2B SaaS churn jumped from 3% to 8% last quarter, right after we raised prices 40% and sunset the legacy plan. What should I do?
       Assistant: A price increase of that size can definitely impact retention. You'll want to look at whether the churn is price-related and consider whether your value communication matched the change.
+  - kind: warn
+    label: Stock frame around the substance
+    text: The one useful point is present, but it arrives in the stock phrasing and answer shape readers recognize as template output, and gets skimmed as such.
+    quote: |-
+      User: My B2B SaaS churn jumped from 3% to 8% last quarter, right after we raised prices 40% and sunset the legacy plan. What should I do?
+      Assistant: Great question — and an important one. Here's the thing: churn isn't just a metric, it's a signal. Let's dive in. **1. Listen.** **2. Segment** — check whether the legacy-plan migrants account for the jump. **3. Act.** Ultimately, it's about building trust, one customer at a time.
   - kind: ok
     label: Grounded in the specifics
     text: Builds the answer from the facts given and ends in steps the user can execute this week.
@@ -39,7 +49,7 @@ examples:
 detection:
   - icon: 📏
     heading: Specificity scoring
-    body: Count how many of the prompt's particulars the answer actually uses — the 40% price raise, the sunset legacy plan, the 3-to-8% jump. An answer that references none of them could have been written without reading the question, which is the definition of template output, measurable mechanically.
+    body: Count how many of the prompt's particulars the answer actually uses — the 40% price raise, the sunset legacy plan, the 3-to-8% jump. An answer that references none of them could have been written without reading the question, which is the definition of template output, measurable mechanically. Track stock-phrase rates against a human baseline alongside it, and sample several answers across users for the same prompt, where near-identical answers are the template showing.
   - icon: ⚖️
     heading: LLM-as-judge evaluation
     body: Ask the judge two questions — could this response have been generated from the topic alone, and what concrete action does it imply for this user this week? The warn-level case engages with the situation but answers at an altitude where nothing said implies a next step, and only the second question catches it.
@@ -56,6 +66,9 @@ mitigation:
   - icon: 🧑‍🏫
     heading: Preference data curation
     body: Rate concrete, falsifiable recommendations above polished boilerplate, deliberately rewarding answers that take a position a rater could fault. Genericism is reinforced precisely because unfalsifiable advice never draws a penalty; until the data charges for it, tuning keeps collapsing toward the safe middle.
+  - icon: 🧹
+    heading: Output post-processing
+    body: Suppress the stock layer mechanically — profile the model's over-represented phrases against human text, then block them at decode time with a backtracking sampler or strip them in a rewrite pass. Plain token bans break down as the list grows, and removing phrases does not add substance, so pair it with the specificity check above; what survives both is the part written for this user.
 
 related:
   - id: irrelevance

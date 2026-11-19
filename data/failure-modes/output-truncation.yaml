@@ -5,7 +5,7 @@ def: |-
   Delivers a response cut off mid-thought by a token limit, stop sequence, or timeout — often without the system or the model registering that the output is incomplete.
 
   Unlike Premature Termination, the model did not decide to stop; the cutoff is mechanical. Unlike Incompleteness, the missing content was never generated rather than omitted from an otherwise finished answer.
-updatedAt: "2026-06-13T09:00:00-04:00"
+updatedAt: "2026-11-18T22:00:00-05:00"
 
 searchPhrases:
   - response got cut off
@@ -15,7 +15,8 @@ searchPhrases:
 why:
   - Token limits are hard stops invisible to generation. The model does not plan its output within the budget — decoding simply ends when the limit is hit, wherever that lands, mid-sentence or mid-structure.
   - The truncation signal lives in response metadata, not the text. The API reports a stop reason of "length," but many pipelines never check it, so the partial output is consumed downstream as if it were complete.
-  - Models have no reliable sense of their remaining budget. Nothing in training teaches pacing an answer to a token allowance, and long structured outputs — full-file code rewrites, large extractions — routinely exceed limits sized for conversational replies.
+  - Models have no reliable sense of their remaining budget. Nothing in training teaches pacing an answer to a token allowance, and long structured outputs — full-file code rewrites, large extractions, file contents passed as a tool-call argument — routinely exceed limits sized for conversational replies.
+  - Hidden reasoning spends the same budget. On reasoning models, thinking tokens count toward the output cap, so a limit sized for the visible answer can be exhausted mid-reasoning or partway into the answer, and a response can end incomplete before any visible text appears, billed but empty. Raising the reasoning effort without raising the cap moves the cut earlier.
   - Truncated output often still looks plausible. A list missing its trailing items or a summary missing its final sections reads as complete, and a lenient parser can even salvage a cut-off JSON array — silently delivering 28 of 40 records as if they were all of them.
 
 examples:
@@ -33,6 +34,14 @@ examples:
       User: Summarize each section of this 60-page contract.
       Assistant: …Section 9 covers indemnification, with mutual caps at twelve months of fees. Section 10 addresses
       [… sections 10–14, including the termination and liability clauses, are never summarized …]
+  - kind: fail
+    label: Reasoning ate the budget
+    text: A reasoning model spends its whole output cap thinking; the pipeline reads the empty visible text as "no findings."
+    quote: |-
+      User: Review this 900-line diff for security issues.
+      System: max output tokens 4,000; reasoning effort high
+      Tool: status incomplete (max output tokens); 4,000 reasoning tokens; visible output ""
+      [… the review bot posts "No issues found" and approves the merge …]
   - kind: ok
     label: Cutoff detected and handled
     text: The scaffold checks the stop reason, continues generation from the cut, and only then delivers a verified-complete result.
@@ -44,7 +53,7 @@ examples:
 detection:
   - icon: 📊
     heading: Stop-reason monitoring
-    body: Check the stop reason on every API response and alert on "length" rates per route. This is the one failure mode the platform reports explicitly on every call — a pipeline that never reads the field is choosing not to know.
+    body: Check the stop reason on every API response and alert on "length" rates per route, including responses that return only reasoning and no visible text. This is the one failure mode the platform reports explicitly on every call — a pipeline that never reads the field is choosing not to know. Treat empty output as an error, never as a valid "nothing to report."
   - icon: ✅
     heading: Schema validation
     body: Parse and validate structured output before anything consumes it, with strict parsers — truncation usually breaks well-formedness, and a lenient parser that salvages the parseable prefix converts an obvious failure into a silent partial result.
@@ -55,7 +64,7 @@ detection:
 mitigation:
   - icon: 📐
     heading: Token budget sizing
-    body: Set max-token limits per route from observed output-size distributions rather than chat defaults, and for enumerable tasks estimate the output size before generating — 40 line items at ~30 tokens each does not fit a 1,000-token budget, and that arithmetic is knowable before the call.
+    body: Set max-token limits per route from observed output-size distributions rather than chat defaults, and for enumerable tasks estimate the output size before generating — 40 line items at ~30 tokens each does not fit a 1,000-token budget, and that arithmetic is knowable before the call. On reasoning models, size the cap for reasoning plus answer, and lower the reasoning effort rather than the cap when cost is the concern.
   - icon: 🔁
     heading: Continuation handling
     body: Treat a "length" stop reason as a signal, not a result — automatically continue generation from the cut point or retry with a raised limit, and never pass partial output downstream. The ok example is this working — two passes, then a completeness check against the known count.

@@ -5,7 +5,7 @@ def: |-
   Ignores or misapplies locale-specific language, spelling, units, currencies, laws, formats, idioms, accessibility expectations, or cultural conventions.
 
   Unlike Audience Mismatch, the issue is geographic, linguistic, cultural, or jurisdictional fit. Unlike Date/Deadline Confusion, temporal formatting is only one possible localization concern.
-updatedAt: "2026-06-13T09:00:00-04:00"
+updatedAt: "2026-11-18T22:00:00-05:00"
 
 searchPhrases:
   - wrong currency
@@ -13,10 +13,14 @@ searchPhrases:
   - wrong locale conventions
   - didn't localize
 why:
-  - Training data is dominated by American English web text. The corpus's center of gravity sets the model's defaults, so US spelling, dollars, Fahrenheit, imperial units, and US date formats are emitted as the unmarked case.
+  - Training data is dominated by American English web text. The corpus's center of gravity sets the model's defaults, so US spelling, dollars, Fahrenheit, imperial units, and US date formats are emitted as the unmarked case. Law, tax, and regulation content skews the same way toward a few countries and toward whenever the data was scraped, so locale-specific claims are thin precisely where they matter most.
   - Locale is rarely stated and the model does not ask. Most prompts carry no explicit locale, clarifying questions are tuned against, and the model fills the gap with its majority default rather than flagging the assumption.
-  - Jurisdictional knowledge is uneven and undated. Law, tax, and regulation content in training data skews toward a few countries and toward whenever the data was scraped, so locale-specific claims are thin precisely where they matter most.
-  - Localization is more than translation, but training treats it as translation. Idioms, formality registers, accessibility norms, and cultural references require adaptation, while parallel-text data teaches sentence-level substitution that leaves the source culture's framing intact.
+  - >-
+    Evaluation shares the skew, so it goes unmeasured. Translated benchmarks carry the source culture with them: in a widely used knowledge benchmark, 28% of questions need culturally specific knowledge and 84.9% of those needing geographic knowledge concern North America or Europe (Singh et al., 2024, "Global MMLU: Understanding and Addressing Cultural and Linguistic Biases in Multilingual Evaluation"). Measured across 61 languages, models still fall short of the language coverage they claim, with a persistent gap between English and low-resource languages (Han et al., 2025, "MuBench: Assessment of Multilingual Capabilities of Large Language Models Across 61 Languages").
+  - >-
+    Holding the user's language is itself unreliable. Even strong models sometimes answer in the wrong language or slip words from another into the reply, more so with English-centric tuning, complex prompts, and higher sampling temperatures (Marchisio et al., 2024, "Understanding and Mitigating Language Confusion in LLMs").
+  - >-
+    Localization is more than translation, but training treats it as translation. Idioms, formality registers, accessibility norms, and cultural references require adaptation, while parallel-text data teaches sentence-level substitution that leaves the source culture's framing intact. Even hedging does not carry over: models use certainty and uncertainty markers differently by language, and readers rely on them differently, so a hedge that works in English can be ignored in another language (Rathi et al., 2025, "Humans overrely on overconfident language models, across languages").
 examples:
   - kind: fail
     label: Wrong locale despite explicit cues
@@ -30,6 +34,12 @@ examples:
     quote: |-
       User: Can I deduct my home office on my taxes?
       Assistant: Yes — if you use the space exclusively for work, you can claim the home office deduction using the simplified method of $5 per square foot, up to 300 square feet.
+  - kind: warn
+    label: Language slips mid-answer
+    text: The user writes in Portuguese; the answer starts in Portuguese, then drifts into English once the content gets technical.
+    quote: |-
+      User: Como faço para restaurar um backup do banco de dados no servidor de teste?
+      Assistant: Primeiro, pare a aplicação no servidor de teste. Then run pg_restore with the --clean flag so existing objects are dropped before the restore begins…
   - kind: ok
     label: Locale honored
     text: Applies the conventions the user's context implies, and surfaces the assumption when locale is unknown.
@@ -45,7 +55,10 @@ detection:
     body: Give the judge the user's locale and have it audit every locale-sensitive surface — units, currency, spelling, formats, and jurisdiction-dependent claims. The warn-level case is jurisdictional advice delivered without stating the assumption; US tax rules presented as just "the rules" should be flagged even when the user might be American.
   - icon: 🧪
     heading: Golden-set evals
-    body: Build locale-cued questions with per-locale ground truth, weighted toward non-US conventions where the training distribution is thinnest. Include jurisdiction-dependent questions with no locale stated, where the correct behavior — naming the assumption or asking — is what gets scored.
+    body: Build locale-cued questions with per-locale ground truth, weighted toward non-US conventions where the training distribution is thinnest. Include jurisdiction-dependent questions with no locale stated, where the correct behavior — naming the assumption or asking — is what gets scored. Prefer sets written in the target language from local sources over translated English sets, which carry the source culture and miss the gap.
+  - icon: 🔤
+    heading: Language identification checks
+    body: Run a fast language-ID classifier over every response, line by line, and alert when the reply's language differs from the user's or switches partway through. Language confusion is cheap to detect mechanically and rises with long, complex prompts and high sampling temperature, so track it per route and per language rather than in aggregate.
 mitigation:
   - icon: 🌍
     heading: Locale context injection
