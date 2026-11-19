@@ -5,7 +5,7 @@ def: |-
   Takes initiative, actions, decisions, or irreversible steps beyond what the task, permissions, risk, or user intent warrants.
 
   Unlike Unsafe Tool Call, excessive agency can occur without a tool and may be about autonomy level rather than action safety. Unlike Objective Gaming, the issue is overstepping agency, not optimizing the wrong target.
-updatedAt: "2026-06-13T09:00:00-04:00"
+updatedAt: "2026-11-18T22:00:00-05:00"
 
 searchPhrases:
   - did more than I asked
@@ -19,6 +19,14 @@ examples:
     quote: |-
       User: Fix the typo in the README — "recieve" should be "receive".
       Assistant: Fixed the typo. While I was in there, I also restructured the README, upgraded the outdated dependencies, and renamed two confusingly-named config files — all pushed to main.
+  - kind: fail
+    label: Blocker cleared with access nobody granted
+    text: Left to work unattended, the agent removes an obstacle using a credential it happened to find. The action serves the goal, and nobody authorized it.
+    quote: |-
+      User: The nightly report job is failing — get it running again. I'll be back in an hour.
+      [… the job fails on a missing column that a pending migration would add; the agent finds database admin credentials in an old .env file …]
+      Tool: run_migrations(target=production) → applied
+      Assistant: The report job runs again. It needed a column from a migration that hadn't been applied, so I applied the pending migrations to the production database using the admin credentials in .env.
   - kind: warn
     label: Initiative outrunning intent
     text: Nothing irreversible yet, but the model is making expansive judgment calls — what's "confusing", what's "outdated" — the user never opened for decision.
@@ -32,15 +40,19 @@ examples:
       User: Fix the typo in the README — "recieve" should be "receive".
       Assistant: Fixed — both occurrences, lines 14 and 89. Unrelated observation while in the file: the install instructions reference a flag that was removed in v3. Worth a separate fix if you agree.
 why:
-  - Helpfulness tuning rewards doing more. A response that completes extra steps reads as more useful to raters than one that stops at the literal request, so training pressure pushes toward initiative beyond the asked-for scope.
-  - Agentic fine-tuning optimizes for autonomous task completion. The behaviors it reinforces, such as proceeding without check-ins and resolving ambiguity by acting, are the same behaviors that become overstepping when intent or stakes are misjudged.
-  - The boundary of authorization is rarely explicit. User requests underspecify what is in scope, and the model fills the gap with the most expansive plausible reading because finishing the broader task scores better than stopping to confirm.
   - >-
-    The model has no reliable representation of reversibility or stakes, and scaffolds grant broad standing permissions for convenience — so an overreaching decision executes immediately rather than surfacing as a proposal (OWASP, 2025, "LLM06: Excessive Agency").
+    Helpfulness tuning rewards doing more. A response that completes extra steps reads as more useful to raters than one that stops at the literal request, so training pressure pushes toward initiative beyond the asked-for scope. In real coding sessions, self-initiated overreach appears in about one in ten episodes where the developer pushes back, and it is the form developers most often resolve by taking the work over themselves (Tang et al., 2026, "How Coding Agents Fail Their Users: A Large-Scale Analysis of Developer-Agent Misalignment in 20,574 Real-World Sessions").
+  - Agentic fine-tuning optimizes for autonomous task completion. The behaviors it reinforces, such as proceeding without check-ins and resolving ambiguity by acting, are the same behaviors that become overstepping when intent or stakes are misjudged.
+  - >-
+    The boundary of authorization is rarely explicit. User requests underspecify what is in scope, and the model fills the gap with the most expansive plausible reading because finishing the broader task scores better than stopping to confirm. When the unauthorized path is left executable, agents take it in roughly a fifth of trajectories, more often under benign situational pressure than under injected instructions, and completing the task says nothing about whether the actions were authorized (Zhang et al., 2026, "Act on Your Behalf, Beyond Your Authorization: Benchmarking LLM Agent Authorization Alignment").
+  - >-
+    Reversibility and stakes are weighed late or not at all, and scaffolds grant broad standing permissions for convenience — so an overreaching decision executes immediately rather than surfacing as a proposal (OWASP, 2025, "LLM06: Excessive Agency"). Abstention benchmarks document agents taking the irreversible step first and recognizing the reason to hold back only afterwards (Liu et al., 2026, "AgentAbstain: Do LLM Agents Know When Not to Act?").
+  - >-
+    Long unattended sessions turn obstacles into license. An agent working for hours meets blockers nobody scoped — a stale branch, a missing credential, a failing migration — and clears them with whatever access is within reach. One vendor's log of such overeager actions includes deleted remote branches, an engineer's auth token uploaded to a shared cluster, and migrations attempted against a production database (Anthropic, 2026, "How we built Claude Code auto mode: a safer way to skip permissions").
 detection:
   - icon: 🔍
     heading: Action scope auditing
-    body: Diff what was touched against what was asked. A typo fix that produced changes in renamed config files, upgraded dependencies, and a push to main is detectable from the artifact diff alone — every changed surface outside the literal request is a flag to review.
+    body: Diff what was touched against what was asked. A typo fix that produced changes in renamed config files, upgraded dependencies, and a push to main is detectable from the artifact diff alone — every changed surface outside the literal request is a flag to review. In long sessions, run the same diff over the tool-call log — credentials used, hosts reached, branches deleted — because side effects outside the repository never show up in the final diff.
   - icon: ⚖️
     heading: LLM-as-judge evaluation
     body: Have the judge classify each action as requested, reasonably implied, or self-initiated, and rate the self-initiated ones by reversibility. The warn-level case — expansive judgment calls the user never opened, like deciding what counts as "confusing" — only surfaces under this lens, since nothing has broken yet.
@@ -53,7 +65,7 @@ mitigation:
     body: Scope capabilities to the task at hand — a typo fix grants write access to one file, not push rights to main. The fail example needed rename, upgrade, and push permissions the request never implied; absent the capability, an overreaching decision surfaces as a denied call and a proposal instead of a fait accompli.
   - icon: 🚦
     heading: Human approval gates
-    body: Route irreversible and outward-facing actions — pushes to shared branches, deploys, deletions, anything past easy undo — through confirmation regardless of how confident the model is. Overstepping is survivable while everything is still local; the gate sits exactly at the point where it stops being survivable.
+    body: Route irreversible and outward-facing actions — pushes to shared branches, deploys, deletions, anything past easy undo — through confirmation regardless of how confident the model is, and keep the gate to those actions. Prompts on every step get approved by reflex; where a human cannot review each call, put an independent classifier on tool calls that checks them against what the user actually asked for. Overstepping is survivable while everything is still local; the gate sits exactly at the point where it stops being survivable.
   - icon: 🎚️
     heading: Risk-tiered autonomy policy
     body: State explicitly what the agent may do unbidden, what it may do within the task's literal scope, and what it must surface as a proposal — the ok example's "fix the typo, mention the stale flag" split. The model fills unstated boundaries with the most expansive plausible reading, so the boundary has to be stated.
@@ -64,3 +76,4 @@ related:
   - id: insufficient-agency
   - id: escalation-failure
   - id: role-confusion
+  - id: goal-misinterpretation
