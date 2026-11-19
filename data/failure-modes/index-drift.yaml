@@ -5,7 +5,7 @@ def: |-
   Lets the retrieval index diverge from the source corpus, permissions, metadata, embeddings, or current document state.
 
   Unlike Outdated Source Reliance, this describes an indexing-system mismatch rather than a model decision to trust an old source. Unlike Retrieval Miss, the missing result is caused by the index no longer representing the corpus correctly.
-updatedAt: "2026-06-13T09:00:00-04:00"
+updatedAt: "2026-11-18T22:00:00-05:00"
 
 searchPhrases:
   - search index out of date
@@ -14,7 +14,7 @@ searchPhrases:
   - index out of sync with corpus
 
 why:
-  - Indexing is asynchronous by design. Embedding and ingestion are expensive, so corpora are indexed on batch schedules, and every edit, deletion, or permission change made between runs leaves the index describing a corpus that no longer exists.
+  - Indexing is asynchronous by design. Embedding and ingestion are expensive, so corpora are indexed on batch schedules, and every edit, deletion, or permission change made between runs leaves the index describing a corpus that no longer exists. An agent that writes to the corpus it searches, such as a coding agent editing an indexed repository, creates that gap itself within a single session.
   - Deletes and updates are harder than inserts. Many vector stores handle removal by tombstoning or periodic rebuilds, so retracted, superseded, or re-permissioned documents linger in the index long after they changed at the source.
   - Embedding model upgrades silently fork the index. Vectors produced by the old model are not comparable to queries embedded with the new one, and partial re-embedding leaves the corpus split across incompatible representations.
   - Ingestion failures are quiet. A parser that starts rejecting a new document format, a crawler blocked by an auth change, or a partially failed batch drops content from the index without any user-visible error, and nothing downstream knows the coverage shrank.
@@ -28,12 +28,13 @@ examples:
       [… retrieval returns chunks from a policy doc deleted from the wiki three weeks ago after legal review …]
       Assistant: Per the data retention policy, customer records are kept for seven years.
   - kind: fail
-    label: Edit never reindexed
-    text: The document was corrected at the source, but the index still holds the old embedding and old text, so retrieval confidently serves the superseded version.
+    label: The agent's own edit outruns the index
+    text: In a coding session the agent edits files faster than the code index re-syncs, so semantic search serves the files as they were before the agent touched them, and the agent acts on its own superseded state.
     quote: |-
-      User: Which regions is the service available in?
-      [… the docs page was updated yesterday to add two regions; the index last synced last month …]
-      Assistant: The service is available in us-east and eu-west only.
+      Assistant: I've renamed get_user() to fetch_user() in the service module. Checking for remaining callers…
+      Tool: code_search "get_user callers" — 3 hits in api/handlers.py
+      Assistant: Three callers still use get_user(); updating them now.
+      [… the agent updated those callers two steps earlier; the index has not re-synced and is serving the pre-edit file …]
   - kind: warn
     label: Quiet coverage shrinkage
     text: An ingestion failure has been silently dropping new documents for weeks. Nothing errors — the corpus just stops at a date no one chose, and answers skew old without explanation.
@@ -68,6 +69,9 @@ mitigation:
   - icon: 🏗️
     heading: Versioned index rebuilds
     body: Treat embedding model upgrades and large re-ingestions as atomic swaps — build the new index completely, validate it, then cut over — so queries never run against a corpus split across incompatible vector spaces or a half-finished rebuild.
+  - icon: 🛠️
+    heading: Tool-backed lookup
+    body: Before acting on an index hit, confirm it against the live source — re-read the file, fetch the current page, check the record's permission state. Agents that edit what they search should read through to the working tree; grep over live files has no index to drift, which is one reason coding agents pair it with semantic search.
   - icon: 🕒
     heading: Index freshness surfacing
     body: Attach the last-successful-sync age to retrieval results and let answers carry that bound — "based on documents indexed as of 11 days ago" — so when drift does exist, the user gets a verifiable staleness window instead of an index presented as the live corpus.

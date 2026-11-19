@@ -5,7 +5,7 @@ def: |-
   Misses, fragments, or misinterprets evidence because relevant information was split across retrieval chunks or separated from needed context.
 
   Unlike Partial Retrieval, this identifies chunking as the mechanism. Unlike Context Dilution, the issue happens before or during retrieval packaging rather than after too much context reaches the model.
-updatedAt: "2026-06-13T09:00:00-04:00"
+updatedAt: "2026-11-18T22:00:00-05:00"
 
 searchPhrases:
   - answer cut off between chunks
@@ -14,9 +14,10 @@ searchPhrases:
   - chunking broke the context
 
 why:
-  - Most pipelines split documents by token count, not meaning. Fixed-size splitting is cheap and predictable, but it cuts through sentences, tables, arguments, and definitions wherever the length limit happens to fall.
+  - >-
+    Most pipelines split documents by token count, not meaning. Fixed-size splitting is cheap and predictable, but it cuts through sentences, tables, arguments, and definitions wherever the length limit happens to fall. Size fails in both directions: chunks too small fragment the evidence, and chunks too large mix several topics so the embedding represents none of them well (Leung et al., 2026, "Classifying and Addressing the Diversity of Errors in Retrieval-Augmented Generation Systems").
   - Chunks are embedded and ranked in isolation. A passage whose meaning depends on a heading, an earlier definition, or an antecedent two paragraphs back embeds poorly and retrieves poorly, because the embedding never saw the context that made it relevant (Anthropic, 2024, "Introducing Contextual Retrieval").
-  - Documents carry meaning through structure — section nesting, table headers, footnotes, cross-references — and common text extraction flattens that structure before splitting, so the chunker cannot respect boundaries it can no longer see.
+  - Documents carry meaning through structure — section nesting, table headers, footnotes, cross-references — and a splitter that ignores the headings, list items, and table rows it is given cuts across that structure. Agents show the same failure without any index; reading a file or page in fixed line or token windows is chunking at read time, and the window edge falls wherever it falls.
   - Pronouns and elided references stop resolving once text is cut. A retrieved chunk saying "this approach fails in production" is useless or misleading when the approach was named in the previous chunk.
 
 examples:
@@ -36,12 +37,12 @@ examples:
       Assistant: The Enterprise tier is limited to 600 requests per minute.
       [… 600 is the burst allowance column; the rate limit is 10,000 …]
   - kind: warn
-    label: Mid-sentence fragment answered anyway
-    text: The chunk begins mid-sentence and the model builds its answer on the fragment without flagging that the evidence is visibly truncated.
+    label: Read window cuts the function
+    text: A coding agent reads a long file in a fixed line window, the read-time version of a chunk. The early return that changes the answer sits just past the window edge, and the agent reasons from the part it saw.
     quote: |-
-      User: When can customers get a refund?
-      [… retrieved chunk begins mid-sentence: "…except in these cases, refunds are processed within 14 days." …]
-      Assistant: Refunds are processed within 14 days.
+      Tool: read_file billing.py lines 1–200
+      Assistant: apply_discount() always applies the discount before tax, so the bug must be in the tax module.
+      [… line 214, just outside the window, returns early for tax-exempt accounts and skips the discount entirely …]
   - kind: ok
     label: Fragment recognized, context refetched
     text: The model notices the evidence is cut off where it matters and pulls the surrounding context before answering.
@@ -65,13 +66,13 @@ detection:
 mitigation:
   - icon: 🧱
     heading: Structure-aware chunking
-    body: Split on the document's own boundaries — sections, paragraphs, sentence ends — and keep atomic units intact, so tables travel with their header rows and exception lists stay attached to the rules they qualify, instead of cutting wherever the token limit falls.
+    body: Split on the document's own boundaries — sections, paragraphs, sentence ends — and keep atomic units intact, so tables travel with their header rows and exception lists stay attached to the rules they qualify, instead of cutting wherever the token limit falls. This means the document's own markup, not embedding-similarity "semantic" splitting, which has not shown consistent gains over fixed-size chunks for its extra cost (Qu et al., 2024, "Is Semantic Chunking Worth the Computational Cost?").
   - icon: 🧾
     heading: Contextual chunk enrichment
     body: Prepend each chunk with the context that makes it self-contained — document title, section path, the antecedent of its references — before embedding (Anthropic, 2024, "Introducing Contextual Retrieval"). "This configuration fails under load" only retrieves and reads correctly when the chunk says which configuration.
   - icon: 🔁
     heading: Adjacent-chunk expansion
-    body: At read time, fetch the neighbors of any retrieved chunk that is visibly truncated — starts mid-sentence, opens with a dangling reference, contains headerless table rows — so the model answers from the restored passage rather than the fragment.
+    body: At read time, fetch the neighbors of any retrieved chunk that is visibly truncated — starts mid-sentence, opens with a dangling reference, contains headerless table rows — so the model answers from the restored passage rather than the fragment. Agents reading files should extend a read to the enclosing function, section, or table rather than stopping at a fixed line count.
 
 related:
   - id: partial-retrieval

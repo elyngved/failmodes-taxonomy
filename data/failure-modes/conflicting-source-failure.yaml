@@ -5,7 +5,7 @@ def: |-
   Fails to detect, compare, qualify, or reconcile retrieved sources that disagree with one another.
 
   Unlike Source Misrepresentation, the issue is not a single source being misstated but a failure to handle disagreement across sources. Unlike Calibration Failure, the error occurs in evidence synthesis before the final confidence framing.
-updatedAt: "2026-06-13T09:00:00-04:00"
+updatedAt: "2026-11-18T22:00:00-05:00"
 
 searchPhrases:
   - ignored conflicting sources
@@ -14,10 +14,14 @@ searchPhrases:
   - sources contradicted each other
 
 why:
-  - Training data for grounded generation almost always pairs a question with consistent evidence and a single answer. Models learn to synthesize one fluent response, not to notice that the evidence set itself disagrees (Chen et al., 2022, "Rich Knowledge Sources Bring Complex Knowledge Conflicts").
-  - When retrieved sources conflict, models resolve the disagreement silently using shallow cues — passage order, phrasing confidence, surface features of the text — rather than source reliability or evidence quality (Wan et al., 2024, "What Evidence Do Language Models Find Convincing?").
-  - The model's own parametric belief acts as a tiebreaker. Evidence agreeing with pretraining priors gets weight and contradicting evidence gets discounted, so the conflict is settled by prior bias instead of being surfaced (Xie et al., 2023, "Adaptive Chameleon or Stubborn Sloth").
+  - >-
+    Training data for grounded generation almost always pairs a question with consistent evidence and a single answer. Models learn to synthesize one fluent response, not to notice that the evidence set itself disagrees, and contradictions among sources barely lower their confidence (Chen et al., 2022, "Rich Knowledge Sources Bring Complex Knowledge Conflicts: Recalibrating Models to Reflect Conflicting Evidence").
+  - When retrieved sources conflict, models resolve the disagreement silently by how relevant each passage looks to the query, largely ignoring the cues people use to judge reliability, such as scientific references or a neutral tone (Wan et al., 2024, "What Evidence Do Language Models Find Convincing?").
+  - >-
+    The model's own parametric belief acts as a tiebreaker. Models accept coherent counter-evidence readily when it stands alone, but when the evidence set mixes passages that agree with their prior and passages that contradict it, they show strong confirmation bias toward the agreeing ones, so the conflict is settled by prior instead of being surfaced (Xie et al., 2023, "Adaptive Chameleon or Stubborn Sloth: Revealing the Behavior of Large Language Models in Knowledge Conflicts").
   - Retrieval pipelines deliver passages stripped of provenance — no publication date, authority, or methodology — leaving the model without the metadata needed to weigh one source against another even when it does notice the conflict.
+  - >-
+    Agents that could search further to settle a conflict mostly don't. With one plausible misinformation article placed among truthful sources, frontier models' accuracy collapsed and they showed minimal search escalation (Shah and Ozgur, 2026, "The Synthetic Web: Adversarially-Curated Mini-Internets for Diagnosing Epistemic Weaknesses of Language Agents"); on an expert-annotated benchmark of conflict types, models often resolved conflicts inappropriately, and prompting them to reason explicitly about possible conflicts helped but left a large gap (Cattan et al., 2025, "DRAGged into Conflicts: Detecting and Addressing Conflicting Sources in Search-Augmented LLMs").
 
 examples:
   - kind: fail
@@ -66,7 +70,7 @@ mitigation:
     body: Carry dates, authority, and document status through retrieval so the model has something better than passage order to resolve conflicts with. The ok-grade answer — "the 2025 update supersedes the 2023 handbook" — is only possible when the passages arrive with their provenance attached.
   - icon: 📝
     heading: Instruction constraints
-    body: Instruct the model to compare retrieved passages against each other before synthesizing, and to surface disagreement rather than smooth it — naming both sources and the resolution beats a vague midpoint or a silent pick, even though tuning taught it the decisive answer rates better.
+    body: Instruct the model to compare retrieved passages against each other before synthesizing, and to surface disagreement rather than smooth it — naming both sources and the resolution beats a vague midpoint or a silent pick, even though tuning taught it the decisive answer rates better. Explicit conflict reasoning measurably improves answers, though it does not close the gap. For a search agent, make a detected conflict a reason to look for a tie-breaking source (the official page, the newer document, the primary record) before answering.
   - icon: 🚪
     heading: Entailment gating
     body: Run pairwise NLI across the retrieved set before generation, and when passages contradict, route to a conflict-handling path that requires the answer to address both sides — so the disagreement is established mechanically instead of depending on uneven attention across a stuffed context.
@@ -75,3 +79,4 @@ related:
   - id: source-misrepresentation
   - id: calibration-failure
   - id: compositional-failure
+  - id: retrieval-distractor

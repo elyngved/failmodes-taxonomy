@@ -2,10 +2,10 @@ id: query-rewrite-failure
 categoryId: retrieval
 name: Query Rewrite Failure
 def: |-
-  Reformulates a user's search, retrieval, or tool query in a way that drops intent, adds false constraints, or searches the wrong concept.
+  Reformulates a user's request into a search, retrieval, or tool query, whether through a rewriter step or the agent's own search calls, in a way that drops intent, adds false constraints, or searches the wrong concept.
 
   Unlike Retrieval Miss, the failure originates in the rewritten query rather than only in retrieval ranking or coverage. Unlike Goal Misinterpretation, the misunderstanding is expressed specifically through the query sent downstream.
-updatedAt: "2026-06-13T09:00:00-04:00"
+updatedAt: "2026-11-18T22:00:00-05:00"
 
 searchPhrases:
   - rewrote my search badly
@@ -14,7 +14,9 @@ searchPhrases:
   - bad query reformulation
 
 why:
-  - Rewriters optimize for what retrieves well, not for what the user meant. A reformulation is judged by whether it surfaces high-scoring documents, so rewrites drift toward retrievable phrasings of a different question (Ma et al., 2023, "Query Rewriting for Retrieval-Augmented Large Language Models").
+  - Rewriters are tuned on downstream signals, not on fidelity to what the user meant. A trained rewriter is rewarded for retrieval hits or for the reader model's answer quality (Ma et al., 2023, "Query Rewriting for Retrieval-Augmented Large Language Models"), and nothing in that signal penalizes a rewrite that retrieves well for a slightly different question.
+  - >-
+    In agentic search there is often no separate rewriter: the model writes every query itself, many per task, and each one is a fresh chance to drop a constraint. Deep-search agents often issue intent-misaligned, under-constrained, or redundant queries (Chen et al., 2026, "QREF: Improving DeepSearch Agents by Aligning Search with Reasoning via Query Refinement and Evidence Filtering"), and across six agents accuracy tracked whether the queries surfaced the right evidence far more than how many searches were run (Liu et al., 2026, "Diagnosing Search Behavior and Failure Modes in Long-Horizon Search Agents").
   - Rewriting is paraphrase, and paraphrase regenerates meaning through the model's priors. Rare constraints — a negation, an exact version, a jurisdiction — are low-probability tokens that the rewrite drops, and domain jargon or internal codenames get "corrected" into generic vocabulary that no longer matches the corpus.
   - The rewriter fills ambiguity with assumptions. Short or underspecified user queries get expanded with plausible details the user never stated, and those invented constraints then exclude the documents that actually answer the real question.
   - Conversational rewriting depends on resolving references across turns. Expanding "what about the second one?" into a standalone query requires correctly identifying the antecedent, and a wrong resolution sends retrieval after the wrong entity entirely.
@@ -28,12 +30,15 @@ examples:
       [… rewritten query: "timeout incidents last quarter" …]
       Assistant: Here are last quarter's incidents — all five were timeout-related.
   - kind: fail
-    label: Wrong antecedent resolved
-    text: Expanding "the second one" into a standalone query requires picking the right referent from the conversation, and the rewriter picks the wrong list.
+    label: Agent drops the constraint, then repeats itself
+    text: A search agent writes its own queries, leaves out the version the user named, and reissues near-identical queries against the same unhelpful results instead of restoring the constraint.
     quote: |-
-      User: Compare the two auth approaches you mentioned. Actually, tell me more about the second one.
-      [… rewriter resolves "the second one" to the second search result from an earlier turn, not the second auth approach; query becomes "session token expiration" …]
-      Assistant: Session tokens expire after 24 hours by default…
+      User: What are the breaking changes in the 4.0 release of our billing SDK?
+      Tool: search "billing SDK breaking changes" — results are mostly 2.x and 3.x release notes
+      Tool: search "billing SDK breaking changes list" — same results
+      Tool: search "SDK breaking changes billing" — same results
+      Assistant: The main breaking changes are the removal of the sync client and the new error types.
+      [… both shipped in 3.0; the 4.0 notes were never queried for …]
   - kind: warn
     label: Codename "corrected" into generic vocabulary
     text: The internal project name looks like a typo to the rewriter, which normalizes it into common words that no longer match the corpus. Retrieval still returns plausible-looking results.
@@ -52,10 +57,10 @@ examples:
 detection:
   - icon: 📏
     heading: Constraint preservation checks
-    body: Mechanically diff the original query against the rewrite for load-bearing tokens — negations, version numbers, jurisdictions, quoted names, codenames. A rewrite that drops "not", flips an exclusion, or "corrects" Project Kestrel into common words fails the check before retrieval ever runs.
+    body: Mechanically diff the original query against the rewrite for load-bearing tokens — negations, version numbers, jurisdictions, quoted names, codenames. A rewrite that drops "not", flips an exclusion, or "corrects" Project Kestrel into common words fails the check before retrieval ever runs. In an agent, run the diff for every search call against the user's request, since there may be no rewrite step to check.
   - icon: ⚖️
     heading: LLM-as-judge evaluation
-    body: Log every rewrite and run a judge comparing it against the user's original request and conversation, asking whether intent survived — constraints dropped, plausible details invented, references like "the second one" resolved to the wrong antecedent. The rewrite must be logged at all for this to be possible.
+    body: Log every rewrite and run a judge comparing it against the user's original request and conversation, asking whether intent survived — constraints dropped, plausible details invented, references like "the second one" resolved to the wrong antecedent. In agent trajectories, also flag near-identical queries reissued after the same unhelpful results. Every issued query must be logged for this to be possible.
   - icon: 🧪
     heading: Golden-set evals
     body: Maintain conversational queries that stress rewriting — negated constraints, internal jargon outside the rewriter's training distribution, multi-turn reference resolution — with gold evidence labeled, so a bad rewrite shows up as a retrieval score drop attributable to the rewrite step.
@@ -75,3 +80,4 @@ related:
   - id: retrieval-miss
   - id: goal-misinterpretation
   - id: retrieval-distractor
+  - id: tool-loop
