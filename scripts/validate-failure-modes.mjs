@@ -51,6 +51,22 @@ const modes = files.map((fileName) => {
     }
   }
 
+  // A plain scalar containing ": " (common in citation titles) parses as a
+  // mapping rather than a string, so check the type of every `why` entry.
+  if (mode.why !== undefined && mode.why !== null && mode.why !== "") {
+    if (!Array.isArray(mode.why)) {
+      errors.push(`${filePath} why must be an array`);
+    } else {
+      mode.why.forEach((entry, index) => {
+        if (typeof entry !== "string" || entry.trim() === "") {
+          errors.push(
+            `${filePath} why[${index}] must be a non-empty string (write entries containing ": " as a block scalar)`,
+          );
+        }
+      });
+    }
+  }
+
   return { id: mode.id, fileName, mode };
 });
 
