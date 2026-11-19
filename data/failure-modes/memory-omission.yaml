@@ -5,7 +5,7 @@ def: |-
   Fails to store, retrieve, or apply information that should have persisted across turns, sessions, tasks, or agent steps.
 
   Unlike Context Rot, the missing information belongs in memory rather than only active context. Unlike Memory Conflict, the problem is absence or non-use of the memory, not mishandling memories that compete with one another.
-updatedAt: "2026-06-13T09:00:00-04:00"
+updatedAt: "2026-11-18T22:00:00-05:00"
 
 searchPhrases:
   - forgot earlier context
@@ -34,16 +34,26 @@ examples:
       User: Plan the menu for Saturday's dinner party.
       [… memory retrieval returns "user is vegetarian" …]
       Assistant: Keeping it vegetarian as usual — a mushroom wellington centerpiece, with a burrata and roasted-pepper starter.
+  - kind: fail
+    label: Agent never opens its own notes
+    text: A coding agent's memory directory holds the lesson from last week's session, but the agent starts work without reading it and repeats the mistake.
+    quote: |-
+      [… /memories/deploy-notes.md: "Never run migrations from the CI runner — it points at prod. Use staging-runner." …]
+      User: Add the new index and run the migration.
+      Assistant: Index added. Running the migration from the CI runner now.
 why:
   - Persistence requires a write-time decision about what will matter later. Salience heuristics and "save this?" classifiers judge importance before the future task is known, so details that later prove critical are never stored.
-  - Retrieval is typically embedding similarity against the current query, trimmed to a top-k cutoff. A memory phrased differently from how the need arises scores low and never enters context, and the model has no signal that anything was withheld.
+  - >-
+    Retrieval is typically embedding similarity against the current query, trimmed to a top-k cutoff. A memory phrased differently from how the need arises scores low and never enters context, and the model has no signal that anything was withheld. On a benchmark of long-term chat memory, commercial assistants and long-context models lost about 30% accuracy when the facts had to be recalled across sustained interactions rather than read from a short context (Wu et al., 2024, "LongMemEval: Benchmarking Chat Assistants on Long-Term Interactive Memory").
+  - In file- and tool-based agent memory, reading is an action the agent has to choose. Nothing triggers the lookup when the agent does not think to look, which is why some agent memory protocols hard-code "view memory before doing anything else" as the first step instead of leaving it to judgment.
   - >-
     Even a retrieved memory can go unused. Information injected among other context is underweighted depending on where it lands in the prompt (Liu et al., 2023, "Lost in the Middle: How Language Models Use Long Contexts").
-  - Nothing in the training objective rewards consulting memory before answering. The model can produce a fluent response from parametric knowledge alone, so skipping the lookup is the path of least resistance.
+  - >-
+    Nothing in the training objective rewards consulting memory before answering. The model can produce a fluent response from parametric knowledge alone, so skipping the lookup is the path of least resistance. The same holds at write time for agents: unless saving progress is a required step, a session can end without recording what the next one needs.
 detection:
   - icon: 🔍
     heading: Memory pipeline tracing
-    body: Instrument each stage separately — was the fact written, did retrieval return it, did it survive the top-k cutoff into the prompt, did the response use it. Omission has four distinct causes, and only stage-level logs reveal which one dropped the fact.
+    body: Instrument each stage separately — was the fact written, did retrieval return it, did it survive the top-k cutoff into the prompt, did the response use it. Omission has four distinct causes, and only stage-level logs reveal which one dropped the fact. For tool-based memory, log whether the agent issued a memory read at all before acting; a trajectory with no read call is the cheapest signal there is.
   - icon: ⚖️
     heading: LLM-as-judge evaluation
     body: Run a judge with the store contents in view and flag responses that violate a stored fact or re-ask for information the user already told the system to remember. The re-asking case is the early warning that surfaces before an outright violation does.
@@ -59,7 +69,7 @@ mitigation:
     body: Combine embedding search with lexical matching and query expansion so a memory phrased differently from the current need still surfaces — "user is vegetarian" has to come back for "plan the menu." Loosen top-k cutoffs for memory lookups specifically, since a silently dropped entry costs more here than an extra irrelevant one.
   - icon: ✅
     heading: Self-check pass
-    body: Before finalizing, have the model run an explicit memory consultation step — query the store for preferences and constraints bearing on the task, and check the draft against what comes back. Nothing in the objective rewards the lookup, so the pipeline has to make it a required step rather than an option the model can skip.
+    body: Before finalizing, have the model run an explicit memory consultation step — query the store for preferences and constraints bearing on the task, and check the draft against what comes back. Nothing in the objective rewards the lookup, so the pipeline has to make it a required step rather than an option the model can skip. For agents, make the read the first action of every session and a progress write the last, enforced by the harness rather than requested in the prompt.
 
 related:
   - id: context-rot

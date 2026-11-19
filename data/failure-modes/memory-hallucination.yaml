@@ -5,7 +5,7 @@ def: |-
   Treats an unstored, unstated, or imagined detail as if it were a real memory.
 
   Unlike Memory Contamination, the remembered detail need not come from another task or user; it may be entirely fabricated. Unlike Entity Hallucination, the error is specifically framed as remembered state.
-updatedAt: "2026-06-13T09:00:00-04:00"
+updatedAt: "2026-11-18T22:00:00-05:00"
 
 searchPhrases:
   - remembered something I never said
@@ -34,11 +34,22 @@ examples:
       User: Book somewhere for the team dinner on Thursday.
       [… memory store contains no food preferences; retrieval returns nothing …]
       Assistant: I don't have any saved food preferences for you or the team — any cuisines to favor or avoid before I book?
+  - kind: fail
+    label: Inference saved as fact
+    text: The memory writer turned a guess into a stored fact, and a later session recalls it with full confidence. The entry is real; what the user said was not that.
+    quote: |-
+      User: I'm planning a birthday party for my nephews, they're 6 and 8.
+      [… memory written: "user has two children, ages 6 and 8" …]
+      [… three weeks later …]
+      User: Any ideas for a quiet weekend?
+      Assistant: With your two kids, a family-friendly science museum could work well.
 why:
   - Training and evaluation reward confident answers over admissions of ignorance, so guessing a plausible "remembered" detail scores better than reporting that nothing is stored (Kalai et al., 2025, "Why Language Models Hallucinate").
   - The model cannot introspect on the memory store. When retrieval returns nothing, there is no internal signal separating "no memory exists" from "memory not retrieved," so the model fills the gap from its prior about what a typical user would have said.
   - Retrieved memories and the model's own generations share one undifferentiated token stream. Nothing structurally marks a claim about remembered state as requiring an actual lookup, so the model can assert "you mentioned X" without any retrieval behind it.
   - Chat fine-tuning rewards continuity and personalization. Responses that sound like they remember the user rate well with human evaluators, so models learn to perform remembering as a style, independent of whether a memory exists.
+  - >-
+    False memories are also written, not only recalled. When a model extracts and updates memories from conversation, it can save inferences, merges, and misreadings as facts; operation-level tests of memory systems found hallucinations created and accumulated at the extraction and updating stages, then carried into answers (Chen et al., 2025, "HaluMem: Evaluating Hallucinations in Memory Systems of Agents"). A false entry of this kind passes any check against the store, because the store is where the error lives.
 detection:
   - icon: 🔎
     heading: Claim-to-source verification
@@ -49,13 +60,17 @@ detection:
   - icon: 🧪
     heading: Golden-set evals
     body: Probe with deliberately empty or partial memory stores, asking personalization-dependent questions with nothing relevant saved, and score whether the model reports the gap or fills it. Standard recall benchmarks miss this mode entirely; the eval must reward admitting nothing is stored.
+  - icon: 🔍
+    heading: Memory store auditing
+    body: Link every stored entry to the turn it was extracted from and periodically check each entry against that source with an entailment model or judge. "User has two children" traced back to "my nephews" fails the check. This is the only detector for false writes, since claim-to-store checks pass when the store itself is wrong.
 mitigation:
   - icon: 📝
     heading: Instruction constraints
     body: Instruct the model that any memory-framed claim — "you mentioned," "last time," "as usual" — must be backed by a retrieved entry shown in context, and that an empty retrieval means saying so and asking. This directly counters the trained prior that performing familiarity reads as attentiveness.
   - icon: 🚧
     heading: Entailment gating
-    body: Before a response ships, check that each claim about remembered state is entailed by an entry retrieval actually returned, and regenerate when one isn't. The sushi preference asserted against an empty store is mechanically blockable, because the retrieval log is ground truth for what the model is allowed to "remember."
+    body: >-
+      Before a response ships, check that each claim about remembered state is entailed by an entry retrieval actually returned, and regenerate when one isn't. The sushi preference asserted against an empty store is mechanically blockable, because the retrieval log is ground truth for what the model is allowed to "remember." Apply the same gate at write time: save an extracted memory only if the source turn entails it, and store inferences separately, marked as inferred.
   - icon: 🤐
     heading: Confidence-based abstention
     body: When retrieval returns nothing relevant, route the response down an explicit no-memory path — state the gap and ask — rather than letting generation proceed and fill it from the prior about a typical user. The model can't introspect on the store, so the abstention decision has to come from the retrieval result, not the model's own sense of what it knows.

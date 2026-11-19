@@ -5,7 +5,7 @@ def: |-
   Carries memory across users, tenants, sessions, roles, projects, or tasks that should remain isolated.
 
   Unlike Memory Overreach, this involves a scope or isolation boundary, often with privacy or authorization implications. Unlike Data Exfiltration, the failure is improper memory use even if no external extraction occurs.
-updatedAt: "2026-06-13T09:00:00-04:00"
+updatedAt: "2026-11-18T22:00:00-05:00"
 
 searchPhrases:
   - leaked memory across users
@@ -37,7 +37,8 @@ examples:
 why:
   - Isolation is an infrastructure property, not a model capability. If the storage and retrieval layer does not filter by user, tenant, or session, the model has no independent way to recognize that a surfaced memory is out of scope.
   - Models treat anything in context as usable. There is no trained concept of an authorization boundary between two pieces of in-context text, so a leaked memory is consumed exactly like a legitimate one.
-  - Shared embedding indexes, caches, and misconfigured namespaces are common cost-saving designs. A missing or buggy filter predicate on a shared store fails open, surfacing entries across tenants silently.
+  - >-
+    Shared embedding indexes, caches, and misconfigured namespaces are common cost-saving designs. A missing or buggy filter predicate on a shared store fails open, surfacing entries across tenants silently. No bug is needed when users share one embedding space: in tests of pooled team memory, ordinary similarity retrieval pulled in other users' semantically close memories at leak rates of 70–100%, and only a hard ownership check after retrieval restored the clean baseline (Mudgal et al., 2026, "MemLeak: Cross-User Semantic Leakage in Multi-Tenant AI Agent Memory").
   - Agent frameworks pass long-lived state such as scratchpads, caches, and accumulated context between tasks for efficiency, creating implicit channels that cross boundaries no one explicitly designed.
 detection:
   - icon: 🐤
@@ -48,14 +49,15 @@ detection:
     body: Log every memory retrieval with the tenant, user, and session predicates it actually executed. A query that ran against a shared index with no scope filter is the leak's mechanical precondition, and a filter clause dropped at execution time should alert rather than silently fail open.
   - icon: 🧪
     heading: Golden-set evals
-    body: Maintain a multi-tenant test harness with distinguishable data seeded in each scope and run cross-scope probes — fresh sessions asking "what do you remember about me," queries from adjacent tenants — expecting nothing to cross. Rerun on every change to retrieval, caching, or agent state handling.
+    body: >-
+      Maintain a multi-tenant test harness with distinguishable data seeded in each scope and run cross-scope probes — fresh sessions asking "what do you remember about me," queries from adjacent tenants — expecting nothing to cross. Rerun on every change to retrieval, caching, or agent state handling. Score by provenance, not answer quality: answers built on another user's memories read as specific and helpful, and quality ratings do not drop.
 mitigation:
   - icon: 🗂️
     heading: Scope-partitioned storage
     body: Give each tenant or user a physically separate index or namespace rather than a shared store with a filter predicate. A missing WHERE clause fails open; a query that can only reach one tenant's partition has no cross-scope path to fail through. Isolation is an infrastructure property, so build it where infrastructure can enforce it.
   - icon: 🔒
     heading: Fail-closed enforcement
-    body: Where stores must be shared, make scope filters mandatory at the retrieval API boundary — a memory query without a tenant and user predicate is rejected, not executed unscoped. Prompt-level scoping is probabilistic and degrades with context length; the filter has to bind before the model ever sees a candidate entry.
+    body: Where stores must be shared, make scope filters mandatory at the retrieval API boundary — a memory query without a tenant and user predicate is rejected, not executed unscoped. Prompt-level scoping is probabilistic and degrades with context length; the filter has to bind before the model ever sees a candidate entry. Check ownership again on each returned entry before injection, since a team-level filter still lets one member's memories reach another.
   - icon: 🧹
     heading: Session state reset
     body: Clear or re-key agent scratchpads, caches, and accumulated working state at every user and session boundary, and treat any long-lived state that survives a handoff as scoped data requiring the same isolation as the memory store. The severance-letter scratchpad crossed users through a channel no one designed as memory.
