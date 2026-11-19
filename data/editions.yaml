@@ -1,0 +1,32 @@
+# Taxonomy editions, newest first. The first entry's version must equal
+# taxonomyVersion in data/taxonomy.yaml, and its modes and categories counts
+# must match the data; the validator enforces both. Older entries are a
+# historical record and are not checked against current data.
+editions:
+  - version: "0.1.0"
+    name: November 2026
+    date: "2026-11-19"
+    summary: >-
+      Adds 21 failure modes and two categories, most of them about agents that
+      do work on real systems and report back to people who did not watch them
+      work.
+    stats:
+      modes: 125
+      categories: 15
+      sources: 370
+    highlights:
+      - "New categories: Oversight and Perception."
+      - New agent modes, including Environment Misidentification, Goal Drift, Handoff Context Loss and Unverified Peer Trust.
+      - 102 of 104 existing modes revised. Several definitions changed scope.
+      - Every cited source was checked against the claim it supports.
+    # TODO: confirm the slug once the post is published.
+    writeupUrl: https://eriklyngved.com/posts/fail-modes-november-2026-edition/
+
+  - version: "0.0.1"
+    name: June 2026
+    date: "2026-06-13"
+    summary: First public edition of the taxonomy.
+    stats:
+      modes: 104
+      categories: 13
+      sources: 143

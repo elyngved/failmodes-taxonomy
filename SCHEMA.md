@@ -157,6 +157,20 @@ The taxonomy file is a YAML object with the following top-level fields:
 
 Each `Category` has `id`, `name`, `blurb`, `desc`, and `modes` (ordered list of failure mode ids).
 
+## Editions File (`data/editions.yaml`)
+
+A YAML object with one field, `editions: Edition[]`, ordered newest first. Each `Edition` has:
+
+- `version: string` - Semver version. The newest entry must equal `taxonomyVersion`.
+- `name: string` - Edition name, e.g. `"November 2026"`. Rendered as "November 2026 edition".
+- `date: string` - Release date, `YYYY-MM-DD`.
+- `summary: string` - One or two sentences on what changed.
+- `stats: { modes: integer, categories: integer, sources: integer }` - Counts at release. For the newest entry the validator checks `modes` and `categories` against the data.
+- `highlights?: string[]` - Short bullet points.
+- `writeupUrl?: string` - Link to a longer write-up of the edition.
+
+`CHANGELOG.md` at the repo root is the human-readable version of the same history. Add a new entry to both when bumping `taxonomyVersion`.
+
 ## Rendering Contract
 
 Consumers should treat this YAML schema as the source of truth for failure mode files.

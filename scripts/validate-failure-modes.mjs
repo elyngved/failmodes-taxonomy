@@ -5,6 +5,7 @@ import { load } from "js-yaml";
 
 const failureModesDirectoryPath = join(process.cwd(), "data", "failure-modes");
 const taxonomyFilePath = join(process.cwd(), "data", "taxonomy.yaml");
+const editionsFilePath = join(process.cwd(), "data", "editions.yaml");
 
 const errors = [];
 
@@ -178,6 +179,8 @@ if (Array.isArray(categories)) {
   }
 }
 
+validateEditions();
+
 if (errors.length) {
   console.error(errors.map((error) => `- ${error}`).join("\n"));
   process.exit(1);
@@ -191,5 +194,59 @@ function readYaml(filePath) {
   } catch (err) {
     errors.push(`${filePath} YAML parse error: ${err.message}`);
     return null;
+  }
+}
+
+function validateEditions() {
+  const doc = readYaml(editionsFilePath);
+  const editions = doc && typeof doc === "object" && !Array.isArray(doc) ? doc.editions : null;
+
+  if (!Array.isArray(editions) || editions.length === 0) {
+    errors.push('data/editions.yaml must be an object with a non-empty "editions" array');
+    return;
+  }
+
+  const seen = new Set();
+  editions.forEach((edition, index) => {
+    const where = `data/editions.yaml editions[${index}]`;
+    for (const field of ["version", "name", "date", "summary"]) {
+      if (typeof edition?.[field] !== "string" || edition[field].trim() === "") {
+        errors.push(`${where} is missing string field "${field}"`);
+      }
+    }
+    if (typeof edition?.date === "string" && !/^\d{4}-\d{2}-\d{2}$/.test(edition.date)) {
+      errors.push(`${where} date must be YYYY-MM-DD`);
+    }
+    for (const field of ["modes", "categories", "sources"]) {
+      if (!Number.isInteger(edition?.stats?.[field])) {
+        errors.push(`${where} stats.${field} must be an integer`);
+      }
+    }
+    if (edition?.highlights !== undefined && !Array.isArray(edition.highlights)) {
+      errors.push(`${where} highlights must be an array`);
+    }
+    if (edition?.writeupUrl !== undefined && !/^https:\/\//.test(edition.writeupUrl)) {
+      errors.push(`${where} writeupUrl must be an https URL`);
+    }
+    if (seen.has(edition?.version)) {
+      errors.push(`${where} duplicates version "${edition.version}"`);
+    }
+    seen.add(edition?.version);
+  });
+
+  const [current] = editions;
+  const taxonomyVersion = taxonomyDoc?.taxonomyVersion;
+  if (current?.version !== taxonomyVersion) {
+    errors.push(
+      `data/editions.yaml newest edition is "${current?.version}" but taxonomyVersion is "${taxonomyVersion}"`,
+    );
+  }
+  if (current?.stats?.modes !== modes.length) {
+    errors.push(`data/editions.yaml newest edition lists ${current?.stats?.modes} modes; the data has ${modes.length}`);
+  }
+  if (current?.stats?.categories !== categoryIds.size) {
+    errors.push(
+      `data/editions.yaml newest edition lists ${current?.stats?.categories} categories; the data has ${categoryIds.size}`,
+    );
   }
 }
