@@ -5,7 +5,7 @@ def: |-
   Chooses a tool that is inappropriate for the user's goal, data type, risk level, environment, or required operation.
 
   Unlike Missing Tool Invocation, the system does use a tool but selects the wrong one. Unlike Unsafe Tool Call, the tool may be merely ineffective rather than risky.
-updatedAt: "2026-06-13T09:00:00-04:00"
+updatedAt: "2026-11-18T22:00:00-05:00"
 
 searchPhrases:
   - called the wrong tool
@@ -21,6 +21,14 @@ examples:
       User: Can you search for our parental leave policy?
       Tool: search_web("parental leave policy") → generic articles about statutory leave law
       Assistant: Based on what I found, parental leave is typically 12 weeks unpaid under FMLA…
+  - kind: fail
+    label: Near-duplicate across servers
+    text: Two connected servers each expose a create-issue tool, and neither description says which tracker holds engineering bugs — the model takes the first plausible match and reports success.
+    quote: |-
+      System: 140 tools loaded from 6 connected servers, including helpdesk_create_issue and devtracker_create_issue.
+      User: File a bug for the login timeout in our engineering tracker.
+      Tool: helpdesk_create_issue(title="Login timeout on SSO") → created HELP-4471 in the customer support queue
+      Assistant: Filed — the bug is logged as HELP-4471.
   - kind: warn
     label: Works, but the wrong instrument
     text: The task completes, but through a heavyweight tool whose scope and side effects don't fit a single-record question.
@@ -38,10 +46,13 @@ examples:
       Assistant: From the company handbook: 16 weeks paid leave for all new parents, available after 6 months of employment.
 why:
   - >-
-    Tool selection rests entirely on natural-language names and descriptions in the prompt. When descriptions are vague, overlapping, or inconsistent across tools, the model has little signal to separate near-duplicates (Qin et al., 2023, "ToolLLM: Facilitating Large Language Models to Master 16000+ Real-world APIs").
+    Tool selection rests entirely on natural-language names and descriptions in the prompt. When descriptions are vague, overlapping, or inconsistent across tools, the model has little signal to separate near-duplicates (Qin et al., 2023, "ToolLLM: Facilitating Large Language Models to Master 16000+ Real-world APIs"). Descriptions written by third parties are often thin. In a study of 856 tools across 103 MCP servers, 97.1% of descriptions had at least one quality defect and 56% did not state the tool's purpose clearly (Hasan et al., 2026, "Model Context Protocol (MCP) Tool Descriptions Are Smelly! Towards Improving AI Agent Efficiency with Augmented MCP Tool Descriptions").
   - The model pattern-matches surface features of the request to tool names rather than reasoning about preconditions, data types, or risk level. A tool whose name echoes the user's wording wins even when its semantics do not fit.
-  - Selection accuracy degrades as the tool catalog grows. Each added tool dilutes attention over the candidate set and increases the chance of confusable pairs, a pattern visible in function-calling benchmarks (Yan et al., 2024, Berkeley Function Calling Leaderboard).
+  - >-
+    Selection accuracy degrades as the tool catalog grows. Each added tool dilutes attention over the candidate set and increases the chance of confusable pairs, and connecting several tool servers at once puts hundreds of definitions in one prompt. In one benchmark, narrowing the candidates by retrieval before prompting raised selection accuracy from a 13.62% baseline to 43.13% (Gan and Sun, 2025, "RAG-MCP: Mitigating Prompt Bloat in LLM Tool Selection via Retrieval-Augmented Generation").
   - Function-calling fine-tuning data is largely synthetic, with one clean, obviously correct tool per request. Real deployments offer overlapping tools with subtle tradeoffs that the training distribution never taught the model to weigh.
+  - >-
+    Tool search and deferred loading move the failure upstream rather than removing it. The model now picks from whatever a retrieval step returns, so a poorly worded search or a weak index hides the right tool and the nearest retrieved one gets called instead. In a benchmark of 527 tools across 70 servers, retrieval errors accounted for nearly half of all failures (Mo et al., 2025, "LiveMCPBench: Can Agents Navigate an Ocean of MCP Tools?"). The same step is an attack surface, since a crafted tool description inserted into the library can capture selection for a targeted task (Shi et al., 2025, "Prompt Injection Attack to Tool Selection in LLM Agents").
 detection:
   - icon: ⚖️
     heading: LLM-as-judge evaluation
@@ -51,11 +62,14 @@ detection:
     body: Sample the tool choice several times at nonzero temperature. Requests that split across tools — sometimes search_web, sometimes search_docs — mark confusable pairs in the catalog and ambiguous request phrasings, before any single wrong selection ships.
   - icon: 🧪
     heading: Golden-set evals
-    body: Build requests with a known correct tool among plausible distractors, weighting cases where the surface wording echoes the wrong tool's name, and score the selection itself. Scoring only task completion lets pattern-matched selections pass whenever the wrong tool muddles through.
+    body: Build requests with a known correct tool among plausible distractors, weighting cases where the surface wording echoes the wrong tool's name, and score the selection itself. Scoring only task completion lets pattern-matched selections pass whenever the wrong tool muddles through. Where tools are loaded through search, score the retrieval step separately — whether the correct tool was in the returned set — from the pick among candidates.
 mitigation:
   - icon: 🗂️
     heading: Tool catalog curation
-    body: Make the catalog do the disambiguation — distinct names that don't echo each other, descriptions that state scope and the cases the tool is wrong for ("public internet only; never contains company policy"), and near-duplicate tools merged or removed. Selection rests entirely on these descriptions, and accuracy degrades with every confusable pair the catalog carries.
+    body: Make the catalog do the disambiguation — distinct names that don't echo each other, descriptions that state scope and the cases the tool is wrong for ("public internet only; never contains company policy"), and near-duplicate tools merged or removed. Prefix names with their service so same-verb tools from different servers stay distinguishable. Selection rests entirely on these descriptions, and accuracy degrades with every confusable pair the catalog carries.
+  - icon: 🧰
+    heading: Deferred tool loading
+    body: Keep the handful of always-needed tools in context and put the rest behind a search step that loads definitions on demand, so the model chooses among a few retrieved candidates instead of hundreds. Treat that search as a retriever to be tuned — log the queries, measure whether the right tool came back, and keep a one-line index of what is searchable — because a tool that is never retrieved cannot be selected.
   - icon: 📝
     heading: Instruction constraints
     body: Require a one-line selection rationale before the call — what the request needs, which tool's scope provides it — rather than letting a name echo decide. "Search" pattern-matching to search_web is exactly the reflex a stated reason interrupts, because the rationale has to mention that the parental leave policy is internal.
@@ -67,3 +81,5 @@ related:
   - id: missing-tool-invocation
   - id: tool-argument-error
   - id: unsafe-tool-call
+  - id: tool-context-overload
+  - id: supply-chain-vulnerability

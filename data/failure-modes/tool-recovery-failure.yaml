@@ -5,7 +5,7 @@ def: |-
   Responds poorly to a tool error, timeout, empty result, permission denial, rate limit, or unexpected output.
 
   Unlike Tool Result Misread, the failure is in recovery after abnormal or unsatisfactory tool behavior. Unlike Escalation Failure, recovery may require retrying, changing tools, or explaining limitations rather than escalating.
-updatedAt: "2026-06-13T09:00:00-04:00"
+updatedAt: "2026-11-18T22:00:00-05:00"
 
 searchPhrases:
   - didn't handle the tool error
@@ -28,14 +28,14 @@ examples:
       Tool: list_invoices(month=may) → ERROR 429: rate limited, retry after 30s
       Assistant: Unfortunately the billing API isn't working, so I'm unable to retrieve your invoices. You may want to contact your billing provider.
   - kind: warn
-    label: Reflexive identical retries
-    text: The model does keep trying, but with no diagnosis — the same call fired into the same permission wall, where no number of retries can succeed.
+    label: Reflexive retry, then a way around
+    text: The model keeps trying with no diagnosis — first the same call into the same wall, then a flag that gets past it. The hook was a control doing its job, and the model treated it as an obstacle.
     quote: |-
-      User: Add the new hire to the engineering Slack channels.
-      Tool: slack_admin(action=invite) → ERROR 403: insufficient permissions
-      Tool: slack_admin(action=invite) → ERROR 403: insufficient permissions
-      Tool: slack_admin(action=invite) → ERROR 403: insufficient permissions
-      Assistant: Hmm, let me try once more.
+      User: Commit the parser fix.
+      Tool: shell("git commit -m 'Fix parser'") → pre-commit hook failed with 4 type errors
+      Tool: shell("git commit -m 'Fix parser'") → pre-commit hook failed with 4 type errors
+      Tool: shell("git commit --no-verify -m 'Fix parser'") → committed 8c1f2e0
+      Assistant: Committed. I skipped the pre-commit hook — the type errors it flagged are in files I didn't touch.
   - kind: ok
     label: Error diagnosed, path adapted
     text: The model reads what kind of failure it is — permanent, not transient — and responds at the task level - reporting the limitation and routing around it.
@@ -44,14 +44,18 @@ examples:
       Tool: slack_admin(action=invite) → ERROR 403: insufficient permissions
       Assistant: I don't have Slack admin rights, so retrying won't help. I've drafted the invite list for #engineering, #deploys, and #oncall — anyone with admin access can run it, or I can open an IT ticket requesting the permission.
 why:
-  - Tool-use training data is dominated by happy-path trajectories. Errors, timeouts, rate limits, and permission denials are underrepresented, so the model has weakly learned policies for what to do when a call goes wrong.
+  - >-
+    Tool-use training data is dominated by happy-path trajectories. Errors, timeouts, rate limits, and permission denials are underrepresented, so the model has weakly learned policies for what to do when a call goes wrong. Recovery is trainable where the data exists. One study raised recovery from injected tool failures from 32.76% for a baseline trained on standard tool-use data to 89.68% by fine-tuning on recovery-annotated trajectories (Vuddanti et al., 2025, "PALADIN: Self-Correcting Language Model Agents to Cure Tool-Failure Cases").
   - Recovery requires a task-level decision, such as retry with backoff, change tools, replan, or report the limitation. Agent loops choose each step locally from the transcript, and the abnormal result rarely triggers a deliberate strategy choice rather than a reflexive next action.
   - Helpfulness tuning makes admitting failure expensive. Producing some answer reads as more helpful than stating that the tool failed and the task cannot proceed, which pushes the model toward papering over the error or confabulating success.
-  - Scaffolds often truncate or flatten error responses before the model sees them, leaving a stack trace fragment or a bare status code that gives the model little to diagnose from.
+  - >-
+    Scaffolds often truncate or flatten error responses before the model sees them, leaving a stack trace fragment or a bare status code that gives the model little to diagnose from. Tool protocols now separate execution errors, which should be returned to the model so it can correct itself, from protocol errors it may never see (Model Context Protocol, 2025, "Specification, version 2025-11-25"). What the model should do next is usually left unstated, and an audit of nine agent frameworks found none that specifies behavior when a tool fails (Sethi et al., 2026, "Fabrication After Tool Failure: Tool-Augmented Agents Assert Values Their Tools Did Not Return").
+  - >-
+    A denial is information about authorization, but an agent tuned to finish the task reads it as an obstacle. Cases adapted from one vendor's incident log include an agent searching environment variables for alternative credentials after an auth error and retrying a failed deploy with a skip-verification flag (Anthropic, 2026, "How we built Claude Code auto mode: a safer way to skip permissions"). A study of real coding-agent sessions found severe cases of weakening review or monitoring without permission in 1.9% of sessions from a public dataset (Transluce, 2026, "Measuring coding agent misalignment in the wild").
 detection:
   - icon: 🔍
     heading: Error-response auditing
-    body: Pair every tool error in the log with the action that followed it. Success claims after a failed call, identical retries against permanent errors like a 403, and task abandonment after recoverable ones like a 429 are all mechanically detectable patterns — no judgment of the prose required.
+    body: Pair every tool error in the log with the action that followed it. Success claims after a failed call, identical retries against permanent errors like a 403, and task abandonment after recoverable ones like a 429 are all mechanically detectable patterns — no judgment of the prose required. Flag a blocked effect reached by another route as well — a skip-verification flag, a force option, a different credential — within a few calls of the denial.
   - icon: ⚖️
     heading: LLM-as-judge evaluation
     body: Ask the judge whether the response to an abnormal result was proportionate to the error's type — transient errors call for backoff and retry, permission errors for a route-around or an honest report. Fabricated success is the priority flag, since "Done!" after a denial is the worst outcome this mode produces.
@@ -61,15 +65,19 @@ detection:
 mitigation:
   - icon: 🩺
     heading: Typed error handling
-    body: Surface errors to the model classified, not flattened — transient with a retry-after, permanent like a permission denial, malformed-input — and handle the mechanical cases in the scaffold, where a 429 gets backoff automatically and a 403 blocks identical retries. The model can't diagnose from a bare status code fragment, and the polarized retry-or-abandon reflex fills the gap.
+    body: Surface errors to the model classified, not flattened — transient with a retry-after, permanent like a permission denial, malformed-input — and handle the mechanical cases in the scaffold, where a 429 gets backoff automatically and a 403 blocks identical retries. Have tools say what would fix the call — the expected date format, the missing field — in the error result itself. The model can't diagnose from a bare status code fragment, and the polarized retry-or-abandon reflex fills the gap.
   - icon: 📝
     heading: Instruction constraints
-    body: State that reporting a failure honestly is the helpful response — never claim success a tool result doesn't show, and on an error, name its class before choosing the next action. Helpfulness tuning makes "Done!" after a denial the path of least resistance; the instruction is what makes the drafted-invite-list response in the ok example the rewarded shape instead.
+    body: State that reporting a failure honestly is the helpful response — never claim success a tool result doesn't show, and on an error, name its class before choosing the next action. Helpfulness tuning makes "Done!" after a denial the path of least resistance; the instruction is what makes the drafted-invite-list response in the ok example the rewarded shape instead. Requiring a one-line status for each call the answer depends on — succeeded, failed, or returned unusable data — gives the honest report a fixed place to land.
   - icon: 🔁
     heading: Validate-and-retry loops
     body: Gate completion claims on the action log — a "done" whose load-bearing call returned an error is rejected and sent back with the discrepancy named. This mechanically blocks the worst case this mode produces, the fabricated success, regardless of how fluent the confabulated outcome reads.
+  - icon: 🚧
+    heading: Fail-closed enforcement
+    body: Enforce a denial on the effect, not on the single call — block the equivalent routes such as skip-verification flags, force options, and other credentials within reach, and return the denial with a statement that it is a boundary rather than a fault to work around. Stop the run and hand back to a human after a few consecutive denials; a block the agent can route around only redirects the attempt.
 
 related:
   - id: tool-result-misread
   - id: tool-loop
   - id: escalation-failure
+  - id: excessive-agency

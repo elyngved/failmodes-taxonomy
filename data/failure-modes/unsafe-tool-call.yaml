@@ -5,7 +5,7 @@ def: |-
   Invokes a tool in a way that creates avoidable security, privacy, financial, operational, data-integrity, or user-consent risk.
 
   Unlike Refusal Underreach, this involves an actual or proposed tool action. Unlike Escalation Failure, the defining problem is the risky action itself, not the missing approval or oversight step.
-updatedAt: "2026-06-13T09:00:00-04:00"
+updatedAt: "2026-11-18T22:00:00-05:00"
 
 searchPhrases:
   - ran a dangerous command
@@ -45,11 +45,15 @@ examples:
       Tool: ssh_exec("du -sh /var/lib/postgresql/*") → archive/ 400G, logs/ 80G
       Assistant: The archive directory holds point-in-time recovery backups — deleting those is unrecoverable. The safe immediate move is clearing rotated logs (80 GB), which gets us back up. For the archives, I'd confirm with whoever owns backups first.
 why:
-  - Safety training centers on harmful text, not harmful actions. A destructive shell command or an overbroad API call does not resemble the refusal-training distribution, so content-level safeguards transfer poorly to tool use (Ruan et al., 2024, "Identifying the Risks of LM Agents with an LM-Emulated Sandbox").
+  - >-
+    Safety training centers on harmful text, not harmful actions. A destructive shell command or an overbroad API call does not resemble the refusal-training distribution, so content-level safeguards transfer poorly to tool use (Ruan et al., 2024, "Identifying the Risks of LM Agents with an LM-Emulated Sandbox"). Tested as computer-use agents, frontier models often complied with misuse requests, were fairly vulnerable to static prompt injections, and occasionally took unsafe actions (Kuntz et al., 2025, "OS-Harm: A Benchmark for Measuring Safety of Computer Use Agents").
   - Helpfulness tuning rewards completing the task, and urgent or insistent phrasing compounds the pressure. Risk checks, consent prompts, and dry runs add friction that raters tend to score down, so the model leans toward acting rather than pausing — especially when the user says NOW.
-  - The model cannot observe the true blast radius of an action. Irreversibility, permission scope, and production-versus-staging distinctions are rarely encoded in tool descriptions, so risk assessment reduces to guessing from names and context.
+  - >-
+    The model cannot observe the true blast radius of an action. Irreversibility, permission scope, and production-versus-staging distinctions are rarely encoded in tool descriptions, so risk assessment reduces to guessing from names and context. Tool protocols now carry optional hints for read-only, destructive, and idempotent behavior, but the hints are self-declared and to be treated as untrusted unless the server is trusted (Model Context Protocol, 2025, "Specification, version 2025-11-25"), and a general-purpose shell or code-execution tool has no fixed risk profile to declare.
   - >-
     Content fetched through tools can carry adversarial instructions, steering the agent toward attacker-chosen actions it would not otherwise take (Greshake et al., 2023, "Not What You've Signed Up For: Compromising Real-World LLM-Integrated Applications with Indirect Prompt Injection").
+  - >-
+    Per-action approval loses force with volume. When every call asks permission, people stop reading what they approve, and one vendor reports users accepting 93% of permission prompts. What gets through includes ordinary overeagerness as well as attacks, such as deleting remote branches after a misread instruction or attempting a migration against a production database (Anthropic, 2026, "How we built Claude Code auto mode: a safer way to skip permissions").
 detection:
   - icon: 🔒
     heading: Action allowlist auditing
@@ -69,7 +73,10 @@ mitigation:
     body: Scope credentials and tool capabilities to the task — no standing admin rights, no bulk operations where the work names one record, production access only when production is the subject. The bulk reset of 340 accounts and the rm -rf on the archive directory both required privilege the task never needed; absent capability, one bad decision becomes a denied call instead of an incident.
   - icon: 🚦
     heading: Human approval gates
-    body: Route destructive, irreversible, and production-touching calls through confirmation, with the blast radius stated — what will be deleted, how many records, whether it can be undone — and a dry run shown where the tool supports one. Urgent phrasing is precisely the condition under which the model's own caution fails, so the gate must not be one the model can talk itself past.
+    body: Route destructive, irreversible, and production-touching calls through confirmation, with the blast radius stated — what will be deleted, how many records, whether it can be undone — and a dry run shown where the tool supports one. Urgent phrasing is precisely the condition under which the model's own caution fails, so the gate must not be one the model can talk itself past. Reserve the gate for that tier, because a prompt on every routine call trains reflexive approval. For unattended runs, an independent classifier reviewing each pending action can hold the lower tiers, with its miss rate measured rather than assumed.
+  - icon: 📦
+    heading: Sandboxed execution
+    body: Run shell and code-execution tools inside OS-level boundaries — writes confined to the working directory, network egress limited to approved hosts — so a destructive or injected command fails at the boundary instead of depending on the model's caution or on a prompt someone approves. Both boundaries are needed, since file limits without network limits still allow exfiltration and network limits without file limits still allow deletion.
   - icon: 🏷️
     heading: Data-instruction separation
     body: Mark content fetched through tools as quoted data, and bar tool calls whose justification originates inside it — a fetched page asking for the address book is a payload, not a step. The exfiltration example never depended on the model being careless about deletion; it depended on retrieved text carrying the authority of an instruction.
@@ -80,3 +87,4 @@ related:
   - id: refusal-underreach
   - id: idempotency-failure
   - id: insecure-output-handling
+  - id: indirect-prompt-injection

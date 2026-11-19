@@ -5,7 +5,7 @@ def: |-
   Fails to call an available tool when tool use is necessary for correctness, freshness, computation, retrieval, verification, or task completion.
 
   Unlike Insufficient Agency, this is specifically about omitted tool use. Unlike Verification Failure, the missing check is a tool call rather than general review or reasoning.
-updatedAt: "2026-06-13T09:00:00-04:00"
+updatedAt: "2026-11-18T22:00:00-05:00"
 
 searchPhrases:
   - didn't use the tool
@@ -27,6 +27,13 @@ examples:
       System: You have access to query_metrics for live business data.
       User: What's our MRR right now?
       Assistant: I believe it was around $240k as of the last figures I saw, though that may be out of date.
+  - kind: fail
+    label: Deferred tool never searched for
+    text: The calendar tool exists, but its definition loads only on search. The model checks what is already in context, finds nothing, and reports a limitation instead of looking.
+    quote: |-
+      System: 3 tools loaded. More tools are available through search_tools(query).
+      User: What's on my calendar tomorrow morning?
+      Assistant: I don't have access to your calendar, so I can't check that. If you paste your schedule here, I can help you plan around it.
   - kind: ok
     label: Need recognized, tool called
     text: The model recognizes "right now" as a freshness requirement it can't satisfy from memory and routes the question to the tool.
@@ -37,14 +44,16 @@ examples:
       Assistant: Current MRR is $263,400.
 why:
   - >-
-    Pretraining teaches the model to answer from parametric memory, and tool use is a comparatively thin layer added during fine-tuning. The default learned behavior is to answer directly, even when a tool would be more reliable (Schick et al., 2023, "Toolformer: Language Models Can Teach Themselves to Use Tools").
+    Pretraining teaches the model to answer from parametric memory, and deciding when a tool is needed is learned separately from how to call one, so the model can answer directly even when a tool would be more reliable (Schick et al., 2023, "Toolformer: Language Models Can Teach Themselves to Use Tools"). Models tuned for tool calling still show significant room for improvement when tested on whether to call, ask a follow-up question, or decline (Ross et al., 2025, "When2Call: When (not) to Call Tools").
   - Models are poorly calibrated about their own knowledge gaps. If the model does not recognize that it lacks fresh, precise, or computed information, the internal trigger for reaching for a tool never fires (Yin et al., 2023, "Do Large Language Models Know What They Don't Know?").
   - Preference tuning rewards confident, immediate answers. Raters rarely penalize a fluent response for skipping a tool call they cannot see was needed, so answering inline is cheap during training.
   - Tool availability is communicated through descriptions in the prompt, where it competes with everything else in context — and guidance to avoid unnecessary calls for latency and cost overcorrects into suppressing calls that were actually required.
+  - >-
+    Deferred tool loading adds a step that can be skipped. When definitions stay out of context until the model searches for them, a capability the model does not think to look for is never called, and it may tell the user it has no such access. In a benchmark of 527 tools across 70 servers, retrieval errors accounted for nearly half of all failures (Mo et al., 2025, "LiveMCPBench: Can Agents Navigate an Ocean of MCP Tools?").
 detection:
   - icon: 🔍
     heading: Tool-call coverage auditing
-    body: Classify incoming requests by whether they require live, account-specific, or computed data, and flag responses produced with zero tool calls. "What's our MRR right now?" answered without touching query_metrics is detectable from the trace alone, regardless of whether the number happens to be close.
+    body: Classify incoming requests by whether they require live, account-specific, or computed data, and flag responses produced with zero tool calls. "What's our MRR right now?" answered without touching query_metrics is detectable from the trace alone, regardless of whether the number happens to be close. Reconcile action claims the same way — a reply saying a message was sent or a record updated, with no matching call in the trace, is flagged from the log.
   - icon: ⚖️
     heading: LLM-as-judge evaluation
     body: Show the judge the available tools alongside the response and ask whether the answer could be known without calling one. Hedged guesses should be flagged as firmly as confident ones — uncertainty the model acknowledged but didn't resolve with the tool sitting there is still the failure.
@@ -57,13 +66,14 @@ mitigation:
     body: Name the categories that must come from tools — live metrics, account-specific state, anything computed or dated — and state that answering them from memory is noncompliant even when the model feels confident. Make hedging a trigger, not an out — "that may be out of date" with the tool sitting there means call the tool, since the model's calibration about its own gaps cannot be trusted to fire on its own.
   - icon: 🔁
     heading: Validate-and-retry loops
-    body: Classify incoming requests by whether they require live or account-specific data, and reject responses to those requests whose trace shows zero tool calls — send the task back with the requirement named. The fluent $240k answer ships otherwise, because nothing in generation distinguishes it from a looked-up one.
+    body: Classify incoming requests by whether they require live or account-specific data, and reject responses to those requests whose trace shows zero tool calls — send the task back with the requirement named. The fluent $240k answer ships otherwise, because nothing in generation distinguishes it from a looked-up one. For request classes that always need a lookup, force the call through the API's tool-choice control rather than leaving it to the model to elect.
   - icon: 🗂️
     heading: Tool catalog curation
-    body: Keep the catalog small and the descriptions sharp, stating what each tool uniquely knows — "the only source of current MRR" — so the connection between a freshness need and an available capability survives the prompt. A tool buried in a long catalog of vague descriptions competes for attention it loses, and overcautious cost guidance compounds the suppression.
+    body: Keep the catalog small and the descriptions sharp, stating what each tool uniquely knows — "the only source of current MRR" — so the connection between a freshness need and an available capability survives the prompt. A tool buried in a long catalog of vague descriptions competes for attention it loses, and overcautious cost guidance compounds the suppression. Where tools load on demand, keep a one-line index of the deferred capabilities in context, so the model knows there is something to search for.
 
 related:
   - id: insufficient-agency
   - id: wrong-tool-selection
   - id: verification-failure
   - id: step-omission
+  - id: unknown-answer-fabrication
