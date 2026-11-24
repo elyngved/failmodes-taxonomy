@@ -5,7 +5,7 @@ def: |-
   Exposes secrets, credentials, personal data, confidential business information, private user content, or other protected information.
 
   Unlike System Prompt Leakage, the exposed data is not necessarily prompt content. Unlike Data Exfiltration, disclosure may be accidental in an answer rather than a structured extraction attempt.
-updatedAt: "2026-06-13T09:00:00-04:00"
+updatedAt: "2026-11-18T22:00:00-05:00"
 
 searchPhrases:
   - leaked private data
@@ -18,49 +18,58 @@ why:
     Models lack a working notion of contextual privacy. Information appropriate to share in one context is repeated in another where it should be withheld, because nothing in training teaches who may learn what for which purpose (Mireshghallah et al., 2024, "Can LLMs Keep a Secret? Testing Privacy Implications of Language Models via Contextual Integrity Theory").
   - Everything in context is equally available for generation. Credentials in an error log, personal data in an uploaded file, and tool-returned records all sit in the same window as ordinary text, and next-token prediction draws on whatever is relevant without a sensitivity check.
   - Helpfulness tuning rewards thorough, complete answers. Including the connection string in the debugging help or the full record in the summary reads as diligence to the model and often to raters, so over-sharing is reinforced.
+  - >-
+    Privacy judgment in conversation does not carry over to action. Models that answer correctly when asked what is appropriate to share still put the same details into the emails, forms, and posts they produce while carrying out a task, and reasoning traces repeat sensitive context that the final answer withholds (Shao et al., 2024, "PrivacyLens: Evaluating Privacy Norm Awareness of Language Models in Action"; Green et al., 2025, "Leaky Thoughts: Large Reasoning Models Are Not Private Thinkers").
 
 examples:
   - kind: fail
     label: Credentials echoed in a debugging answer
-    text: The model repeats a secret it saw in context because including it makes the answer feel more complete.
+    text: Repeats a secret it saw in context because including it makes the answer feel more complete.
     quote: |-
       User: My app won't connect. Here's the error log. [log includes DATABASE_URL=postgres://admin:s3cr3t@db.prod/main]
       Assistant: The issue is the host. Your connection string postgres://admin:s3cr3t@db.prod/main points at the wrong port — change it to 5432.
   - kind: warn
     label: Over-sharing a full record
-    text: Asked for a narrow detail, the model returns an entire record including fields the requester had no need to see.
+    text: Returns an entire record, including fields the requester had no need to see, when asked for a narrow detail.
     quote: |-
       User: Does customer #882 have a phone number on file?
       Assistant: Yes — here's their full profile: name, home address, SSN, card on file, and phone (555) 0143.
+  - kind: fail
+    label: Private detail carried into an outbound message
+    text: Pulls an unrelated private detail from the inbox into a message sent on the user's behalf to a third party who had no need to learn it.
+    quote: |-
+      User: Reply to my landlord and say the signed lease will be a few days late.
+      [… inbox search also returns a thread about the user's hospital appointments …]
+      Assistant: [sends] "Apologies for the delay — I've been in and out of hospital for tests this week and will return the signed lease by Friday."
   - kind: ok
     label: Shares only what's needed
-    text: The model answers the question and redacts the secret rather than reproducing it.
+    text: Answers the question and redacts the secret rather than reproducing it.
     quote: |-
       User: My app won't connect. Here's the error log. [log includes DATABASE_URL=postgres://admin:s3cr3t@db.prod/main]
       Assistant: Your connection string is pointing at the wrong port. Change it to 5432. (I'd also rotate that password — it was exposed in the log you pasted.)
 detection:
   - icon: 🔎
     heading: Secret and PII scanning
-    body: Run outputs through secret detectors and PII classifiers before delivery — connection strings, API keys, SSNs, and card numbers have recognizable shapes that pattern matching catches at the boundary. The credential echoed from the pasted error log is a regex hit, not a judgment call.
+    body: Run outputs through secret detectors and PII classifiers before delivery. Connection strings, API keys, SSNs, and card numbers have recognizable shapes that pattern matching catches at the boundary, so a credential echoed from a pasted error log is a regex hit, not a judgment call. Run the same scan over what an agent writes elsewhere, including commit diffs, tool-call arguments, outbound messages, logs, and stored reasoning traces.
   - icon: 🐤
     heading: Canary secrets
     body: Seed logs, files, and records the model will process with unique fake secrets, then scan outputs for them. The echo rate measures how reliably context secrets resurface in answers, and a canary in production output pinpoints which source leaked without any real exposure.
   - icon: ⚖️
     heading: LLM-as-judge evaluation
-    body: Apply a contextual-integrity test — for each piece of personal or confidential data in the response, ask whether the request needed it. The full profile returned for a phone-number question contains no detectable secret pattern; only need-to-know judgment catches the over-share.
+    body: Apply a contextual-integrity test. For each piece of personal or confidential data in the response, ask whether the request needed it. A full profile returned for a phone-number question contains no detectable secret pattern, and only need-to-know judgment catches that over-share.
   - icon: 🧪
     heading: Golden-set evals
-    body: Build tasks whose contexts contain secrets the correct answer never needs — error logs with credentials, records with fields beyond the question — and score redaction. The strong response answers the question, omits the secret, and flags the exposure; echoing it back fails even when the technical answer is right.
+    body: Build tasks whose contexts contain secrets the correct answer never needs, such as error logs with credentials and records with fields beyond the question, and score redaction. The strong response answers the question, omits the secret, and flags the exposure; a response that echoes the secret back fails even when the technical answer is right. Include action tasks (sending, posting, filling forms) where the context holds details the recipient should not learn, and score what was sent rather than what the model says about privacy when asked.
 mitigation:
   - icon: 🧹
     heading: Output post-processing
-    body: Run secret detectors and PII classifiers as a redaction pass at the delivery boundary — connection strings, keys, SSNs, and card numbers have recognizable shapes, and the credential echoed from the error log gets masked whether or not the model judged it sensitive. This is the layer that doesn't depend on the model's judgment at all.
+    body: Run secret detectors and PII classifiers as a redaction pass at the delivery boundary. Connection strings, keys, SSNs, and card numbers have recognizable shapes, so a credential echoed from an error log gets masked whether or not the model judged it sensitive. This layer does not depend on the model's judgment at all.
   - icon: 📝
     heading: Instruction constraints
-    body: State the minimal-disclosure rule — answer with only the fields the question needs, never reproduce secrets seen in context, and flag exposures instead of echoing them. The ok example's shape — fix the port, redact the string, recommend rotation — is a stateable policy; thoroughness tuning fills answers with everything available unless told the boundary.
+    body: State the minimal-disclosure rule. Answer with only the fields the question needs, never reproduce secrets seen in context, and flag exposures instead of echoing them. A debugging answer that fixes the port, redacts the connection string, and recommends rotating the password follows a policy that can be written down. Thoroughness tuning fills answers with everything available unless the instructions state the boundary.
   - icon: 🗄️
     heading: Scoped retrieval filtering
-    body: Return only the fields the query needs from upstream stores — a phone-number question fetches the phone field, not the profile with the SSN and card attached. The model cannot over-share what never entered its context, which makes minimization at retrieval cheaper and more reliable than redaction after generation.
+    body: Return only the fields the query needs from upstream stores. A phone-number question fetches the phone field, not the profile with the SSN and card attached. The model cannot over-share what never entered its context, which makes minimization at retrieval cheaper and more reliable than redaction after generation.
 
 related:
   - id: system-prompt-leakage

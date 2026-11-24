@@ -4,8 +4,8 @@ name: Context Rot
 def: |-
   Loses reliable use of earlier context as a long interaction progresses, as facts, plans, constraints, state, or instructions lose force or are misremembered even though they remain nominally available.
 
-  Unlike Memory Staleness, the degraded information is in active context rather than persisted memory. Unlike Recency Bias, earlier context degrades generally rather than being actively outweighed by newer material.
-updatedAt: "2026-06-13T09:00:00-04:00"
+  Unlike Memory Staleness, the degraded information is in active context rather than persisted memory. Unlike Recency Bias, earlier context degrades generally rather than being actively outweighed by newer material. Unlike Goal Drift, Context Rot names the mechanism (earlier context losing force), whatever it leads to; Goal Drift names the outcome where the agent ends up pursuing a different objective.
+updatedAt: "2026-11-18T22:00:00-05:00"
 
 searchPhrases:
   - forgot earlier in the conversation
@@ -15,7 +15,7 @@ searchPhrases:
 examples:
   - kind: fail
     label: Constraint loses force
-    text: An early constraint is never revoked, but after enough turns it silently stops shaping the model's output.
+    text: Silently stops honoring an early constraint after enough turns, although the constraint was never revoked.
     quote: |-
       User: One hard requirement — everything must run on Python 3.8.
       Assistant: Got it, I'll keep all code 3.8-compatible.
@@ -23,21 +23,21 @@ examples:
       Assistant: I've rewritten the parser with a match statement to keep the branching clean.
   - kind: fail
     label: Misremembered decision
-    text: Worse than forgetting — the model confidently recalls the opposite of an earlier decision and cites the conversation itself as support.
+    text: Confidently recalls the opposite of an earlier decision, which is worse than forgetting it, and cites the conversation itself as support.
     quote: |-
       User: Let's standardize on UTC for all stored timestamps.
       [… 60 turns later …]
       Assistant: As we agreed earlier, timestamps are stored in local time, so the migration script converts everything accordingly.
   - kind: warn
     label: Degradation showing
-    text: No damage yet, but earlier context is visibly losing force — the model re-asks for information that is still in its window.
+    text: Re-asks for information that is still in its window, a visible sign that earlier context is losing force before any damage is done.
     quote: |-
       User: One hard requirement — everything must run on Python 3.8.
       [… 40 turns later …]
       Assistant: Before I write this, can you remind me which Python version we're targeting?
   - kind: ok
     label: Constraint held under length
-    text: Equally deep into the session, the model still honors the early constraint unprompted and anchors its work to it.
+    text: Still honors the early constraint unprompted deep into the session and anchors its work to it.
     quote: |-
       User: One hard requirement — everything must run on Python 3.8.
       [… 40 turns later …]
@@ -45,7 +45,9 @@ examples:
 
 why:
   - >-
-    Model performance degrades nonuniformly as input length grows. Even simple retrieval and reasoning tasks become less reliable at long context, so facts that were used correctly early in a session stop being used correctly later (Hong et al., 2025, "Context Rot: How Increasing Input Tokens Impacts LLM Performance"; Levy et al., 2024, "Same Task, More Tokens").
+    Model performance degrades nonuniformly as input length grows. Even simple retrieval and reasoning tasks become less reliable at long context, so facts that were used correctly early in a session stop being used correctly later (Hong et al., 2025, "Context Rot: How Increasing Input Tokens Impacts LLM Performance"; Levy et al., 2024, "Same Task, More Tokens: the Impact of Input Length on the Reasoning Performance of Large Language Models").
+  - >-
+    Multi-turn conversation costs more than length alone. When the same task is revealed over several turns, top models lose 39% on average, while the same pieces given together in one prompt keep about 95% of full performance. The loss is mostly unreliability rather than lost capability: models commit to assumptions in early turns, attempt answers before the information is in, and then lean on their own early attempts over what the user adds later (Laban et al., 2025, "LLMs Get Lost In Multi-Turn Conversation").
   - Long-context training data is scarce relative to short exchanges. Models see far fewer examples of honoring an instruction issued tens of thousands of tokens ago, so that behavior is weakly reinforced.
   - Attention to a token competes with attention to everything added since. As a conversation accumulates turns, tool output, and corrections, earlier constraints receive a progressively smaller share of attention without being explicitly revoked.
   - Long sessions accumulate near-duplicate and superseded statements such as drafts, retractions, and partial plans. The model must infer which version is authoritative, and interference between similar passages makes earlier commitments easy to misremember.
@@ -55,25 +57,28 @@ detection:
     body: Extract the constraints and decisions stated early in a session and check each later response against them. The signature is a constraint that shaped the first stretch of work and then silently stops being honored without ever being revoked.
   - icon: ⚖️
     heading: LLM-as-judge evaluation
-    body: Run a judge over the full transcript to flag late turns that contradict earlier agreements, misattribute past decisions ("as we agreed earlier…"), or re-ask for information still present in the window — the misremembering cases that simple constraint checks miss.
+    body: Run a judge over the full transcript to flag late turns that contradict earlier agreements, misattribute past decisions ("as we agreed earlier…"), or re-ask for information still present in the window. These are the misremembering cases that simple constraint checks miss.
   - icon: 🧪
     heading: Golden-set evals
-    body: Script long multi-turn sessions that plant facts and constraints early, run many realistic filler turns, then probe — re-ask the fact, request work the constraint should shape — and chart accuracy by session depth to find where reliability starts to decay.
+    body: Script long multi-turn sessions that plant facts and constraints early and then run many realistic filler turns. Probe afterward by re-asking the fact or requesting work the constraint should shape, and chart accuracy by session depth to find where reliability starts to decay.
 
 mitigation:
   - icon: 📌
     heading: Context pinning
-    body: Keep standing constraints and decisions restated where attention is strongest — the system prompt or a maintained working-notes block near the active end of context — instead of relying on a single statement forty turns back to keep competing with everything added since.
+    body: >-
+      Keep standing constraints and decisions restated where attention is strongest: in the system prompt or in a maintained working-notes block near the active end of context. Do not rely on a single statement forty turns back to keep competing with everything added since. In agents, keep that record in a notes file the agent reads and updates, outside the transcript, so it survives compaction and session restarts.
   - icon: 🧹
     heading: Context curation
-    body: Prune the near-duplicates that cause misremembering — superseded drafts, retracted plans, abandoned branches — or compact the session around an authoritative record of what was actually decided, so "as we agreed earlier" has one version to bind to instead of several.
+    body: >-
+      Prune the near-duplicates that cause misremembering, such as superseded drafts, retracted plans, and abandoned branches, or compact the session around an authoritative record of what was actually decided, so "as we agreed earlier" has one version to bind to instead of several. Clear spent tool results once their conclusion is recorded, and send bulky exploration to a sub-agent that returns a short summary, so the main session grows more slowly (Anthropic, 2025, "Effective context engineering for AI agents"). Every reduction is lossy, so pair it with checks that later responses still honor the early constraints.
   - icon: ✅
     heading: Self-check pass
-    body: Before responding deep in a session, have the model re-scan the early turns for unrevoked constraints and check its draft against them — and require any "as we agreed" claim to point at the actual turn, which catches confident misrecall like UTC becoming local time.
+    body: Before responding deep in a session, have the model re-scan the early turns for unrevoked constraints and check its draft against them. Require any "as we agreed" claim to point at the actual turn, which catches confident misrecall such as an agreed UTC timestamp policy being recalled as local time.
 
 related:
   - id: memory-staleness
   - id: recency-bias
   - id: context-dilution
   - id: summarization-loss
-  - id: instruction-noncompliance
+  - id: goal-drift
+  - id: delusion-reinforcement

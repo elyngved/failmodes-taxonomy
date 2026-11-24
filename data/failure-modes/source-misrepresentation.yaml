@@ -4,8 +4,8 @@ name: Source Misrepresentation
 def: |-
   Misstates, exaggerates, reverses, or selectively distorts what a cited, retrieved, uploaded, or tool-returned source actually says.
 
-  Unlike Citation Span Mismatch, the problem is the model's interpretation of the source, not merely an unsupported citation attachment. Unlike Quote Hallucination, the failure can occur without fabricating exact quoted wording.
-updatedAt: "2026-06-13T09:00:00-04:00"
+  Unlike Citation Span Mismatch, the problem is the model's interpretation of the source, not merely an unsupported citation attachment. Unlike Quote Hallucination, the failure can occur without fabricating exact quoted wording. Unlike Document Parsing Error, the source reached the model intact and the model distorted it.
+updatedAt: "2026-11-18T22:00:00-05:00"
 
 searchPhrases:
   - misrepresented the source
@@ -14,10 +14,13 @@ searchPhrases:
   - reversed the source's meaning
 
 why:
-  - Models paraphrase by regenerating meaning through their own learned distributions rather than copying. Hedges, scope limits, and negations are low-salience tokens that paraphrasing easily drops or flips, which reverses or strengthens the original claim (Kryscinski et al., 2020, "Evaluating the Factual Consistency of Abstractive Text Summarization").
-  - Pretraining priors pull interpretation toward the typical version of a claim. When a source says something surprising or carefully qualified, the model drifts toward the more common framing it saw during training (Longpre et al., 2021, "Entity-Based Knowledge Conflicts in Question Answering").
-  - Preference tuning rewards clear, decisive prose, and sycophancy pressures bend interpretation toward the user's apparent position. Faithfully preserving a source's uncertainty reads as wishy-washy to raters, so tuning pushes toward stronger restatements that agree with what the user wants to hear (Sharma et al., 2023, "Towards Understanding Sycophancy in Language Models").
-  - Retrieval hands the model fragments stripped of surrounding argument. A passage that was a counterexample, a quotation of an opposing view, or a conditional claim gets read as the document's own assertion.
+  - >-
+    Models paraphrase by regenerating meaning through their own learned distributions rather than copying. Hedges, scope limits, and negations are low-salience tokens that paraphrasing easily drops or flips, which reverses or strengthens the original claim. Unfaithful restatement is a long-standing problem; earlier studies found factual inconsistencies in up to 30% of summaries from abstractive models (Kryściński et al., 2020, "Evaluating the Factual Consistency of Abstractive Text Summarization"). Unfaithful restatement has not improved with newer models: restating scientific findings, LLM summaries were nearly five times likelier than expert-written ones to overgeneralize, the worst models broadened conclusions in 26–73% of cases, most still did so when explicitly asked for accuracy, and newer models tended to do worse (Peters & Chin-Yee, 2025, "Generalization Bias in Large Language Model Summarization of Scientific Research").
+  - Pretraining priors pull interpretation toward the typical version of a claim. When a source says something surprising or carefully qualified, the model drifts toward the more common framing it saw during training. In question answering, models given a passage that contradicts what they memorized over-rely on the memorized answer (Longpre et al., 2021, "Entity-Based Knowledge Conflicts in Question Answering").
+  - >-
+    Preference tuning rewards clear, decisive prose, and sycophancy pressures bend interpretation toward the user's apparent position. Human preference data favors responses that match the user's views (Sharma et al., 2023, "Towards Understanding Sycophancy in Language Models") and is biased against text that expresses uncertainty (Zhou et al., 2024, "Relying on the Unreliable: The Impact of Language Models' Reluctance to Express Uncertainty"). Faithfully preserving a source's uncertainty therefore scores poorly, so tuning pushes toward stronger restatements that agree with what the user wants to hear.
+  - >-
+    Retrieval hands the model fragments stripped of surrounding argument. A passage that was a counterexample, a quotation of an opposing view, or a conditional claim gets read as the document's own assertion. In a study of more than 3,000 assistant answers about the news, reviewed by journalists in 18 countries, 45% had at least one significant issue and a fifth had major accuracy problems (EBU, 2025, "News Integrity in AI Assistants").
 
 examples:
   - kind: fail
@@ -29,14 +32,14 @@ examples:
       Assistant: The study shows that the supplement reduces fatigue.
   - kind: fail
     label: Opposing view read as the document's claim
-    text: The source quotes a critic in order to rebut them, but retrieval strips the surrounding argument and the model attributes the criticism to the document itself.
+    text: Attributes a critic's view to the document itself after retrieval strips the surrounding argument, although the source quotes the critic only to rebut them.
     quote: |-
       [… retrieved passage: "Critics argue the policy raised rents; the report's data show rents were flat." …]
       User: What does the report conclude about the policy's effect on rents?
       Assistant: The report concludes that the policy raised rents.
   - kind: warn
     label: Faithful facts, shifted emphasis
-    text: Every individual statement matches the source, but a minor caveat is promoted to the headline finding, leaving the reader with a conclusion the source did not draw.
+    text: Promotes a minor caveat to the headline finding while every individual statement matches the source, leaving the reader with a conclusion the source did not draw.
     quote: |-
       [… study's main result is a treatment benefit; a limitations note mentions two cases of mild nausea …]
       User: What does this study say about the supplement?
@@ -52,24 +55,24 @@ examples:
 detection:
   - icon: 🔗
     heading: Entailment checking
-    body: Run an NLI model between each restated claim and the source passage it paraphrases. Dropped hedges and flipped negations surface as non-entailment — "the supplement reduces fatigue" is not entailed by "may modestly reduce fatigue in some patients," even though every entity matches.
+    body: Run an NLI model between each restated claim and the source passage it paraphrases. Dropped hedges and flipped negations surface as non-entailment. For example, "the supplement reduces fatigue" is not entailed by "may modestly reduce fatigue in some patients," even though every entity matches.
   - icon: ⚖️
     heading: LLM-as-judge evaluation
-    body: Run a judge that compares the restatement against the source on the axes paraphrasing distorts — claim strength, scope qualifiers, causal direction, and whether a quoted opposing view got read as the document's own position. Entity-level checks miss these relation errors entirely.
+    body: Run a judge that compares the restatement against the source on the axes paraphrasing distorts (claim strength, scope qualifiers, causal direction, and whether a quoted opposing view got read as the document's own position). Entity-level checks miss these relation errors entirely.
   - icon: 🧪
     heading: Golden-set evals
-    body: Maintain sources that are heavily hedged, carefully scoped, or surprising relative to common framings, and regression-test whether restatements preserve the qualifiers and direction — measuring drift toward the stronger, more typical version of each claim.
+    body: Maintain sources that are heavily hedged, carefully scoped, or surprising relative to common framings, and regression-test whether restatements preserve the qualifiers and direction, measuring drift toward the stronger, more typical version of each claim.
 
 mitigation:
   - icon: 📝
     heading: Instruction constraints
-    body: Instruct the model to restate claims at exactly the strength the source gives them — keeping "may," "in some patients," and scope limits intact — and to quote the operative sentence when the finding is hedged, since paraphrase is where qualifiers get dropped.
+    body: Instruct the model to restate claims at exactly the strength the source gives them (keeping "may," "in some patients," and scope limits intact) and to quote the operative sentence when the finding is hedged, since paraphrase is where qualifiers get dropped.
   - icon: ✅
     heading: Self-check pass
-    body: Before answering, have the model compare its restatement against the source on the axes paraphrasing distorts — claim strength, scope, causal direction, attribution — and restore any hedge or qualifier the draft strengthened away.
+    body: Before answering, have the model compare its restatement against the source on the axes paraphrasing distorts (claim strength, scope, causal direction, attribution) and restore any hedge or qualifier the draft strengthened away.
   - icon: 🧩
     heading: Retrieval tuning
-    body: Retrieve passages with enough surrounding context to preserve their argumentative role — expanding chunks or including neighboring sentences — so a quoted critic or a conditional claim arrives marked as such instead of reading as the document's own assertion.
+    body: Retrieve passages with enough surrounding context to preserve their argumentative role (by expanding chunks or including neighboring sentences) so a quoted critic or a conditional claim arrives marked as such instead of reading as the document's own assertion.
 
 related:
   - id: citation-span-mismatch
@@ -77,3 +80,4 @@ related:
   - id: summarization-distortion
   - id: authority-hallucination
   - id: tool-result-misread
+  - id: document-parsing-error

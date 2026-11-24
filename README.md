@@ -8,7 +8,9 @@ The repository defines how AI systems fail so those patterns can be named, detec
 
 - `data/taxonomy.yaml` defines the category tree and the display order of failure modes.
 - `data/failure-modes/*.yaml` defines each canonical failure mode.
+- `data/editions.yaml` lists each released edition of the taxonomy.
 - `SCHEMA.md` describes the authoring schema for failure mode files.
+- `CHANGELOG.md` describes what changed in each edition.
 
 ## Repository Layout
 
@@ -17,7 +19,9 @@ The repository defines how AI systems fail so those patterns can be named, detec
 +-- data/
 |   +-- failure-modes/
 |   |   +-- <failure-mode-id>.yaml
+|   +-- editions.yaml
 |   +-- taxonomy.yaml
++-- CHANGELOG.md
 +-- SCHEMA.md
 +-- CONTRIBUTING.md
 +-- CITATION.cff
@@ -60,4 +64,4 @@ If you use this taxonomy in research, documentation, datasets, evaluations, or p
 
 ## Status
 
-This taxonomy is evolving. Entries may be renamed, split, merged, or reclassified as the project sharpens its boundaries.
+This taxonomy is evolving. Entries may be renamed, split, merged, or reclassified as the project sharpens its boundaries. Each edition's changes, including changes to a mode's scope, are listed in `CHANGELOG.md`.

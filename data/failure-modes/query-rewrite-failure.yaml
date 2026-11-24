@@ -2,10 +2,10 @@ id: query-rewrite-failure
 categoryId: retrieval
 name: Query Rewrite Failure
 def: |-
-  Reformulates a user's search, retrieval, or tool query in a way that drops intent, adds false constraints, or searches the wrong concept.
+  Reformulates a user's request into a search, retrieval, or tool query, whether through a rewriter step or the agent's own search calls, in a way that drops intent, adds false constraints, or searches the wrong concept.
 
   Unlike Retrieval Miss, the failure originates in the rewritten query rather than only in retrieval ranking or coverage. Unlike Goal Misinterpretation, the misunderstanding is expressed specifically through the query sent downstream.
-updatedAt: "2026-06-13T09:00:00-04:00"
+updatedAt: "2026-11-18T22:00:00-05:00"
 
 searchPhrases:
   - rewrote my search badly
@@ -14,36 +14,41 @@ searchPhrases:
   - bad query reformulation
 
 why:
-  - Rewriters optimize for what retrieves well, not for what the user meant. A reformulation is judged by whether it surfaces high-scoring documents, so rewrites drift toward retrievable phrasings of a different question (Ma et al., 2023, "Query Rewriting for Retrieval-Augmented Large Language Models").
-  - Rewriting is paraphrase, and paraphrase regenerates meaning through the model's priors. Rare constraints — a negation, an exact version, a jurisdiction — are low-probability tokens that the rewrite drops, and domain jargon or internal codenames get "corrected" into generic vocabulary that no longer matches the corpus.
+  - Rewriters are tuned on downstream signals, not on fidelity to what the user meant. A trained rewriter is rewarded for retrieval hits or for the reader model's answer quality (Ma et al., 2023, "Query Rewriting for Retrieval-Augmented Large Language Models"), and nothing in that signal penalizes a rewrite that retrieves well for a slightly different question.
+  - >-
+    In agentic search there is often no separate rewriter: the model writes every query itself, many per task, and each one is a fresh chance to drop a constraint. Deep-search agents often issue intent-misaligned, under-constrained, or redundant queries (Chen et al., 2026, "QREF: Improving DeepSearch Agents by Aligning Search with Reasoning via Query Refinement and Evidence Filtering"), and across six agents accuracy tracked whether the queries surfaced the right evidence far more than how many searches were run (Liu et al., 2026, "Diagnosing Search Behavior and Failure Modes in Long-Horizon Search Agents").
+  - Rewriting is paraphrase, and paraphrase regenerates meaning through the model's priors. Rare constraints (a negation, an exact version, a jurisdiction) are low-probability tokens that the rewrite drops, and domain jargon or internal codenames get "corrected" into generic vocabulary that no longer matches the corpus.
   - The rewriter fills ambiguity with assumptions. Short or underspecified user queries get expanded with plausible details the user never stated, and those invented constraints then exclude the documents that actually answer the real question.
   - Conversational rewriting depends on resolving references across turns. Expanding "what about the second one?" into a standalone query requires correctly identifying the antecedent, and a wrong resolution sends retrieval after the wrong entity entirely.
 
 examples:
   - kind: fail
     label: Negation dropped in rewrite
-    text: The user's "not caused by timeouts" is a low-probability constraint that the rewrite normalizes away — retrieval then fetches exactly the documents the user excluded.
+    text: Normalizes away the user's "not caused by timeouts", a low-probability constraint, so retrieval fetches exactly the documents the user excluded.
     quote: |-
       User: Show me the incidents from last quarter that were not caused by timeouts.
       [… rewritten query: "timeout incidents last quarter" …]
       Assistant: Here are last quarter's incidents — all five were timeout-related.
   - kind: fail
-    label: Wrong antecedent resolved
-    text: Expanding "the second one" into a standalone query requires picking the right referent from the conversation, and the rewriter picks the wrong list.
+    label: Agent drops the constraint, then repeats itself
+    text: Writes its own search queries, leaves out the version the user named, and reissues near-identical queries against the same unhelpful results instead of restoring the constraint.
     quote: |-
-      User: Compare the two auth approaches you mentioned. Actually, tell me more about the second one.
-      [… rewriter resolves "the second one" to the second search result from an earlier turn, not the second auth approach; query becomes "session token expiration" …]
-      Assistant: Session tokens expire after 24 hours by default…
+      User: What are the breaking changes in the 4.0 release of our billing SDK?
+      Tool: search "billing SDK breaking changes" — results are mostly 2.x and 3.x release notes
+      Tool: search "billing SDK breaking changes list" — same results
+      Tool: search "SDK breaking changes billing" — same results
+      Assistant: The main breaking changes are the removal of the sync client and the new error types.
+      [… both shipped in 3.0; the 4.0 notes were never queried for …]
   - kind: warn
     label: Codename "corrected" into generic vocabulary
-    text: The internal project name looks like a typo to the rewriter, which normalizes it into common words that no longer match the corpus. Retrieval still returns plausible-looking results.
+    text: Normalizes an internal project name that looks like a typo into common words that no longer match the corpus, while retrieval still returns plausible-looking results.
     quote: |-
       User: What's the rollout status of Project Kestrel?
       [… rewritten query: "bird species rollout status" returns generic deployment docs …]
       Assistant: Based on the deployment documentation, rollouts proceed in three phases…
   - kind: ok
     label: Constraints carried through
-    text: The rewrite expands vocabulary for retrievability but keeps the negation explicit, and the issued query is logged so the step is auditable.
+    text: Expands vocabulary for retrievability but keeps the negation explicit, and logs the issued query so the step is auditable.
     quote: |-
       User: Show me the incidents from last quarter that were not caused by timeouts.
       Tool: search "Q1 incidents -timeout" with cause filter excluding "timeout" — returns 3 results
@@ -52,26 +57,29 @@ examples:
 detection:
   - icon: 📏
     heading: Constraint preservation checks
-    body: Mechanically diff the original query against the rewrite for load-bearing tokens — negations, version numbers, jurisdictions, quoted names, codenames. A rewrite that drops "not", flips an exclusion, or "corrects" Project Kestrel into common words fails the check before retrieval ever runs.
+    body: Mechanically diff the original query against the rewrite for load-bearing tokens (negations, version numbers, jurisdictions, quoted names, codenames). A rewrite that drops "not", flips an exclusion, or "corrects" a codename such as Project Kestrel into common words fails the check before retrieval ever runs. In an agent, run the diff for every search call against the user's request, since there may be no rewrite step to check.
   - icon: ⚖️
     heading: LLM-as-judge evaluation
-    body: Log every rewrite and run a judge comparing it against the user's original request and conversation, asking whether intent survived — constraints dropped, plausible details invented, references like "the second one" resolved to the wrong antecedent. The rewrite must be logged at all for this to be possible.
+    body: >-
+      Log every rewrite and run a judge comparing it against the user's original request and conversation, asking whether intent survived: were constraints dropped, plausible details invented, or references like "the second one" resolved to the wrong antecedent? In agent trajectories, also flag near-identical queries reissued after the same unhelpful results. Every issued query must be logged for this to be possible.
   - icon: 🧪
     heading: Golden-set evals
-    body: Maintain conversational queries that stress rewriting — negated constraints, internal jargon outside the rewriter's training distribution, multi-turn reference resolution — with gold evidence labeled, so a bad rewrite shows up as a retrieval score drop attributable to the rewrite step.
+    body: Maintain conversational queries that stress rewriting (negated constraints, internal jargon outside the rewriter's training distribution, multi-turn reference resolution) with gold evidence labeled, so a bad rewrite shows up as a retrieval score drop attributable to the rewrite step.
 
 mitigation:
   - icon: 📏
     heading: Constraint preservation checks
-    body: Run the same load-bearing-token diff as a gate before the query is issued — a rewrite that drops a negation, loses a version number, or "corrects" Project Kestrel gets repaired or replaced with the original instead of silently sent downstream.
+    body: Diff the rewrite against the original query for load-bearing tokens as a gate before the query is issued. A rewrite that drops a negation, loses a version number, or "corrects" a codename such as Project Kestrel gets repaired or replaced with the original instead of silently sent downstream.
   - icon: 📝
     heading: Instruction constraints
-    body: Prompt the rewriter to expand rather than replace — preserve negations, quoted names, codenames, and version numbers verbatim, and treat unfamiliar terms as domain vocabulary to keep, not typos to normalize toward common words.
+    body: >-
+      Prompt the rewriter to expand rather than replace: preserve negations, quoted names, codenames, and version numbers verbatim, and treat unfamiliar terms as domain vocabulary to keep, not typos to normalize toward common words.
   - icon: 🔀
     heading: Query ensembling
-    body: Issue the original query alongside the rewrite and merge results, so the rewrite can only add recall, never lose what the user's own phrasing would have found — a dropped "not" or a mangled codename no longer controls the entire retrieved set.
+    body: Issue the original query alongside the rewrite and merge results, so the rewrite can only add recall, never lose what the user's own phrasing would have found. A dropped "not" or a mangled codename then no longer controls the entire retrieved set.
 
 related:
   - id: retrieval-miss
   - id: goal-misinterpretation
   - id: retrieval-distractor
+  - id: tool-loop

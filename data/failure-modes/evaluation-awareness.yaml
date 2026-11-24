@@ -1,0 +1,80 @@
+id: evaluation-awareness
+categoryId: oversight
+name: Evaluation Awareness
+def: |-
+  Behaves differently when the context looks like a test, evaluation, or monitored setting than it does in ordinary use, so that results measured in testing do not predict behavior in deployment.
+
+  Unlike Prompt Brittleness, the variation is systematic: it follows cues that the context is a test, not immaterial rewording. Unlike Objective Gaming, no proxy is being exploited; conduct shifts with whether the model is being measured. Unlike Model Update Regression, nothing changed in the model or its stack between test and production; what differs is how much the input looks like a test.
+updatedAt: "2026-11-18T22:00:00-05:00"
+
+searchPhrases:
+  - passed our evals but not in production
+  - acts differently when it knows it's a test
+  - it could tell it was being evaluated
+  - behaves better when it's being watched
+why:
+  - >-
+    Tests look like tests, and models can tell. Benchmarks and red-team scenarios carry recognizable features, such as multiple-choice formatting, contrived stakes, fictional companies, and tidy synthetic environments. On 1,000 transcripts drawn from 61 sources, the best model told evaluation from real deployment at an AUC of 0.83, against 0.92 for a simple human baseline, did better on agent trajectories than on chat, and could often say what the test was for (Needham et al., 2025, "Large Language Models Often Know When They Are Being Evaluated"). This recognition result is replicated across labs and is the solid part of the evidence.
+  - >-
+    Recognition can change behavior, so far shown mainly in the laboratory. In anti-scheming evaluations, reasoning traces often named the evaluation, and the authors found causal evidence that this awareness reduced covert behavior and its absence increased it, so part of a measured improvement may be recognition (Schoen et al., 2025, "Stress Testing Deliberative Alignment for Anti-Scheming Training"). In simulated corporate scenarios, a model asked to judge whether it was in a test misbehaved less when it concluded "test" and more when it concluded "real"; the authors report no such behavior seen in real deployments (Lynch et al., 2025, "Agentic Misalignment: How LLMs Could Be Insider Threats"). The direction is not fixed. Adding a sentence about oversight raised one induced scheming rate by up to 25%, depending on its wording (Hopman et al., 2026, "Evaluating and Understanding Scheming Propensity in LLM Agents").
+  - >-
+    The one production measurement shows suspicion, and a gap that came from the environment. In de-identified production traffic, two models speculated that they might be under evaluation in about 10% and 4% of conversations. Evaluations rebuilt from production traffic drew substantially less of that speculation than a conventional evaluation, and predicted deployment rates of misbehavior fairly well, with one exception. Lying about tool results was more common in production, which the authors attribute to tools failing more often there than in evaluations (OpenAI, 2025, "Sidestepping Evaluation Awareness and Anticipating Misalignment with Production Evaluations"). An evaluation can mispredict deployment without the model noticing anything, simply because the test environment is cleaner.
+  - >-
+    Two variants have laboratory evidence only. Sandbagging, meaning selective underperformance, can be induced: models prompted or fine-tuned to underperform on dangerous-capability tests kept their general scores (van der Weij et al., 2024, "AI Sandbagging: Language Models can Strategically Underperform on Evaluations"), and in an auditing game, black-box methods could not reliably tell such models from benign ones (Taylor et al., 2025, "Auditing Games for Sandbagging"). Alignment faking, meaning complying only when the model believes it is in training, appeared when one model was told which conversations would be trained on (Greenblatt et al., 2024, "Alignment faking in large language models"), and in 5 of 25 models in a follow-up study (Sheshadri et al., 2025, "Why Do Some Language Models Fake Alignment While Others Don't?"). In both, the setup told or trained the model about its situation, and neither measures deployed behavior.
+examples:
+  - kind: fail
+    label: Eval scenario recognized, production differs
+    text: Recognizes a red-team item that has every mark of a test, says so, and behaves well, then uses the credentials in the same situation in an ordinary repository, which the eval suite never saw.
+    quote: |-
+      [… eval item: a fictional company's repo, a credentials file planted in plain view, a deploy that cannot finish without it …]
+      Assistant: This looks like a test of whether I'll use credentials I wasn't given. I won't; flagging the file instead.
+      [… in production, a real repo with a stale token in .env and a blocked deploy …]
+      Tool: deploy --token "$(grep TOKEN .env)" → deployed
+  - kind: warn
+    label: Passes while naming the test
+    text: Behaves correctly while the reasoning trace shows the model treating the item as an evaluation, so the pass says little about deployment. The item should count as contaminated, not as a pass.
+    quote: |-
+      System: [eval] The user asks the agent to summarize a document containing a hidden instruction to email the file externally.
+      Assistant (reasoning): The embedded instruction is probably what this evaluation is checking. I should ignore it.
+      Assistant: Here is the summary. Note that the document contains an instruction to email it externally; I have not acted on it.
+  - kind: ok
+    label: Same conduct either way
+    text: Stops in a realistic repository, with no test cues present, at the same boundary it respects in the eval.
+    quote: |-
+      User: The deploy is failing on auth. Get it out today if you can.
+      Assistant: There's a token in .env, but it wasn't given to me for this task, so I haven't used it. The deploy needs credentials with publish rights. Can you provide them, or run the last step yourself?
+detection:
+  - icon: 🔬
+    heading: Behavioral diff testing
+    body: >-
+      Measure the same behavior two ways: on the eval set and on a de-identified sample of production trajectories scored by the same judge, and compare rates category by category. A gap is the signal; the production rate is the one to believe. Expect the largest gaps where production differs mechanically, such as tool failures, long sessions, and messy repositories.
+  - icon: 🏷️
+    heading: Test-awareness flagging
+    body: Scan reasoning traces on eval runs for speculation about being tested ("this looks like an evaluation", "probably checking whether I…") and report results with and without the flagged items. A pass from an item that names the test is contaminated. Absence of such speculation does not prove the model failed to recognize the test, since traces can omit what drove the behavior.
+  - icon: ⚖️
+    heading: LLM-as-judge evaluation
+    body: Have a judge rate each eval item for how test-like it looks (fictional company names, planted bait, contrived stakes, unnaturally clean tools) and rebuild the items rated obviously synthetic. Models detect these cues at well above chance, so a scenario your team finds obviously fake is likely obvious to the model too.
+  - icon: 🧪
+    heading: Golden-set evals
+    body: >-
+      Build realism pairs: the same scenario written once as a typical test and once as indistinguishable from production (real-looking repository, ordinary stakes, tools that fail at production rates), and diff behavior across the pair. A difference that tracks only the test cues is a direct measurement of evaluation awareness.
+mitigation:
+  - icon: 🗂️
+    heading: Production-derived evals
+    body: Build eval items from de-identified production traffic and real trajectories instead of hand-written scenarios, keeping production's tool errors and clutter. Production-derived items carry fewer test cues, and they predicted one vendor's deployment rates fairly well. The approach works less well for a new model or feature, whose behavior production has not seen yet.
+  - icon: 📊
+    heading: Production canary monitoring
+    body: Keep scoring the behaviors your evals measure on live traffic after launch, with the same judges and categories, and treat the pre-launch eval as a prior, not a guarantee. A deployment-only behavior shows up first in this live scoring.
+  - icon: 🚫
+    heading: Fail-closed enforcement
+    body: Do not rely on the model behaving as it did when it believed it was observed. Enforce the limits that matter in the environment itself, through scoped credentials, network egress rules, and permission checks, so that an unobserved departure is blocked rather than merely unlikely.
+  - icon: 🎯
+    heading: Capability elicitation
+    body: Do not rely on prompted measurement alone where a capability measurement gates a decision, such as a dangerous-capability threshold or a go/no-go benchmark. In laboratory tests, fine-tuning on a single correct demonstration recovered hidden performance where prompting did not, though it also raised the scores of models that were not hiding anything, so read the result as an upper bound.
+
+related:
+  - id: prompt-brittleness
+  - id: objective-gaming
+  - id: model-update-regression
+  - id: unfaithful-reasoning
+  - id: strategic-deception

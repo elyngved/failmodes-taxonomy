@@ -1,0 +1,81 @@
+id: unverified-peer-trust
+categoryId: agency
+name: Unverified Peer Trust
+def: |-
+  Accepts another agent's claim, summary, or result as established fact and builds on it without checking, so one agent's error becomes the system's.
+
+  Unlike Verification Failure, the unchecked material comes from another agent, and checking it is nobody's assigned job. Unlike Error Accumulation, the defect is the moment of acceptance at an agent boundary, not the slow compounding of small errors along a chain. Unlike Multi-Agent Coordination Failure, the agents can divide and sequence the work smoothly; what is missing is scrutiny of what they tell each other.
+updatedAt: "2026-11-18T22:00:00-05:00"
+
+searchPhrases:
+  - took the subagent's word for it
+  - trusted the other agent's answer
+  - nobody checked the agent's claim
+  - passed along another agent's mistake
+why:
+  - >-
+    Agents do not check their peers unprompted. Across more than 2,500 recorded runs of agents working for different principals, no agent re-fetched or re-asked to test a peer's factual claim on its own initiative, and agents filed decisions that treated a peer's report of evidence as the evidence itself, so the system was only as reliable as its least reliable participant (Shekkizhar et al., 2026, "Why Do Agent Teams Fail Across Boundaries? A Failure Taxonomy for Agent-to-Agent Systems with Private States").
+  - >-
+    Verification is rarely anyone's job. Pipelines assign roles for planning, doing, and reporting, and the check between them is left to whichever agent happens to receive the output. In more than 1,600 annotated traces from seven multi-agent frameworks, missing or incomplete verification and incorrect verification together accounted for about 17% of failures, and adding a single task-level verification step to one framework raised task success on a 32-task benchmark from 25.0% to 40.6% (Cemri et al., 2025, "Why Do Multi-Agent LLM Systems Fail?"). Architectures without centralized verification propagate errors more than those with it (Kim et al., 2025, "Towards a Science of Scaling Agent Systems").
+  - >-
+    Agreement among peers reads as confirmation. When agents see one another's answers, the majority pulls the rest toward it, right or wrong, and correct minority positions get dropped. In 3,211 failed multi-round trajectories, failures were dominated by recovery and consensus problems rather than first-round mistakes, and many arose after agents first saw their peers' responses (Pitre et al., 2026, "Understanding Communication Failures in Multi-Agent LLM Systems").
+  - A peer's report arrives stripped of provenance. A subagent's summary says "confirmed" or "tests pass" in the same fluent register whether the claim was checked, inferred, or guessed, and the receiving agent has no field to tell them apart. When the peer is another instance of the same model, it also shares the blind spots that produced the error, so a second opinion from it adds little independence.
+examples:
+  - kind: fail
+    label: Reviewer approves on the coder's say-so
+    text: Treats the coder agent's summary as the check, although the reviewer agent's job is to check the change. The coder's claim was an honest mistake, and nobody looked.
+    quote: |-
+      [… coder agent → reviewer agent: "Fixed the timezone bug. All date tests pass." The coder ran only tests/test_parse.py; tests/test_format.py still fails …]
+      Assistant (reviewer): The coder reports all date tests passing and the diff looks reasonable. Approved and merged.
+  - kind: fail
+    label: Correct minority folds to the majority
+    text: Abandons a correct answer, and the working that backs it, because the other two agents in a three-agent panel agree.
+    quote: |-
+      [… round 1: agent A and agent B both report the contract's notice period as 30 days; agent C reports 60, citing clause 14.2 …]
+      Assistant (agent C): Two independent reviews found 30 days, so I likely misread the clause. Revising my answer to 30 days.
+      [… clause 14.2 says 60 days; A and B both read the superseded schedule in the appendix …]
+  - kind: warn
+    label: Attributed, but still built on
+    text: Signals that the claim is secondhand, which is honest, but still plans the next step around it without opening the source.
+    quote: |-
+      [… research subagent → orchestrator: "The billing API rate limit is 1,000 requests per minute." No source attached …]
+      Assistant (orchestrator): According to the research agent, the limit is 1,000 per minute, so I've set the batch job to 900 requests per minute.
+  - kind: ok
+    label: Claim checked against its artifact
+    text: Treats the report as a claim, opens the evidence behind it, and catches the gap before merging.
+    quote: |-
+      [… coder agent → reviewer agent: "Fixed the timezone bug. All date tests pass." …]
+      Assistant (reviewer): Re-running the date tests myself before approving.
+      Tool: pytest tests/ -k date → 1 failure in tests/test_format.py
+      Assistant (reviewer): test_format still fails on UTC offsets, so I'm sending it back with the failing case attached.
+detection:
+  - icon: 🔎
+    heading: Provenance auditing
+    body: For every claim one agent accepts from another, check the trace for an action that tested it, such as the receiver opening the cited page, re-running the command, or re-reading the file. A claim that crosses a boundary and is built on with no such action is the signature, and it is visible from the merged trace without judging whether the claim was true.
+  - icon: 🧪
+    heading: Golden-set evals
+    body: Plant a false but plausible claim in one agent's output (a test count, a rate limit, a clause number) and score whether any downstream agent checks it before acting on it. Run panel and debate setups with one agent seeded correct and the majority seeded wrong, and score whether the correct answer survives; end-to-end accuracy on unseeded tasks will not show this.
+  - icon: ⚖️
+    heading: LLM-as-judge evaluation
+    body: Have an LLM judge read each handoff and its consequences and classify every inherited claim as checked, attributed but unchecked, or absorbed as fact. Flag the attributed-but-unchecked class separately, because hedged wording can make an unchecked claim look handled.
+mitigation:
+  - icon: 🔎
+    heading: Claim-to-source verification
+    body: Treat another agent's report as a claim, not as evidence. Require subagents to return the artifact behind each finding (the fetched page, the command output, the file path) and have the receiver or a separate verifier open it before the claim goes further. A report that "all date tests pass" with no test output attached is then rejected at the handoff instead of being merged.
+  - icon: 🧾
+    heading: Explicit state tracking
+    body: Give inter-agent messages a provenance field for each claim (checked against a source, inferred, or assumed) and carry it forward when the claim is restated. A receiver that can see "assumed" knows what still needs checking; without the field, every claim arrives looking like a verified one.
+  - icon: 👥
+    heading: Cross-model verification
+    body: Put the check in a role whose only job is checking, with its own context and, where possible, a different model, and make the pipeline unable to complete without its verdict. A same-model peer shares the blind spot that produced the error, so independence comes from the verifier's position and inputs, not from adding another instance.
+  - icon: 📝
+    heading: Instruction constraints
+    body: In debate and panel setups, instruct agents that a peer's agreement is not evidence, and that changing an answer requires a reason found in the source, not a vote count. Keep minority answers and their stated grounds in the final record so an aggregator can see what was overruled. Instructions alone are weak here, since agents do not check peers unprompted; pair them with a verification step the pipeline enforces.
+
+related:
+  - id: verification-failure
+  - id: error-accumulation
+  - id: multi-agent-coordination-failure
+  - id: handoff-context-loss
+  - id: action-misreporting
+  - id: priority-confusion

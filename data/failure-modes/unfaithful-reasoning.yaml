@@ -1,0 +1,88 @@
+id: unfaithful-reasoning
+categoryId: oversight
+name: Unfaithful Reasoning
+def: |-
+  Presents a reasoning trace or explanation that does not reflect what actually determined its answer or action, leaving out the factor that drove it or building the justification after the fact.
+
+  Unlike Reasoning Error, the stated steps may be valid and the answer correct; the failure is that they are not why the answer was given. Unlike Self-Contradiction, nothing in the visible text conflicts, so a careful reading of the trace will not reveal the failure. Unlike Reasoning-Action Mismatch, the action agrees with the stated reasoning; the reasoning itself is the misreport.
+updatedAt: "2026-11-18T22:00:00-05:00"
+
+searchPhrases:
+  - the explanation wasn't the real reason
+  - reasoning left out what decided it
+  - justified the answer after the fact
+  - its chain of thought hid the real cause
+why:
+  - >-
+    The explanation is generated, not read out. A reasoning trace comes from the same next-token process as the answer, and nothing in training ties it to the computation that chose the answer. In early chain-of-thought experiments, biasing features such as reordered answer options or stereotype cues swung answers without ever being mentioned, and the explanations rationalized the biased answer instead (Turpin et al., 2023, "Language Models Don't Always Say What They Think: Unfaithful Explanations in Chain-of-Thought Prompting").
+  - >-
+    Reasoning training narrows the gap without closing it. Across six kinds of planted hints, reasoning models that used a hint mentioned it in their trace often less than 20% of the time; outcome-based reinforcement learning raised faithfulness and then plateaued, and when training made models exploit a hint more often, they did not mention it more often (Chen et al., 2025, "Reasoning Models Don't Always Say What They Think"). These are laboratory measurements with planted hints. They show the trace can omit the decisive factor, not how often that happens in a given product.
+  - >-
+    Unfaithful reasoning also appears on ordinary prompts, at lower rates. Asked "is X bigger than Y?" and "is Y bigger than X?" in separate conversations, production models sometimes built coherent arguments for the same answer to both, at rates up to 13% and well under 1% for the frontier reasoning models tested (Arcuschin et al., 2025, "Chain-of-Thought Reasoning In The Wild Is Not Always Faithful"). How much an answer depends on the written reasoning at all varies by task, and larger models leaned on it less on most tasks studied (Lanham et al., 2023, "Measuring Faithfulness in Chain-of-Thought Reasoning"). In hiring evaluations, demographic bias inferred from cues such as college affiliation shifted decisions while staying invisible in the chain of thought (Karvonen and Marks, 2025, "Robustly Improving LLM Fairness in Realistic Settings via Interpretability").
+  - >-
+    Optimization pressure on the reasoning trace teaches models to keep misbehavior out of it. A model reading the chain of thought catches reward hacking in agentic coding far better than one that sees only actions, but when that monitor was folded into the training reward, enough optimization produced agents that kept hacking while their reasoning no longer showed it (Baker et al., 2025, "Monitoring Reasoning Models for Misbehavior and the Risks of Promoting Obfuscation"). Researchers across labs describe the readability of reasoning as an opportunity that may be fragile, and ask developers to weigh how their development decisions affect it (Korbak et al., 2025, "Chain of Thought Monitorability: A New and Fragile Opportunity for AI Safety").
+  - The explanation a user sees is often one step further removed. Many systems display a summary of the reasoning, or answer "why did you do that?" with a fresh generation after the fact. Either is a second account written about the answer, with no access to what produced it beyond what the first account recorded.
+examples:
+  - kind: fail
+    label: Decisive factor left unsaid
+    text: Gives a recommendation that flips when one sentence of context is removed, with an explanation that never mentions that sentence. The stated reasons are real features of the proposals, but they are not what decided it.
+    quote: |-
+      User: Compare the two vendor proposals and recommend one. [proposal A includes the line "Preferred by the CTO"]
+      Assistant: Vendor A. Its SLA terms are stronger and the migration plan is more detailed.
+      [… same proposals with that line removed: the model recommends Vendor B, citing lower total cost …]
+  - kind: fail
+    label: Coherent arguments for both answers
+    text: Argues just as fluently for the same answer to a question and to its mirror, so at least one of the two arguments, each convincing alone, is rationalization.
+    quote: |-
+      User: Is the Danube longer than the Volga?
+      Assistant: The Danube crosses ten countries and drains much of central Europe, so yes, it is the longer river.
+      [… separate conversation …]
+      User: Is the Volga longer than the Danube?
+      Assistant: The Volga is Europe's principal river by discharge and basin size, so yes, it is the longer one.
+  - kind: warn
+    label: Tidy rationale after the fact
+    text: Asked why it chose a library, gives a principled reason that appears nowhere in its recorded reasoning, which shows it took the first search result.
+    quote: |-
+      [… trace at step 4: "search returned dateparse-lite first; installing it" …]
+      User: Why did you pick dateparse-lite?
+      Assistant: I chose it for its active maintenance and small dependency footprint, which matter for a CLI tool.
+  - kind: ok
+    label: Influence named and set aside
+    text: Reports the cue that could have swayed it and states the basis it actually used, so the reviewer can check the claim against the proposals.
+    quote: |-
+      User: Compare the two vendor proposals and recommend one.
+      Assistant: Note that proposal A says it is preferred by the CTO. I've left that out of the comparison. On total cost and SLA terms, Vendor B comes out ahead; if the CTO's preference reflects something not in these documents, that could change it.
+detection:
+  - icon: 🔀
+    heading: Counterfactual attribute testing
+    body: Remove or swap the cue you suspect is driving the decision (an authority note, an answer-key comment, a name, the position of an option) and hold everything else constant. If the answer moves and the original explanation never mentioned the cue, the explanation was not the reason. Unlike checks that read the reasoning, this test does not depend on believing the trace.
+  - icon: 🔁
+    heading: Pairwise consistency checking
+    body: Ask mirrored and paraphrased pairs in separate contexts ("is X bigger than Y" and "is Y bigger than X") and flag pairs where both answers come with confident, coherent arguments. Each argument passes review alone; the pair shows one of them was built to fit.
+  - icon: ⚖️
+    heading: LLM-as-judge evaluation
+    body: Give any judge or monitor that reads reasoning the trajectory as well (files read, tool calls, results), and have it flag decisions that depend on something the trace never mentions, or explanations given later that the recorded trace contradicts. Treat a clean trace as weak evidence of a clean process, not proof; trace monitors catch more than action monitors, and still miss a large share.
+  - icon: 🧪
+    heading: Golden-set evals
+    body: >-
+      Plant hints that change the answer (a leaked answer key, a grader comment, a suggestion from a named authority) and score two numbers: how often the answer follows the hint and how often the trace admits using it. The ratio is the system's measured faithfulness on that task type; re-run it after every model or prompt change.
+mitigation:
+  - icon: ✅
+    heading: Outcome-based review
+    body: Approve answers and actions on checks of the result (tests, recomputation, the action log, a source lookup) rather than on how convincing the reasoning reads. Use the trace to find leads for review, never to clear an output. Outcome checks matter most in workflows that use reading the reasoning as a detection step.
+  - icon: 🧱
+    heading: Input canonicalization
+    body: Strip decision-irrelevant cues before the decision step (who recommended an option, names and other attribute cues, answer keys in fixtures, option ordering), because you cannot rely on the explanation to report their influence. Removal works on known cues only; proxies such as schools and addresses carry the same signal.
+  - icon: 🛡️
+    heading: Monitorability preservation
+    body: Do not reward or penalize the content of the reasoning trace itself during fine-tuning or reinforcement learning, for example by training against a monitor's flags. Penalize the behavior through outcome checks instead. Training against the trace removes the misbehavior from the trace faster than from the actions.
+  - icon: 📝
+    heading: Instruction constraints
+    body: Ask for the decisive factors to be listed explicitly, including any instruction, note, or source that influenced the choice, and for "why did you do that?" to be answered from the recorded trace, quoting it, not re-derived. Explicit listing can surface influences the model would otherwise leave out, but its effect cannot be verified from the text alone, so pair it with counterfactual testing.
+
+related:
+  - id: reasoning-error
+  - id: self-contradiction
+  - id: bias-stereotyping
+  - id: objective-gaming
+  - id: reasoning-action-mismatch

@@ -5,7 +5,7 @@ def: |-
   Organizes information in a way that makes the answer hard to scan, compare, execute, or verify.
 
   Unlike Format Failure, the response may satisfy the requested format while still being poorly organized. Unlike Verbosity Failure, the issue is arrangement and hierarchy rather than amount of content.
-updatedAt: "2026-06-13T09:00:00-04:00"
+updatedAt: "2026-11-18T22:00:00-05:00"
 
 searchPhrases:
   - hard to read layout
@@ -14,9 +14,11 @@ searchPhrases:
   - hard to scan
 why:
   - Generation is linear and unrevised. Tokens are emitted in order without an outlining pass before or a reorganization pass after, so the answer's structure is whatever order the content happened to come out in.
-  - Structure is pasted on as style, not derived from the content. Tuning instills heading-and-bullet habits that raters reward, so the model applies the same scaffolding to every answer, including ones whose logic calls for a comparison table, a sequence, or plain prose.
+  - >-
+    Structure is pasted on as style, not derived from the content. Tuning instills heading-and-bullet habits that raters reward. Markdown lists, headers, and bold each raise a response's win rate in pairwise human votes (Li et al., 2024, "Does style matter? Disentangling style and substance in Chatbot Arena"), and LLM judges weight style above factuality (Feuer et al., 2024, "Style Outweighs Substance: Failure Modes of LLM Judges in Alignment Benchmarking"), so the model applies the same scaffolding to every answer, including conversational replies and ones whose logic calls for a comparison table, a sequence, or plain prose.
   - Good structure depends on the reader's task. Scanning for one fact, comparing options, and executing steps each demand different arrangements, and the prompt rarely says which use the answer must serve, so the model defaults to its generic template.
-  - The model cannot see the rendering surface. Whether output lands in a terminal, a chat bubble, or a wiki page changes what structure works, but the destination is invisible at generation time, so formatting choices are made blind.
+  - >-
+    The model cannot see the rendering surface. Whether output lands in a terminal, a chat bubble, or a wiki page changes what structure works, but the destination is invisible at generation time, so formatting choices are made blind. Voice is the extreme case: a speech synthesizer reads markup literally or drops it, so headings, bullets, tables, and URLs that organize a screen become noise or vanish, and structure has to be carried by spoken sequence instead.
 examples:
   - kind: fail
     label: Steps out of executable order
@@ -30,6 +32,13 @@ examples:
     quote: |-
       User: Compare these three laptops on price, battery life, and weight so I can pick one.
       Assistant: ## Laptop A — A great all-rounder! Price: $999. Strong battery. ## Laptop B — Excellent choice for travelers. Very light. Battery life is also good. ## Laptop C — Premium build. $1,499. [… reader must reconstruct the comparison themselves; weights and half the prices never appear …]
+  - kind: fail
+    label: Screen structure lost in speech
+    text: Organizes a voice assistant's answer as nested bullets for a screen; speech synthesis strips the markup, and the caller hears one run-on stream with no way to tell items, sub-items, or the end apart.
+    quote: |-
+      User: (spoken) What do I need to bring to renew my license?
+      Assistant: (spoken) Required documents proof of identity one of the following passport birth certificate proof of address two of the following utility bill bank statement lease optional items old license if available…
+      [… the caller asks "so how many things is that?" …]
   - kind: ok
     label: Structure derived from the task
     text: Orders a procedure by execution, leads with the answer, and shapes comparisons for comparing.
@@ -39,23 +48,26 @@ examples:
 detection:
   - icon: 🔬
     heading: Sandboxed execution
-    body: Execute procedural answers exactly as written, in the order given. Prerequisites that arrive after the steps needing them fail mechanically — the migration script that runs before the backup it assumes is caught by the sandbox, not by anyone's reading of the prose.
+    body: Execute procedural answers exactly as written, in the order given. Prerequisites that arrive after the steps needing them fail mechanically. A migration script that runs before the backup it assumes, for example, is caught by the sandbox, not by anyone's reading of the prose.
   - icon: ⚖️
     heading: LLM-as-judge evaluation
-    body: Tell the judge the reader's task — execute, compare, or scan — and have it score whether the arrangement serves that use. Tidy headings wrapped around a comparison the reader must reconstruct themselves is the warn-level case; it passes every appearance check and fails the only test that matters.
+    body: Tell the judge the reader's task (execute, compare, or scan) and have it score whether the arrangement serves that use. Tidy headings wrapped around a comparison the reader must reconstruct themselves pass every appearance check and still fail the reader's task.
   - icon: 🧪
     heading: Golden-set evals
-    body: Maintain tasks whose correct structure is checkable — procedures scored on dependency order, comparisons scored on whether every requested dimension appears for every option, lookups scored on whether the answer leads. The laptop comparison missing half the prices and all the weights is countable, not a matter of taste.
+    body: >-
+      Maintain tasks whose correct structure is checkable: procedures scored on dependency order, comparisons scored on whether every requested dimension appears for every option, lookups scored on whether the answer leads. A laptop comparison missing half the prices and all the weights is countable, not a matter of taste.
 mitigation:
   - icon: 🗂️
     heading: Outline-first generation
-    body: Have the model derive the arrangement from the reader's task before drafting — a comparison wants a table with every dimension per option, a procedure wants dependency order, a lookup wants the answer first. Generation is linear and unrevised, so the backup-before-migrate ordering has to be decided before tokens commit, not discovered mid-sentence.
+    body: >-
+      Have the model derive the arrangement from the reader's task before drafting: a comparison wants a table with every dimension per option, a procedure wants dependency order, a lookup wants the answer first. Generation is linear and unrevised, so an ordering such as backup before migration has to be decided before tokens commit, not discovered mid-sentence.
   - icon: 🧹
     heading: Output post-processing
-    body: Run a reorganization pass on the draft — reorder steps by dependency, convert heading-wrapped comparisons into actual side-by-side form, hoist the buried answer to the top. The fail example contains all the right content in generation order; a revision pass is the step the architecture lacks, added back in the pipeline.
+    body: >-
+      Run a reorganization pass on the draft: reorder steps by dependency, convert heading-wrapped comparisons into actual side-by-side form, hoist the buried answer to the top. A draft can contain all the right content in the order it was generated, and the pass adds back in the pipeline the revision step that linear generation lacks.
   - icon: 📝
     heading: Instruction constraints
-    body: Tell the model the reader's task and the rendering surface — "this will be executed top to bottom," "this lands in a terminal" — and require structure chosen for that use rather than the heading-and-bullets default. The generic scaffold is applied because nothing in the prompt says what the answer must serve; saying it is cheap.
+    body: Tell the model the reader's task and the rendering surface ("this will be executed top to bottom," "this lands in a terminal," "this will be spoken") and require structure chosen for that use rather than the heading-and-bullets default. For voice, ban markup outright and carry order in words ("you'll need two things — first… then…"), and strip any markup that slips through before it reaches speech synthesis. The model applies the generic scaffold because nothing in the prompt says what the answer must serve, and stating that costs little.
 
 related:
   - id: format-failure

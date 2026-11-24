@@ -80,7 +80,9 @@ A list of upstream causes that skew the model or system toward this failure mode
 
 Focus on factors such as training data, objective design, RL tuning, prompting patterns, retrieval setup, memory behavior, tool routing, and evaluation gaps.
 
-When a cause is grounded in a research paper or trusted source, cite it inline as parenthetical plain text.
+When a cause is grounded in a research paper or trusted source, cite it inline as parenthetical plain text. Use the form `(Author et al., 2024, "Exact Title")`; write two authors as "A and B" and use the organization as author for standards and company posts.
+
+A plain YAML scalar that contains a colon followed by a space parses as a mapping, and citation titles often contain one. Write any such entry as a block scalar (`>-`). The validator rejects `why` entries that are not strings.
 
 ### `examples: Example[]`
 
@@ -102,7 +104,9 @@ Fields:
 - `text: string`
 - `quote?: string`
 
-Quote fields should be short mini transcripts. Use role prefixes such as `User:`, `Assistant:`, `System:`, and `Tool:`.
+Quote fields should be short mini transcripts. Use role prefixes such as `User:`, `Assistant:`, `System:`, and `Tool:`. Use a bracketed line with an ellipsis for elided turns or events the transcript does not show verbatim: `[… 40 turns later …]`.
+
+For non-text input, put what the image, page, screen, or audio actually contained on a bracketed line that names the medium (`[… image: … …]`, `[… screenshot: … …]`, `[… page 7 of pricing.pdf: … …]`, `[… audio: … …]`), and put what a parser, OCR step, speech recognizer, or click executor passed on in a `Tool:` line. In voice examples, mark spoken turns as `User: (spoken)` and `Assistant: (spoken)`. The failure is the gap between the bracketed ground truth and the `Tool:` or `Assistant:` line.
 
 ### `detection: Approach[]`
 
@@ -152,6 +156,20 @@ The taxonomy file is a YAML object with the following top-level fields:
 - `categories: Category[]` - Ordered list of category definitions.
 
 Each `Category` has `id`, `name`, `blurb`, `desc`, and `modes` (ordered list of failure mode ids).
+
+## Editions File (`data/editions.yaml`)
+
+A YAML object with one field, `editions: Edition[]`, ordered newest first. Each `Edition` has:
+
+- `version: string` - Semver version. The newest entry must equal `taxonomyVersion`.
+- `name: string` - Edition name, e.g. `"November 2026"`. Rendered as "November 2026 edition".
+- `date: string` - Release date, `YYYY-MM-DD`.
+- `summary: string` - One or two sentences on what changed.
+- `stats: { modes: integer, categories: integer, sources: integer }` - Counts at release. For the newest entry the validator checks `modes` and `categories` against the data.
+- `highlights?: string[]` - Short bullet points.
+- `writeupUrl?: string` - Link to a longer write-up of the edition.
+
+`CHANGELOG.md` at the repo root is the human-readable version of the same history. Add a new entry to both when bumping `taxonomyVersion`.
 
 ## Rendering Contract
 

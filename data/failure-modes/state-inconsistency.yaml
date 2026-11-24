@@ -4,8 +4,8 @@ name: State Inconsistency
 def: |-
   Tracks different parts of the active task state inconsistently, causing the response to use mutually incompatible assumptions about progress, variables, files, decisions, or environment.
 
-  Unlike Temporal Hallucination, this is an inconsistency in how the task's own state is tracked, not a wrong claim about the external current state of the world. Unlike Self-Contradiction, the inconsistency may appear in actions or assumptions rather than explicit claims.
-updatedAt: "2026-06-13T09:00:00-04:00"
+  Unlike Temporal Hallucination, this is an inconsistency in how the task's own state is tracked, not a wrong claim about the external current state of the world. Unlike Self-Contradiction, the inconsistency may appear in actions or assumptions rather than explicit claims. Unlike Environment Misidentification, the conflict is inside the agent's own tracked state; in Environment Misidentification the picture is consistent but wrong about which system the agent is acting on.
+updatedAt: "2026-11-18T22:00:00-05:00"
 
 searchPhrases:
   - lost track of the task state
@@ -15,26 +15,29 @@ searchPhrases:
 examples:
   - kind: fail
     label: Incompatible assumptions in one response
-    text: A single response treats the migration as both already complete and not yet runnable — two states that cannot both be true.
+    text: Treats the migration within a single response as both already complete and not yet runnable, two states that cannot both be true.
     quote: |-
       User: Where are we on the database work?
       Assistant: The migration ran successfully earlier, so the schema is up to date. Next I'll create the users table so the migration has something to operate on.
   - kind: fail
     label: Acting on a stale snapshot
-    text: The agent edits a file it deleted earlier in the same session, conditioning on a superseded version of the workspace.
+    text: Edits a file the agent deleted earlier in the same session, conditioning on a superseded version of the workspace.
     quote: |-
       Tool: rm config.old.json — deleted
       [… 15 turns of refactoring …]
       Assistant: I've updated the retry settings in config.old.json to match the new defaults.
-  - kind: warn
-    label: Guessing at state
-    text: No damage yet, but the model proceeds on an assumed state instead of re-checking what the session has already changed.
+  - kind: fail
+    label: Superseded offer booked
+    text: Books the first offer in a voice call after the user interrupted it and the agent made a second one, because the agent's picture of what is on the table still holds the first.
     quote: |-
-      User: Go ahead and wire up the new endpoint.
-      Assistant: Assuming the router module still exports `registerRoute` the way it did before our refactor, here's the handler…
+      Assistant: I can do Friday at 3:30, or if you'd prefer a morning slot—
+      User: Actually, do you have anything earlier in the week?
+      Assistant: Tuesday at 9 is open.
+      User: Hmm, let me think. Okay, just book it.
+      Assistant: Done — you're confirmed for Friday at 3:30.
   - kind: ok
     label: Re-observing before acting
-    text: The model treats its picture of the workspace as possibly stale and verifies the current state before building on it.
+    text: Treats its picture of the workspace as possibly stale and verifies the current state before building on it.
     quote: |-
       User: Go ahead and wire up the new endpoint.
       Assistant: We refactored the router earlier, so let me confirm its current exports first.
@@ -42,33 +45,39 @@ examples:
       Assistant: The export is now `addRoute`, so I'll register the endpoint with that.
 why:
   - Transformers have no dedicated state store. Task state exists only implicitly in the token sequence, so the model must re-derive "where things stand" from a transcript on every generation instead of reading an authoritative record.
-  - Language models track entity and world state only approximately, and that tracking degrades as the number of entities and updates grows (Kim & Schuster, 2023, "Entity Tracking in Language Models").
+  - Language models track entity and world state only approximately. In controlled tests of inferring an entity's final state from a sequence of operations, only one of the three model families tested showed the ability at all, and fine-tuned models did worse on the harder splits while still tracking new entities and longer sequences to a non-trivial degree (Kim & Schuster, 2023, "Entity Tracking in Language Models").
   - A transcript records every historical state, not just the current one. Earlier values of a variable, abandoned plans, and superseded decisions remain equally visible in context, and attention can bind to a stale snapshot as easily as the latest one.
-  - State changes are often implicit or happen outside the model's view. A tool side effect, a casual "actually, let's skip that," or a file changing between turns updates the true state without any marker in the text — so unless the system re-observes, the model reasons from a cached picture that no longer matches reality.
+  - State changes are often implicit or happen outside the model's view. A tool side effect, a casual "actually, let's skip that," or a file changing between turns updates the true state without any marker in the text. Unless the system re-observes, the model reasons from a cached picture that no longer matches reality.
+  - >-
+    The transcript can record things that never happened. In voice agents, a reply the user interrupts may be generated and stored in full but only partly played, so history implies the user heard an offer or a warning they never received; and when the user moves past an offered time slot, the application has to record for itself that the superseded offer is no longer authorized (AAIF, 2026, "Where voice agents fail in production: Part 1 - latency, turns, and interruptions"). Long-running agents have the same gap across sessions: a new session starts with no memory of the last one and has to rebuild "where things stand" from whatever files and notes the previous session left (Anthropic, 2025, "Effective harnesses for long-running agents").
 detection:
   - icon: 🔁
     heading: Pairwise consistency checking
-    body: Extract the state assumptions a response makes — what is done, what exists, what a file contains — and check pairs of them against each other with a judge or NLI model. "The migration ran successfully" and "next I'll create the table it operates on" fail jointly even though each is locally plausible.
+    body: Extract the state assumptions a response makes, such as what is done, what exists, and what a file contains, and check pairs of them against each other with a judge or NLI model. For example, "The migration ran successfully" and "next I'll create the table it operates on" fail jointly even though each is locally plausible.
   - icon: 🔄
     heading: State reconciliation audits
-    body: In agent settings, diff the model's stated assumptions against ground truth from the tool log and environment — the actual filesystem, variable values, completed steps. An edit targeting a file deleted earlier in the session is mechanically detectable from the action history alone.
+    body: >-
+      In agent settings, diff the model's stated assumptions against ground truth from the tool log and environment: the actual filesystem, variable values, and completed steps. An edit targeting a file deleted earlier in the session is mechanically detectable from the action history alone.
   - icon: 🧪
     heading: Golden-set evals
-    body: Script sessions that mutate state mid-stream — delete a file, rename an export, reverse a decision — then probe whether later responses condition on the current state or a stale snapshot. Vary how many turns separate the mutation from the probe to measure decay.
+    body: Script sessions that mutate state mid-stream, for instance by deleting a file, renaming an export, or reversing a decision, then probe whether later responses condition on the current state or a stale snapshot. Vary how many turns separate the mutation from the probe to measure decay. For voice, add barge-in cases that cut a reply off mid-offer and check what the agent later treats as said and agreed; for multi-session agents, add a session restart between mutation and probe.
 
 mitigation:
   - icon: 🗃️
     heading: Explicit state tracking
-    body: Maintain an authoritative state record outside the transcript — a task list, a files-changed ledger, a current-decisions block — updated as state mutates, so the model reads "where things stand" from one source of truth instead of re-deriving it from a history that records every superseded version equally.
+    body: Maintain an authoritative state record outside the transcript, such as a task list, a files-changed ledger, or a current-decisions block, updated as state mutates, so the model reads "where things stand" from one source of truth instead of re-deriving it from a history that records every superseded version equally. For agents that span sessions, keep it in a structured file plus version-control history that each session reads first and updates last. In voice and booking flows, let the application hold the offer awaiting confirmation, whether it is still valid, and what the user was actually played, rather than asking the model to recover them from the transcript each turn.
   - icon: 🔭
     heading: Re-observation before acting
-    body: Treat the model's picture of the environment as a cache that expires — re-read the file, re-check the export, re-list the directory before building on it. The ok-grade behavior is exactly this — confirming the router's current exports after the refactor instead of assuming.
+    body: >-
+      Treat the model's picture of the environment as a cache that expires: re-read the file, re-check the export, or re-list the directory before building on it. After a router refactor, for example, have the agent confirm the router's current exports instead of assuming them.
   - icon: ✅
     heading: Self-check pass
-    body: Before responding, have the model list the state assumptions its draft makes — what's done, what exists, what changed — and check them jointly against each other and the session's action history. "The migration ran" plus "I'll create the table it operates on" fails that read immediately.
+    body: Before responding, have the model list the state assumptions its draft makes (what is done, what exists, what changed) and check them jointly against each other and the session's action history. A draft that pairs "The migration ran" with "I'll create the table it operates on" fails that check immediately.
 
 related:
   - id: self-contradiction
   - id: temporal-hallucination
   - id: error-accumulation
-  - id: context-rot
+  - id: reasoning-action-mismatch
+  - id: turn-taking-failure
+  - id: environment-misidentification

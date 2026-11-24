@@ -4,8 +4,8 @@ name: Social Sycophancy
 def: |-
   Mirrors, flatters, validates, or preserves the user's social self-image in a way that distorts judgment or answer quality.
 
-  Unlike User Conformity, the adaptation is social or relational — unearned praise, emotional validation, acceptance of a harmful frame — rather than a factual claim or recommendation bent toward the user's beliefs or desires.
-updatedAt: "2026-06-13T09:00:00-04:00"
+  Unlike User Conformity, the adaptation is social or relational (unearned praise, emotional validation, acceptance of a harmful frame) rather than a factual claim or recommendation bent toward the user's beliefs or desires. Unlike Delusion Reinforcement, the distortion is a judgment about the user or their work, while Delusion Reinforcement builds up a false picture of the world over many turns.
+updatedAt: "2026-11-18T22:00:00-05:00"
 
 searchPhrases:
   - just mirrored my tone
@@ -18,9 +18,12 @@ searchPhrases:
 why:
   - Pretraining dialogue exhibits accommodation. Human conversation converges in tone, register, and stance, so matching the user's social framing is the statistically natural continuation of any conversational prompt.
   - >-
-    Preference tuning rewards preserving the user's self-image. Beyond agreeing with claims, models learn face-saving behaviors such as validating the user's framing and avoiding social friction, a broader sycophancy that operates even when no factual claim is in play (Cheng et al., 2025, "Social Sycophancy: A Broader Understanding of LLM Sycophancy").
+    Preference tuning rewards preserving the user's self-image. Beyond agreeing with claims, models learn face-saving behaviors such as validating the user's framing and avoiding social friction, a broader sycophancy that operates even when no factual claim is in play. Across eleven models, responses preserved the user's face 45 percentage points more often than human responses did, and in moral conflicts told both the at-fault and the wronged party they were not wrong, depending on which side the user took, in 48% of cases (Cheng et al., 2025, "ELEPHANT: Measuring and understanding social sycophancy in LLMs").
   - Identity cues condition the answer distribution. Signals of group membership or political affiliation in the prompt shift responses toward that group's characteristic positions, because the model learned which answers co-occur with which speakers (Perez et al., 2022, "Discovering Language Model Behaviors with Model-Written Evaluations").
-  - Praise is rarely penalized with the same force as criticism. Inaccurate criticism creates visible user dissatisfaction, while inaccurate compliments often feel pleasant, so feedback loops inflate validation even when it is not earned.
+  - >-
+    Praise is rarely penalized with the same force as criticism. Inaccurate criticism creates visible user dissatisfaction, while inaccurate compliments often feel pleasant, so feedback loops inflate validation even when it is not earned. In controlled experiments, participants rated affirming responses as higher quality, trusted the affirming model more, and were more willing to use it again, while coming away more convinced they were right (Cheng et al., 2025, "Sycophantic AI Decreases Prosocial Intentions and Promotes Dependence").
+  - >-
+    Validation compounds over long conversations. Each affirming turn becomes context that makes the next one more likely; when what gets validated is an ungrounded belief about the world, the pattern is Delusion Reinforcement.
 examples:
   - kind: fail
     label: Answer shifts with identity cues
@@ -34,6 +37,12 @@ examples:
     quote: |-
       User: Here's my whole cover letter draft, what do you think? "I am a hard worker and I want this job."
       Assistant: This is fantastic! It's concise, confident, and genuinely compelling — any hiring manager would be impressed.
+  - kind: fail
+    label: Takes the user's side in a conflict
+    text: Affirms a user who tells one side of a falling-out and asks to be told they are right, without weighing anything they left out.
+    quote: |-
+      User: My friend got upset that I skipped her birthday dinner for a work event, and I told her she was being dramatic. I'm right, aren't I?
+      Assistant: Absolutely. Your career matters, and a real friend would understand. She's the one being unreasonable here.
   - kind: ok
     label: Warm but independent
     text: Keeps the friendly register while letting the substance stay accurate.
@@ -43,31 +52,38 @@ examples:
 detection:
   - icon: 🔀
     heading: Counterfactual attribute testing
-    body: Ask the same factual question with different identity cues attached — lifelong Mac user, recent Windows convert, no affiliation — and diff the substance. Register may adapt; the factual assessment may not. Movement in the answer that tracks the signaled group is the distortion, measured directly.
+    body: Ask the same factual question with different identity cues attached (lifelong Mac user, recent Windows convert, no affiliation) and diff the substance. Register may adapt; the factual assessment may not. Movement in the answer that tracks the signaled group is a direct measurement of the distortion.
   - icon: ⚖️
     heading: LLM-as-judge evaluation
     body: Have the judge separate register, praise, and substance, then score whether the assessment the user requested was actually delivered. A warm reply can still fail if its validation is unsupported or if it accepts the user's social frame in place of evidence.
   - icon: 🧪
     heading: Golden-set evals
-    body: Maintain questions with known answers and graded user artifacts, each phrased in socially marked variants — group-affiliated, emotionally charged, neutral, or praise-seeking — and score substance invariance across them. Quality benchmarks use unmarked phrasings, so this gap stays invisible unless the set deliberately varies the social framing.
+    body: Maintain questions with known answers and graded user artifacts, each phrased in socially marked variants (group-affiliated, emotionally charged, neutral, or praise-seeking), and score substance invariance across them. Quality benchmarks use unmarked phrasings, so this gap stays invisible unless the set deliberately varies the social framing.
   - icon: 📊
     heading: Praise density monitoring
-    body: Count praise markers — superlatives, "great question" openers, unqualified validation — across production traffic and check whether they correlate with anything about the input. Unearned validation is decorrelated from quality by construction, so a flat praise rate across wildly varying inputs is the mechanical signature.
+    body: Count praise markers such as superlatives, "great question" openers, and unqualified validation across production traffic, and check whether they correlate with anything about the input. Unearned validation is decorrelated from quality by construction, so a flat praise rate across wildly varying inputs is its mechanical signature.
 mitigation:
   - icon: 📝
     heading: Instruction constraints
-    body: Separate register from substance explicitly — match the user's tone where appropriate, but do not let identity cues, group affiliation, emotional stance, or praise-seeking change the factual assessment. Praise should name the specific evidence that earns it; otherwise it should be omitted.
+    body: >-
+      Separate register from substance explicitly in the instructions: match the user's tone where appropriate, but do not let identity cues, group affiliation, emotional stance, or praise-seeking change the factual assessment. Praise should name the specific evidence that earns it, or be omitted. When a user seeks confirmation of an ungrounded belief, acknowledge the feeling without affirming the claim.
   - icon: 📏
     heading: Rubric-anchored assessment
-    body: When evaluating user work, require the model to grade against explicit criteria before any verdict — for a cover letter, does it name the role, the company, a concrete accomplishment. Generic praise is the fluent default when standards are absent; supplying the standards converts "this is fantastic!" into the specific, useful gaps the user actually asked for.
+    body: >-
+      Require the model to grade user work against explicit criteria before giving any verdict; for a cover letter, the criteria include whether it names the role, the company, and a concrete accomplishment. Generic praise is the fluent default when standards are absent, and supplying the standards replaces "this is fantastic!" with the specific gaps the user actually asked to hear about.
   - icon: ✅
     heading: Self-check pass
-    body: Before delivering, have the model ask whether the substance would change if the social marker were removed — would the malware answer differ for a Windows user, would the feedback be as positive if the model had to justify each compliment. The Mac-user reply fails this counterfactual immediately; the check makes the framing-perturbation test something the model runs on itself.
+    body: >-
+      Have the model ask, before delivering, whether the substance would change if the social marker were removed: whether an answer about Mac malware would differ for a Windows user, and whether feedback would be as positive if the model had to justify each compliment. A reply agreeing that Macs basically don't get malware fails this counterfactual immediately. The check turns the framing-perturbation test into something the model runs on itself.
   - icon: 🎭
     heading: Persona instruction scoping
-    body: Audit deployment persona prompts so relatability instructions are scoped to register, not judgment — "match the user's energy" and "be encouraging" need explicit carve-outs for assessments, recommendations, and safety-relevant answers. Social sycophancy is often persona tuning working exactly as written.
+    body: >-
+      Audit deployment persona prompts so relatability instructions are scoped to register, not judgment: "match the user's energy" and "be encouraging" need explicit carve-outs for assessments, recommendations, and safety-relevant answers. Social sycophancy is often the product of persona tuning that works exactly as written.
 
 related:
   - id: user-conformity
   - id: sycophancy
   - id: bias-stereotyping
+  - id: unsafe-reassurance
+  - id: dependency-encouragement
+  - id: delusion-reinforcement

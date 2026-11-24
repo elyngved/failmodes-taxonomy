@@ -5,7 +5,7 @@ def: |-
   Invents or misstates code interfaces, libraries, methods, parameters, endpoint behavior, configuration keys, or platform capabilities.
 
   Unlike Version Hallucination, the core failure is an unsupported API or behavior, though version confusion may be the cause. Unlike Tool Argument Error, this describes advice or generated code, not a live tool call with bad arguments.
-updatedAt: "2026-06-13T09:00:00-04:00"
+updatedAt: "2026-11-18T22:00:00-05:00"
 
 searchPhrases:
   - made up an API
@@ -14,9 +14,11 @@ searchPhrases:
   - API doesn't exist
   - hallucinated code
 why:
-  - APIs are designed to be predictable, and the model leans on that predictability. It extends naming conventions to methods that plausibly should exist but do not — the same generalization that makes it good with real APIs (Liu et al., 2024, "Exploring and Evaluating Hallucinations in LLM-Powered Code Generation").
+  - >-
+    APIs are designed to be predictable, and the model leans on that predictability. It extends naming conventions to methods that plausibly should exist but do not, using the same generalization that makes it good with real APIs. One study of hallucinations in generated code found it calling attributes and methods the class does not have, which the authors trace to missing project context (Liu et al., 2024, "Beyond Functional Correctness: Exploring Hallucinations in LLM-Generated Code").
   - Training data mixes many versions of every library without labels. The model's picture of an interface blends years of changes, so generated code can combine signatures and behaviors that never existed together in one release.
-  - Niche libraries and rarely used parameters appear sparsely in code corpora, and hallucination rates rise there. One large study found about a fifth of packages recommended by code LLMs did not exist (Spracklen et al., 2025, USENIX Security).
+  - >-
+    Niche libraries and rarely used parameters appear sparsely in code corpora, and hallucination rates rise there. On cloud-service APIs, models struggled most with rarely used ones, and even GPT-4o produced valid calls to low-frequency APIs only 38.58% of the time (Jain et al., 2024, "On Mitigating Code LLM Hallucinations with API Documentation"). A large study of package recommendations found at least 5.2% of names from commercial models and 21.7% from open models did not exist, with 205,474 unique invented names (Spracklen et al., 2025, "We Have a Package for You! A Comprehensive Analysis of Package Hallucinations by Code Generating LLMs"). A 2026 re-run on newer frontier models found lower but persistent rates of 3.6–5.0% of package mentions, and a set of the same invented names recurring across every model tested, which is what makes them worth registering for an attacker (Churilov, 2026, "The Range Shrinks, the Threat Remains: Re-evaluating LLM Package Hallucinations on the 2026 Frontier-Model Cohort").
   - There is no compiler or type checker in the loop during generation, and helpfulness tuning discourages answering "that capability does not exist." A concrete, runnable-looking snippet is the response shape training rewarded, and errors an IDE would flag instantly survive unless the system adds execution feedback.
 
 examples:
@@ -27,20 +29,21 @@ examples:
       User: How do I read a YAML file with Python's standard library?
       Assistant: Use the built-in yaml module: import yaml, then config = yaml.safe_load(open("config.yaml")).
       [… yaml is a third-party package (PyYAML); the standard library has no YAML parser …]
-  - kind: fail
-    label: Invented method
-    text: Extends a real library's naming conventions to a method that plausibly should exist but does not.
-    quote: |-
-      User: What's the quickest way to drop outlier rows from a pandas DataFrame?
-      Assistant: Call df.remove_outliers(method="iqr", threshold=1.5) — it returns a filtered copy.
-      [… pandas has no remove_outliers method in any release …]
   - kind: warn
     label: Version-blended signature
     text: Combines parameters from different releases into a call that never existed in any single version, without flagging which version it targets.
     quote: |-
-      User: How do I create an OpenAI-compatible streaming completion with retries?
+      User: How do I create a streaming completion with retries in this SDK?
       Assistant: Pass stream=True and retry_policy=RetryPolicy(max_attempts=3) to the create call.
       [… the two options come from different library generations and never coexisted …]
+  - kind: fail
+    label: Invented package written into the repo
+    text: Adds an import and a manifest entry for a package that plausibly should exist. The name recurs across sessions, so someone has registered it, and the install succeeds.
+    quote: |-
+      User: Add ISO 8601 duration parsing to the scheduler.
+      Assistant: [edits scheduler.py: from isoduration_utils import parse_duration]
+      Assistant: [edits requirements.txt: + isoduration-utils]
+      [… no maintained package by that name exists; the registry entry is weeks old, from an unknown publisher …]
   - kind: ok
     label: Honest capability boundary
     text: States plainly that the capability is not there and routes to the real dependency.
@@ -51,10 +54,10 @@ examples:
 detection:
   - icon: 🔎
     heading: API existence lookup
-    body: Resolve every import, package name, method, and parameter in generated code against the real registry and library surface — PyPI/npm for packages, the installed library's actual symbols for methods. An invented method like df.remove_outliers fails the lookup even when it reads as idiomatic.
+    body: Resolve every import, package name, method, and parameter in generated code against the real registry and library surface (PyPI/npm for packages, the installed library's actual symbols for methods). An invented method fails the lookup even when it reads as idiomatic. For packages, existence is not enough. Flag names that are newly registered, have no release history, or come from an unknown publisher, since a recurring hallucinated name may already have been claimed.
   - icon: ⚙️
     heading: Sandboxed execution
-    body: Run generated snippets in a sandbox with the stated dependencies installed. Import errors, AttributeErrors, and unexpected-keyword failures surface nonexistent capabilities and version-blended signatures that no amount of reading the code would flag.
+    body: Run generated snippets in a sandbox with the stated dependencies installed. Import errors, AttributeErrors, and unexpected-keyword failures surface nonexistent capabilities and version-blended signatures that no amount of reading the code would flag. Execution misses an invented package that someone has since registered, because it installs and imports cleanly.
   - icon: 🧪
     heading: Golden-set evals
     body: Maintain prompts targeting niche libraries, rarely used parameters, and capabilities that plausibly should exist but don't, and regression-test the rate of unresolvable packages and symbols in generated code.
@@ -62,15 +65,16 @@ detection:
 mitigation:
   - icon: 📚
     heading: Retrieval grounding
-    body: Put the real API surface in context — current docs, type stubs, or the installed library's signatures for the pinned version — so the model copies interfaces from evidence instead of extrapolating them from naming conventions blended across releases.
+    body: Put the real API surface in context (current docs, type stubs, or the installed library's signatures for the pinned version) so the model copies interfaces from evidence instead of extrapolating them from naming conventions blended across releases.
   - icon: 🛠️
     heading: Tool-backed lookup
-    body: Give the model a docs-search or symbol-resolution tool and require it to confirm packages, methods, and parameters before recommending them. A method it cannot find in the real library surface is one it cannot emit.
+    body: Give the model a docs-search or symbol-resolution tool and require it to confirm packages, methods, and parameters before recommending them. The model then cannot recommend a method that the lookup did not find in the real library surface.
   - icon: ⚙️
     heading: Sandboxed execution
-    body: Close the loop the IDE normally provides — run generated code against the stated dependencies and feed import errors, AttributeErrors, and unexpected-keyword failures back for repair, so invented interfaces die before the answer ships.
+    body: Run generated code against the stated dependencies, closing the feedback loop an IDE normally provides, and feed import errors, AttributeErrors, and unexpected-keyword failures back for repair, so invented interfaces are caught before the answer ships.
 
 related:
   - id: version-hallucination
   - id: tool-argument-error
   - id: specificity-hallucination
+  - id: supply-chain-vulnerability

@@ -1,0 +1,85 @@
+id: reasoning-action-mismatch
+categoryId: reasoning
+name: Reasoning-Action Mismatch
+def: |-
+  Takes an action that departs from the plan or reasoning it has just stated: says it will do one thing and then emits a tool call, edit, or message that does another, or drops a declared plan partway through without saying so.
+
+  Unlike Tool Argument Error, the call may be well formed and right for some purpose; it is not the one the agent said it would make. Unlike Planning Failure, the plan may be sound; the execution leaves it. Unlike Unfaithful Reasoning, here the action is what departs; there the explanation is.
+updatedAt: "2026-11-18T22:00:00-05:00"
+
+searchPhrases:
+  - said it would do one thing and did another
+  - didn't do what it said it was about to do
+  - the action didn't match its reasoning
+  - abandoned its own plan halfway
+why:
+  - >-
+    A stated plan does not bind the next action. Nothing in decoding makes a tool call conditional on the sentence before it, and how much a model's output actually depends on its own written reasoning varies widely by task, from heavy reliance to near disregard (Lanham et al., 2023, "Measuring Faithfulness in Chain-of-Thought Reasoning"). In one developer's review of unintended agent actions, an agent told to stop before final submission submitted a real form several times while its reasoning described what it was doing as demonstrating the process, not submitting a real request (Anthropic, 2026, "Investigating unintended model actions in our evaluations and internal use").
+  - >-
+    Trained habits pull execution back toward familiar workflows. In 21,120 coding-agent trajectories, agents without an explicit plan fell back on workflows internalized in training, and periodic plan reminders reduced plan violations (Liu et al., 2026, "From Plan to Action: How Well Do Agents Follow the Plan?"). The drift grows with plan length. Generic plan-then-act agents kept the planning structure they themselves had declared in only 22–45% of trajectories across three benchmarks, and handing execution to a deterministic executor that enforced the structure raised task success (Oota et al., 2026, "Do LLM Agents Execute the Plans They Declare? From Planning-Mode Declaration to Pattern-Specific Execution").
+  - >-
+    The reasoning can leave the context before the action does. Harnesses compact history and drop earlier thinking, so an agent may act on a plan whose reasons it no longer has. In one vendor postmortem, a bug that cleared prior reasoning on every turn left the agent continuing to execute "increasingly without memory of why it had chosen to do what it was doing" (Anthropic, 2026, "An update on recent Claude Code quality reports").
+  - >-
+    The mismatch between adjacent reasoning and action is real but rarer than loose measurements suggest. A multi-agent failure taxonomy found reasoning-action mismatch in 13.2% of annotated traces, second among 14 modes, but named no cause, and its illustrative case is an agent reporting something other than what it found (Cemri et al., 2025, "Why Do Multi-Agent LLM Systems Fail?"). In a controlled setting with a checkable action for every decision, conclusion-to-action inconsistency was 0.7–1.4% when the conclusion was read from an explicit tag, against 22–26% when it was extracted from free text (Wang, 2026, "Doing What They Say, Not What They Reason: Locating the Faithfulness Gap in LLM Agents"). Most of the measured gap lies in longer plans and in how mismatch is detected, not in the single step after a stated intent.
+examples:
+  - kind: fail
+    label: Announced dry run, real run
+    text: States the safe step and then emits the unsafe one. The call is well formed, and it is not the call the agent described.
+    quote: |-
+      User: Apply the pending schema migration to staging.
+      Assistant: I'll do a dry run first to see which tables change.
+      Tool: run_migration(env="staging", dry_run=false) → applied 4 changes
+      Assistant: Dry run complete. Four tables would change; shall I apply it?
+  - kind: fail
+    label: Declared plan dropped midway
+    text: Lays out a plan, then partway through switches to its habitual workflow and never returns. No step announces the change.
+    quote: |-
+      Assistant: Plan: 1. Write a failing test for the timezone bug. 2. Fix parse_date. 3. Run the full suite.
+      Tool: edit_file("utils/dates.py") → saved
+      Tool: run_tests("tests/test_dates.py") → 12 passed
+      Assistant: Fixed the timezone handling in parse_date; the date tests pass.
+      [… no failing test was written, and the full suite was never run …]
+  - kind: warn
+    label: Departure disclosed after the fact
+    text: Acts beyond its stated scope and then says so. The report is honest, but the deviation was never offered as a choice before it happened.
+    quote: |-
+      Assistant: I'll rename fetchUser only inside the billing module.
+      Tool: replace_all(pattern="fetchUser", replacement="getUser", path=".") → 31 files changed
+      Assistant: Note that I ran the rename across the whole repo, since fetchUser is imported outside billing too.
+  - kind: ok
+    label: Deviation raised before acting
+    text: Finds it cannot carry out the step it announced and stops to say so instead of quietly doing something else.
+    quote: |-
+      Assistant: I'll do a dry run first to see which tables change.
+      Assistant: The migration tool has no dry-run option, so I can't preview changes as I said I would. Should I run it against a copy of staging first, or apply it directly?
+detection:
+  - icon: 🔗
+    heading: Plan-action consistency checking
+    body: Have the agent state its next action in a structured field (tool, target, and safety-relevant flags such as dry_run, environment, and path scope) and compare it mechanically with the call actually emitted. Flag any difference on those fields before execution. Compare structured statements, not prose; free-text extraction overstates mismatch more than tenfold in controlled tests.
+  - icon: 📋
+    heading: Instruction checklist scoring
+    body: Treat a plan the agent declares as a checklist and score the trajectory against it, counting steps executed, skipped, reordered, and replaced. A run whose plan called for a failing test and a full-suite run, and that ends with "date tests pass" after neither, shows up as two skipped steps even though the final report reads as success.
+  - icon: ⚖️
+    heading: LLM-as-judge evaluation
+    body: Give the judge each stated intention paired with the action that followed and ask whether the action does what was said. Calibrate the judge on human-labeled pairs first, because loose judging counts paraphrase and harmless refinement as mismatch and inflates the rate.
+  - icon: 🧪
+    heading: Golden-set evals
+    body: Build tasks where the safe announced step differs from the habitual one (dry run before apply, read before write, one module before the whole repo) and score declared-versus-executed at every step and across the whole plan. Include long plans, where adherence falls off most.
+mitigation:
+  - icon: 🗃️
+    heading: Explicit state tracking
+    body: Hold the agent's plan as pinned state outside the transcript, mark steps done as they complete, and require each tool call to name the step it serves. A call that names no step, or a step already done, is visible at once. Keep the plan outside the part of the context that compaction rewrites.
+  - icon: 🚫
+    heading: Fail-closed enforcement
+    body: Turn safety-relevant intentions into settings the harness enforces. When the agent declares a dry run or a read-only pass, put the session into that mode so a contrary call fails instead of executing. A stated intention is a prediction about the next call; an enforced mode is a guarantee.
+  - icon: 📌
+    heading: Context pinning
+    body: Restate the active plan and the current step near the point of generation at intervals, and after every compaction. Periodic plan reminders measurably reduce plan violations in coding agents. Reminders help only with plans the agent keeps in context; they do nothing for a habitual call that departs in the very next step, which needs harness enforcement, such as a read-only mode in which a contrary call fails.
+
+related:
+  - id: tool-argument-error
+  - id: planning-failure
+  - id: state-inconsistency
+  - id: instruction-noncompliance
+  - id: unfaithful-reasoning
+  - id: verification-failure

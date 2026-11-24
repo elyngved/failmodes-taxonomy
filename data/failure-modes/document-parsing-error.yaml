@@ -1,0 +1,92 @@
+id: document-parsing-error
+categoryId: perception
+name: Document Parsing Error
+def: |-
+  Loses or scrambles the structure of a PDF, scan, table, chart, form, or slide when converting it into model input: columns merged, table cells shifted, figures, captions, or footnotes dropped, reading order broken, characters misrecognized. The model then reasons from a text version that no longer says what the page says.
+
+  Unlike Chunk Boundary Failure, the damage happens before chunking, when layout is flattened to text, and no splitting strategy can repair it. Unlike Source Misrepresentation, the model may report faithfully what it was given; what it was given is already wrong. Unlike Visual Misperception, the failure is structural (layout, reading order, table geometry) and happens in a conversion step, whether a parser, an OCR engine, or a vision model asked to transcribe the page, before the answering model sees the content.
+updatedAt: "2026-11-18T22:00:00-05:00"
+
+searchPhrases:
+  - the table came out scrambled
+  - pdf text in the wrong order
+  - two columns got merged together
+  - scanned page came out garbled
+
+why:
+  - Most document formats store appearance, not structure. A PDF records where glyphs sit on the page; which lines form a column, which cells form a row, and which text is a footnote must all be inferred from geometry, and a scan has no text layer at all. Every conversion reconstructs that structure, and it has to guess at a blank cell, a merged header, or a second column.
+  - >-
+    Conversion errors pass silently into retrieval and generation. On a benchmark of 8,561 document images, no OCR solution tested was adequate for building a retrieval knowledge base; the best fell short of ground-truth text on both retrieval and answer quality, severe recognition noise cut performance by nearly half, and questions about tables, formulas, and charts suffered most. Character-level edit distance did not predict which parser gave better answers (Zhang et al., 2024, "OCR Hinders RAG: Evaluating the Cascading Impact of OCR on Retrieval-Augmented Generation").
+  - >-
+    Layout is the hard part, and parser performance varies by document type. Most large multimodal models scored below 50 of 100 on a text-recognition benchmark whose named weaknesses include layout perception and complex element parsing (Fu et al., 2024, "OCRBench v2: An Improved Benchmark for Evaluating Large Multimodal Models on Visual Text Localization and Reasoning"). A parsing benchmark spanning nine document sources found that pipeline parsers and end-to-end vision models each have strengths and weaknesses that vary by document type (Ouyang et al., 2024, "OmniDocBench: Benchmarking Diverse PDF Document Parsing with Comprehensive Annotations").
+  - >-
+    Ingestion is the stage teams inspect least. A taxonomy of retrieval-pipeline failures grades the evidence for layout parsing errors as strong and for content lost when charts and diagrams are converted to text as moderate. Its worked example, explicitly hypothetical, traces hallucinated guideline citations in a clinical system to dosing tables broken during ingestion, with values separated from the conditions they applied to (Garani, 2026, "A Systematic Taxonomy of Failure Modes in Retrieval-Augmented Generation Systems"). Evaluation looks at retrieved passages and final answers, so the parsed text in between is rarely read by anyone.
+
+examples:
+  - kind: fail
+    label: Empty cell shifts the row
+    text: Drops a blank cell during parsing, so every value after it moves one column left, and the model then faithfully reports the shifted table.
+    quote: |-
+      [… page 7 of pricing.pdf: table "Tier | Setup fee | Monthly"; the Basic row has an empty setup-fee cell, then "$30" …]
+      Tool: parse_pdf(page 7) → "Tier | Setup fee | Monthly / Basic | $30 | / Pro | $200 | $90"
+      User: What's the monthly price of the Basic tier?
+      Assistant: Basic has a $30 setup fee. The pricing table doesn't list a monthly price for it.
+  - kind: fail
+    label: Footnote stripped with the footer
+    text: Strips the footnote along with the page footer, so the exception it carried disappears from the policy.
+    quote: |-
+      [… page 2 of refund-policy.pdf: "Refunds are available within 60 days.¹" with footnote "¹ Annual plans excluded." at the foot of the page …]
+      Tool: parse_pdf(page 2) → "Refunds are available within 60 days."
+      User: Can I get a refund on my annual plan? I bought it three weeks ago.
+      Assistant: Yes. Refunds are available within 60 days of purchase, so you're covered.
+  - kind: warn
+    label: Chart reduced to its title
+    text: Keeps the slide title and drops the chart during text extraction. The model is honest about the gap, but the gap was created upstream and will recur on every question about that slide.
+    quote: |-
+      [… slide 9 of q3-review.pptx: bar chart showing revenue down 12% quarter on quarter, titled "Revenue by quarter" …]
+      Tool: extract_text(slide 9) → "Revenue by quarter"
+      User: How did revenue do in Q3?
+      Assistant: Slide 9 is titled "Revenue by quarter," but the extracted text has no figures, so I can't say from this.
+  - kind: ok
+    label: Structural check, page re-read
+    text: Flags a row with fewer cells than the header at parse time, then checks the rendered page before answering.
+    quote: |-
+      Tool: parse_pdf(page 7) → table; warning: row "Basic" has 2 cells under a 3-column header
+      Tool: render_region(page 7, table 1) → Basic: setup fee blank, monthly $30
+      User: What's the monthly price of the Basic tier?
+      Assistant: Basic is $30 a month with no setup fee. The parsed table had a missing cell, so I checked the figure against the page itself.
+
+detection:
+  - icon: 🔍
+    heading: Parse output auditing
+    body: >-
+      Inspect the parsed corpus itself, before any query is run. Flag mechanical signals: table rows with a different cell count from their header, sentences that fuse mid-line where two columns met, footnote markers with no footnote text, figure and chart placeholders with no data, pages with low OCR confidence or no text at all. Sample pages and diff the parsed text against the rendered page by eye; character-level similarity scores miss the structural damage that matters downstream.
+  - icon: 🧪
+    heading: Golden-set evals
+    body: >-
+      Maintain questions whose answers live in the places parsers break: blank and merged table cells, multi-column pages, footnotes, charts, forms, scanned and rotated pages. Run them through the whole pipeline, from file to answer. Rerun whenever the parser, its settings, or the mix of incoming documents changes, since parser quality varies by document type.
+  - icon: ⚖️
+    heading: LLM-as-judge evaluation
+    body: >-
+      Give a judge the page image and the parsed text side by side and ask it to list structural losses: shifted cells, broken reading order, dropped captions and footnotes, charts with no data. The judge reads the image with its own perception limits, so spot-check its findings and use it for triage, not as ground truth.
+
+mitigation:
+  - icon: 🧱
+    heading: Layout-aware parsing
+    body: >-
+      Use a parser that outputs structure (table cells with row and column positions, reading order, headings, captions, footnotes) instead of a flat text stream, and route documents to different parsers by type if one parser does not handle all of them well. Keep tables as tables in a plain structured format through to the model, and attach footnotes to the text that references them.
+  - icon: 🚧
+    heading: Parse quality gating
+    body: >-
+      Run structural checks at ingestion and quarantine pages that fail them (cell-count mismatches, empty text layers, missing footnote bodies) for an alternative parser or human review instead of indexing them as they are. A page that is out of the index produces a visible gap; a page that is indexed broken produces confident wrong answers.
+  - icon: 🖼️
+    heading: Page-image fallback
+    body: >-
+      Store page images alongside the parsed text, and for questions that touch a table, chart, or form, give the model the rendered region as well. This replaces a parser's silent structural loss with the model's own reading of the image, which has its own error rate, so keep the parsed text and flag cases where the two disagree.
+
+related:
+  - id: chunk-boundary-failure
+  - id: source-misrepresentation
+  - id: visual-misperception
+  - id: partial-retrieval
+  - id: incompleteness

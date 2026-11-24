@@ -4,8 +4,8 @@ name: Planning Failure
 def: |-
   Builds an ineffective, unsafe, incomplete, or poorly ordered plan for achieving the user's goal.
 
-  Unlike Step Omission, the whole sequence or strategy is flawed, not only one missing step. Unlike Workflow Misalignment, the plan may be logically poor even if it follows the expected process style.
-updatedAt: "2026-06-13T09:00:00-04:00"
+  Unlike Step Omission, the whole sequence or strategy is flawed, not only one missing step. Unlike Workflow Misalignment, the plan may be logically poor even if it follows the expected process style. Unlike Reasoning-Action Mismatch, the plan itself is flawed; there, the plan may be sound and execution leaves it.
+updatedAt: "2026-11-18T22:00:00-05:00"
 
 searchPhrases:
   - bad plan
@@ -15,26 +15,37 @@ searchPhrases:
 examples:
   - kind: fail
     label: Steps ordered against their dependencies
-    text: Each step is individually sensible, but the sequence destroys the data a later step depends on.
+    text: Orders individually sensible steps so that an early one destroys the data a later step depends on.
     quote: |-
       User: Plan the zero-downtime migration to the new schema.
       Assistant: 1. Drop the legacy columns to clean up the schema. 2. Deploy the new application code. 3. Backfill the new columns from the legacy data. 4. Verify row counts match.
   - kind: warn
     label: Happy-path plan, no contingencies
-    text: The ordering is fine, but the plan assumes every step succeeds — no rollback point, no verification gates, nothing about what happens if the backfill dies halfway.
+    text: >-
+      Orders the steps correctly but assumes every step succeeds: no rollback point, no verification gates, nothing about what happens if the backfill dies halfway.
     quote: |-
       User: Plan the zero-downtime migration to the new schema.
       Assistant: 1. Add the new columns. 2. Deploy code that writes to both. 3. Backfill. 4. Switch reads to the new columns. 5. Drop the legacy columns.
+  - kind: fail
+    label: Plan built on an action the environment lacks
+    text: Plans a browser task around an export option it assumed would exist, then spends its step budget hunting for it instead of replanning.
+    quote: |-
+      User: Export last month's invoices from the billing portal as one PDF.
+      Assistant: Plan: 1. Open Invoices. 2. Filter to October. 3. Select all. 4. Click "Export as single PDF".
+      [… the portal only exports one PDF per invoice; the agent spends 30 steps searching menus for step 4 …]
   - kind: ok
     label: Dependencies and failure handling planned in
-    text: The plan sequences around its dependencies and makes each phase verifiable and reversible before the irreversible step runs.
+    text: Sequences the plan around its dependencies and makes each phase verifiable and reversible before the irreversible step runs.
     quote: |-
       User: Plan the zero-downtime migration to the new schema.
       Assistant: 1. Add new columns (reversible). 2. Deploy dual-write code; verify write parity on a sample. 3. Backfill in batches with a resume checkpoint. 4. Switch reads behind a flag; monitor for a day, flip back if error rates move. 5. Only then drop legacy columns, after a final row-count audit.
 why:
-  - Models generate plans as plausible text, not as searched and validated action sequences. On benchmarks where plan correctness can be checked mechanically, success rates are low even for simple domains (Valmeekam et al., 2023, "On the Planning Abilities of Large Language Models").
-  - Sound planning requires a world model of action preconditions and effects. The model approximates these from text, where preconditions are usually left implicit, so plans assume states that will not hold when a step actually runs.
-  - A plan is emitted linearly in one decode. There is no backtracking, so a dependency problem the model only becomes able to see at step seven cannot revise the already-committed ordering of steps one through six.
+  - >-
+    Plans are generated, not searched and validated, so nothing guarantees they are correct. The size of the gap has changed: GPT-4-era models solved about 12% of mechanically checkable planning tasks (Valmeekam et al., 2023, "On the Planning Abilities of Large Language Models: A Critical Investigation"), while frontier reasoning models now rival classical planners on standard benchmark domains, losing ground when action and object names are stripped of meaning (Corrêa et al., 2025, "Frontier Large Language Models Rival State-of-the-Art Planners"). Planning ability is no longer the bottleneck it was, and the missing soundness check now is.
+  - >-
+    Sound planning requires a world model of action preconditions and effects. The model approximates these from text, where preconditions are usually left implicit, so plans assume states that will not hold when a step actually runs. In agents this is where plans now break most: among genuine computer-use failures, planning and verification errors outnumber execution and grounding errors (Dong et al., 2026, "How Benchmarks Mis-Score Computer-Use Agents").
+  - >-
+    A plan written without extended reasoning is emitted linearly in one decode, so a dependency problem visible only at step seven cannot revise steps one through six. Reasoning models can backtrack while thinking, but their accuracy on puzzle-style planning still collapses past a complexity threshold (Shojaee et al., 2025, "The Illusion of Thinking: Understanding the Strengths and Limitations of Reasoning Models via the Lens of Problem Complexity"). Part of that collapse is an artifact of output-length limits and unsolvable test instances (Lawsen, 2025, "Comment on The Illusion of Thinking: Understanding the Strengths and Limitations of Reasoning Models via the Lens of Problem Complexity"); the practical reading is that plans long enough to strain the output or thinking budget are where to expect failure.
   - Training data consists of finished, idealized procedures. Tutorials and writeups omit dead ends, failure handling, and recovery, so generated plans inherit a happy-path shape with no contingencies.
 detection:
   - icon: 🔗
@@ -42,22 +53,26 @@ detection:
     body: Extract the plan's steps, build the precondition-effect graph, and check that no step consumes state an earlier step destroyed or depends on one that hasn't run yet. Dropping legacy columns before the backfill that reads them is detectable from the plan text alone, before anything executes.
   - icon: ⚖️
     heading: LLM-as-judge evaluation
-    body: Run an adversarial judge prompted to attack the plan rather than admire it — where are the rollback points, which steps are verifiable, what happens when the backfill dies halfway. Happy-path shape is the warn-level signature, and convincing structure is exactly what fools human raters.
+    body: >-
+      Run an adversarial judge prompted to attack the plan rather than admire it: where are the rollback points, which steps are verifiable, what happens when a backfill dies halfway. A happy-path shape with no contingencies is the signature of a weak plan, and convincing structure is exactly what fools human raters.
   - icon: 🧪
     heading: Golden-set evals
-    body: Maintain planning tasks in domains with mechanical validators or executable environments, and score whether the plan achieves the goal when actually run — never how plausible it reads. Plausibility and validity diverge sharply for generated plans.
+    body: Maintain planning tasks in domains with mechanical validators or executable environments, and score whether the plan achieves the goal when actually run, never how plausible it reads. Plausibility and validity diverge sharply for generated plans.
 mitigation:
   - icon: 🔁
     heading: Validate-and-retry loops
-    body: Before any step executes, check the plan's precondition-effect graph mechanically and send it back with the broken dependency named — "step 3 reads legacy data that step 1 dropped." A plan is emitted linearly with no backtracking, so revision has to come from outside the decode; the validator supplies the second pass the architecture doesn't.
+    body: >-
+      Check the plan's precondition-effect graph mechanically before any step executes, and send it back with the broken dependency named, such as "step 3 reads legacy data that step 1 dropped." Backtracking inside the model's thinking catches some of this, but nothing there checks the plan against the environment's actual preconditions; the validator does. In agents, re-run the check whenever an observation contradicts a precondition the plan assumed.
   - icon: ⚔️
     heading: Adversarial plan critique
-    body: Run a separate critique pass prompted to attack the plan before it's accepted — what happens when the backfill dies halfway, where are the rollback points, which step is the first irreversible one. Training data is finished, idealized procedures, so contingencies don't appear unless a step demands them; the critic is that step.
+    body: >-
+      Run a separate critique pass prompted to attack the plan before it's accepted: what happens when a backfill dies halfway, where are the rollback points, which step is the first irreversible one. Training data is finished, idealized procedures, so contingencies don't appear unless a step demands them; the critic is that step.
   - icon: ♻️
     heading: Reversible-by-default execution
-    body: Require plans to sequence reversible phases before irreversible ones, with a verification gate ahead of each point of no return — the ok example's flag-guarded read switch before the column drop. This bounds the damage of plan flaws that survive validation and critique, which some always will.
+    body: Require plans to sequence reversible phases before irreversible ones, with a verification gate ahead of each point of no return, such as a flag-guarded read switch before a column drop. This bounds the damage of plan flaws that survive validation and critique, which some always will.
 
 related:
   - id: step-omission
   - id: workflow-misalignment
   - id: reasoning-error
+  - id: reasoning-action-mismatch

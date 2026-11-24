@@ -5,7 +5,7 @@ def: |-
   Overlooks or underuses information located in the middle of a long prompt, document set, or conversation context. (Also known as Lost in the Middle.)
 
   Unlike Recency Bias, the neglected information is not necessarily earlier than the competing context; its position in the middle is the salient factor. Unlike Context Dilution, the problem is positional neglect rather than broad signal weakening.
-updatedAt: "2026-06-13T09:00:00-04:00"
+updatedAt: "2026-11-18T22:00:00-05:00"
 
 searchPhrases:
   - ignored the middle of the document
@@ -15,52 +15,65 @@ searchPhrases:
 examples:
   - kind: fail
     label: Middle document missed
-    text: The answer sits in the middle document of three, and the model reports it doesn't exist while handling the first and last documents fine.
+    text: Reports that the answer does not exist when it sits in the middle document of three, while handling the first and last documents correctly.
     quote: |-
       User: Here are our three vendor contracts. Which one lets us terminate without penalty?
       [… contract A, then contract B (whose §9.2 allows no-penalty termination), then contract C …]
       Assistant: None of the three contracts include a no-penalty termination clause. Contract A requires 90 days' notice and contract C imposes an early-exit fee.
   - kind: warn
     label: Edges summarized, middle thinned
-    text: No outright error, but a summary of a long report covers the opening and closing sections in detail while the middle chapters get one vague sentence.
+    text: Summarizes a long report with detailed coverage of the opening and closing sections and one vague sentence for the middle chapters, without stating anything outright wrong.
     quote: |-
       User: Summarize this 60-page audit report for the leadership meeting.
       [… report pasted; chapters 4–6 in the middle contain the main findings …]
       Assistant: The report opens with scope and methodology, and closes with a strong set of recommendations. The intervening chapters cover various operational details.
   - kind: ok
     label: Middle content retrieved
-    text: Given the same contracts, the model finds and cites the clause buried in the middle document.
+    text: Finds and cites the termination clause buried in the middle contract of three.
     quote: |-
       User: Here are our three vendor contracts. Which one lets us terminate without penalty?
       [… contract A, then contract B (whose §9.2 allows no-penalty termination), then contract C …]
       Assistant: Contract B — §9.2 allows either party to terminate with 30 days' notice and no penalty. Contracts A and C both impose early-exit costs.
+  - kind: fail
+    label: Mid-trajectory finding dropped
+    text: Makes a final code change that ignores the one file that mattered, which the coding agent read in the middle of a run of a dozen file reads.
+    quote: |-
+      User: Why do refunds over $1,000 fail? Fix it.
+      [… six file reads and a log search …]
+      Tool: read payments/limits.py — MAX_REFUND = 1000 (enforced in validate_refund)
+      [… nine more file reads and two test runs …]
+      Assistant: The failure comes from the gateway timeout. I've raised the timeout to 30s; refunds of any size should now go through.
 why:
   - >-
     Accuracy on long-context retrieval follows a U-shaped curve over position. Models use information at the beginning and end of the input far better than information in the middle, even when the task is otherwise identical (Liu et al., 2023, "Lost in the Middle: How Language Models Use Long Contexts").
   - Models develop strong attention toward the earliest tokens in the sequence, sometimes called attention sinks, which concentrates capacity at the start of the input at the expense of the interior (Xiao et al., 2023, "Efficient Streaming Language Models with Attention Sinks").
   - Common positional encoding schemes weight nearby tokens more heavily than distant ones. Tokens in the middle of a long input are far from the generation point, so they lose the recency advantage while lacking the primacy advantage of the opening tokens.
-  - Training data itself favors the edges. Natural documents front-load important content in leads, abstracts, and conclusions, and instruction tuning puts system prompts at the start and user questions at the end — so the middle of the context is rarely where the supervised signal points.
+  - Training data itself favors the edges. Natural documents front-load important content in leads, abstracts, and conclusions, and instruction tuning puts system prompts at the start and user questions at the end, so the supervised signal rarely points to the middle of the context.
+  - >-
+    The U-shape is real but conditional, and current models show it less uniformly than the 2023 results suggest. Measured relative to each model's window, the middle dip is strongest when the input fills up to about half the window; closer to the limit the primacy advantage fades and the end of the input wins (Veseli et al., 2025, "Positional Biases Shift as Inputs Approach Context Window Limits"). On a simple lexical lookup, eighteen current models showed no notable variation across eleven needle positions, even though all degraded with length (Hong et al., 2025, "Context Rot: How Increasing Input Tokens Impacts LLM Performance"). The effect depends on the task, so a simple lookup test can pass while a harder task still loses the middle. Larger windows do not remove the effect: an input that fills less than half of a very large window sits in the range where the dip is strongest.
 detection:
   - icon: 🔀
     heading: Position permutation testing
-    body: Hold the documents and question fixed, vary only where the answer-bearing passage sits, and compare accuracy across positions. The U-shaped curve — strong at the edges, weak in the middle — is the fingerprint of this mode.
+    body: >-
+      Hold the documents and question fixed, vary only where the answer-bearing passage sits, and compare accuracy across positions. A U-shaped curve, with high accuracy at the edges and low accuracy in the middle, is the signature of Midsequence Neglect. Express position as a fraction of the model's window and repeat at several fill levels, since the curve changes shape as the input approaches the limit. Use answer passages that share few words with the question; a literal-match needle is found anywhere and hides the effect (Modarressi et al., 2025, "NoLiMa: Long-Context Evaluation Beyond Literal Matching").
   - icon: ⚖️
     heading: LLM-as-judge evaluation
     body: For summaries and analyses of long inputs, run a judge that scores coverage per source section rather than overall quality. Detailed treatment of the opening and closing with one vague sentence for the interior is the soft form of the failure.
   - icon: 🧪
     heading: Golden-set evals
-    body: Maintain retrieval and summarization tasks whose key content sits deliberately mid-context — the middle contract of three, the central chapters of a long report — and rerun them on every model or context-assembly change, since edge-position tests will not catch regressions here.
+    body: Maintain retrieval and summarization tasks whose key content sits deliberately mid-context, such as the middle contract of three or the central chapters of a long report. Rerun them on every model or context-assembly change, since edge-position tests will not catch regressions here.
 
 mitigation:
   - icon: 📐
     heading: Position-aware ordering
-    body: Assemble context so the most important material sits at the edges the model actually uses — most relevant documents first or last, key instructions at the start and restated at the end — exploiting the U-shaped curve instead of being ambushed by it (Peysakhovich & Lerer, 2023, "Attention Sorting Combats Recency Bias in Long Context Language Models").
+    body: >-
+      Assemble context so the most important material sits at the edges the model actually uses: put the most relevant documents first or last, and put key instructions at the start and restate them at the end. One tested method reorders documents by the attention the model gives them, so the most-attended sit last, and improves long-context performance (Peysakhovich & Lerer, 2023, "Attention Sorting Combats Recency Bias in Long Context Language Models"). In long agent runs, have the agent rewrite its plan or open-items list at the end of context as it works, so the goal never sits in the middle of fifty tool calls.
   - icon: 🧭
     heading: Query decomposition
-    body: Process long document sets piecewise instead of in one stuffed prompt — examine each contract in its own call, or each chapter in its own pass, then combine verdicts — so no document is ever "the middle one" when the model reads it.
+    body: Process long document sets piecewise instead of in one stuffed prompt. Examine each contract in its own call, or each chapter in its own pass, then combine the verdicts, so that no document is ever "the middle one" when the model reads it.
   - icon: 📝
     heading: Instruction constraints
-    body: Require explicit per-document or per-section output — a verdict on each contract, coverage of every chapter in a summary — so the middle can't be skipped silently; "the intervening chapters cover various operational details" stops being an acceptable sentence.
+    body: Require explicit per-document or per-section output, such as a verdict on each contract or coverage of every chapter in a summary, so the model cannot skip the middle silently. A summary line such as "the intervening chapters cover various operational details" then fails the required format.
 
 related:
   - id: recency-bias

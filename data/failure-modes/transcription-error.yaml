@@ -1,0 +1,93 @@
+id: transcription-error
+categoryId: perception
+name: Transcription Error
+def: |-
+  Converts speech to text wrongly before the model reasons about it: substitutes plausible words, mishears names, numbers, and spelled-out strings, drops content, transcribes other voices as the user, or inserts phrases that were never spoken. The response then treats the transcript as what was said.
+
+  Unlike Goal Misinterpretation, the model reasons correctly about the wrong words. Unlike Quote Hallucination, the invented words are in the system's input channel, not in its answer. Unlike Turn-Taking Failure, the words are what goes wrong, not when the system speaks.
+updatedAt: "2026-11-18T22:00:00-05:00"
+
+searchPhrases:
+  - misheard what I said
+  - transcript has words nobody said
+  - got my email wrong on the phone
+  - picked up the tv as me talking
+
+why:
+  - >-
+    Recognizers are trained to produce fluent text, and they produce it over silence and noise too. In one study, about 1% of transcriptions from a widely used speech model contained whole phrases or sentences that were never spoken; 38% of those carried explicit harms such as violent content, invented associations, or false authority; and the hallucinations fell disproportionately on speakers with longer pauses, such as people with aphasia (Koenecke et al., 2024, "Careless Whisper: Speech-to-Text Hallucination Harms"). Non-speech sounds trigger a recurring set of such phrases, which is why filtering them out lowers error rates (Barański et al., 2025, "Investigation of Whisper ASR Hallucinations Induced by Non-Speech Audio").
+  - >-
+    Word error rate hides the words that matter. Fifteen recognition models averaged a 44% error rate on spoken street names, and for speakers whose first language was not English the resulting routing errors were twice as large (Zhou et al., 2026, "'Sorry, I Didn't Catch That': How Speech Models Miss What Matters Most"). On a vendor's benchmark of single-field calls, the best voice agent captured a name, email, phone number, or address correctly in 60.3% of ordinary calls, and when agents checked a capture that was wrong, they ended with the right value only 24–37% of the time (Sierra, 2026, "τ-Entity: Can voice agents get the details right?").
+  - >-
+    The model downstream receives the best guess as plain text. Pipelines pass one hypothesis and drop the recognizer's confidence and alternatives, so "fifty" heard for "fifteen" reaches the model as a fact. On a full-duplex voice benchmark, transcription errors accounted for 23–33% of failed tasks, and authentication was the main bottleneck because agents could not capture names and emails even when callers spelled them letter by letter (Ray et al., 2026, "τ-Voice: Benchmarking Full-Duplex Voice Agents on Real-World Domains").
+  - >-
+    Recognizers transcribe every voice they hear. A television, a second speaker, or the agent's own voice coming back through the speaker becomes text attributed to the user. A police report drafting tool wrote that an officer had turned into a frog after transcribing a film playing in the background of body-camera audio (Vice, 2026, "An AI-Generated Police Report Claimed a Cop Transformed Into a Frog").
+
+examples:
+  - kind: fail
+    label: Amount misheard, then acted on
+    text: Mishears "fifteen" as "fifty," then moves the transcribed amount without reading it back.
+    quote: |-
+      User: (spoken) I'd like to move fifteen thousand to savings.
+      Tool: transcript → "I'd like to move fifty thousand to savings."
+      Assistant: (spoken) Done. I've moved $50,000 to your savings account.
+  - kind: fail
+    label: Words inserted over silence
+    text: Invents a sentence during a pause in a meeting, and the meeting summary turns it into an action item.
+    quote: |-
+      User: (spoken) Next item is the vendor contract.
+      [… audio: 6 s of silence while the speaker scrolls through the document …]
+      Tool: transcript → "Next item is the vendor contract. We've decided to cancel it."
+      Assistant: Action items: cancel the vendor contract (decided in the meeting).
+  - kind: warn
+    label: Background speech taken as the caller
+    text: Transcribes a television in the room as the caller. A confirmation step catches it this time, but the transcript still records a request the caller never made.
+    quote: |-
+      [… audio: a TV in the room says "cancel my subscription" while the caller is silent …]
+      Tool: transcript → "Cancel my subscription."
+      Assistant: (spoken) Just to confirm, you'd like to cancel your subscription?
+      User: (spoken) What? No.
+  - kind: ok
+    label: Uncertain value confirmed in a different form
+    text: Marks the amount as uncertain at recognition, then confirms it digit by digit before acting.
+    quote: |-
+      User: (spoken) I'd like to move fifteen thousand to savings.
+      Tool: transcript → "I'd like to move fifty thousand to savings." (low confidence on "fifty"; alternative "fifteen")
+      Assistant: (spoken) Just to check the amount, is that one-five, fifteen thousand, or five-zero, fifty thousand?
+      User: (spoken) One-five. Fifteen.
+      Assistant: (spoken) Moving $15,000 to savings now.
+
+detection:
+  - icon: 🧪
+    heading: Golden-set evals
+    body: >-
+      Record test audio for the things the task depends on (names, emails, account numbers, addresses, amounts) across accents, languages, line quality, background noise, long pauses, and a second voice in the room. Score exact match on each entity and on end-task success, not word error rate. A transcript can score well on WER and still get the account number wrong.
+  - icon: 📊
+    heading: Transcript confidence monitoring
+    body: >-
+      Flag transcript text produced over audio that voice-activity detection marks as non-speech, recurring stock phrases known to appear over silence, low-confidence spans on entity fields, and segments from a speaker other than the user. Sample flagged segments against the audio. Text over silence is the signature of an inserted phrase, and it is detectable without knowing what was said.
+  - icon: 📈
+    heading: User correction mining
+    body: >-
+      Mine calls for the lagging signals: "no, I said…", callers spelling the same field twice, agents asking for the same value repeatedly, and fields edited by staff after the call. Clusters by entity type and caller group show where recognition is failing and for whom.
+
+mitigation:
+  - icon: 🔁
+    heading: Validate-and-retry loops
+    body: >-
+      Read back entities and consequential values in a form that separates confusable words (digit by digit, letter by letter, "one-five" against "five-zero") and validate against something external: a checksum, a format rule, the account on file. Read-back costs time and does not always fix the value; in one vendor benchmark a prescribed confirm-and-correct sequence raised full success from 14–41% of tasks to 37–54% but added over 20 seconds per call. Reserve it for fields that drive actions.
+  - icon: 🧾
+    heading: Uncertainty passthrough
+    body: >-
+      Pass the recognizer's word-level confidence and alternative hypotheses to the model, not just the top transcript, and instruct it to confirm low-confidence spans before acting on them. Bias recognition toward expected vocabulary where the system knows it, such as the names on the account or the product catalog.
+  - icon: 🔇
+    heading: Non-speech filtering
+    body: >-
+      Gate recognition with voice-activity detection and echo cancellation, separate speakers so only the user's voice is treated as input, and strip known stock phrases that appear over silence. Tune the gate on real callers; an aggressive gate clips quiet, hesitant, or impaired speakers, the people most exposed to inserted text.
+
+related:
+  - id: goal-misinterpretation
+  - id: quote-hallucination
+  - id: turn-taking-failure
+  - id: clarification-underuse
+  - id: visual-misperception

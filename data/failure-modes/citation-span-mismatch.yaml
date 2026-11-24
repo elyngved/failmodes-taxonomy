@@ -5,7 +5,7 @@ def: |-
   Attaches a citation to a claim, sentence, or paragraph that the referenced passage does not fully support.
 
   Unlike Citation Hallucination, the cited source may exist. Unlike Source Misrepresentation, the source may be described accurately elsewhere while the local citation span fails to substantiate the attached claim.
-updatedAt: "2026-06-13T09:00:00-04:00"
+updatedAt: "2026-11-18T22:00:00-05:00"
 
 searchPhrases:
   - citation doesn't support the claim
@@ -14,9 +14,12 @@ searchPhrases:
   - citation points to the wrong part
 
 why:
-  - Models are typically trained to generate answers and citations jointly rather than to verify each claim against its cited passage. Citation placement becomes a fluency pattern, not a checked entailment relation (Rashkin et al., 2021, "Measuring Attribution in Natural Language Generation Models").
-  - Evaluations of generative search systems show that a large share of generated citations do not support their attached sentences, because nothing in the generation objective penalizes a plausible-looking but unsupported citation (Liu et al., 2023, "Evaluating Verifiability in Generative Search Engines").
-  - The model often composes a sentence by blending several retrieved passages, then attaches a citation to only one of them. The cited span supports part of the sentence while the rest comes from other passages or from parametric knowledge (Gao et al., 2023, "Enabling Large Language Models to Generate Text with Citations").
+  - Models are typically trained to generate answers and citations jointly rather than to verify each claim against its cited passage. Citation placement becomes a fluency pattern, not a checked entailment relation.
+  - >-
+    Evaluations of generative search systems show that a large share of generated citations do not support their attached sentences, because nothing in the generation objective penalizes a plausible-looking but unsupported citation (Liu et al., 2023, "Evaluating Verifiability in Generative Search Engines"). Deep-research agents have not closed the gap: an audit across systems found citation accuracy of 40–80% and large fractions of statements unsupported by the systems' own sources (Venkit et al., 2025, "DeepTRACE: Auditing Deep Research AI Systems for Tracking Reliability Across Citations and Evidence"), and content-grounding errors stay frequent with web search switched on (Fan et al., 2026, "HalluHard: A Hard Multi-Turn Hallucination Benchmark").
+  - The model often composes a sentence by blending several retrieved passages, then attaches a citation to only one of them. The cited span supports part of the sentence while the rest comes from other passages or from parametric knowledge. Models struggle to synthesize several documents in context, and the paper's own automatic citation-precision metric cannot recognize a citation that only partly supports its sentence, so it penalizes that citation as irrelevant (Gao et al., 2023, "Enabling Large Language Models to Generate Text with Citations").
+  - >-
+    Citations are often attached after the fact. A model can answer from parametric memory and then cite whichever retrieved document looks consistent with that answer; in one study up to 57% of citations lacked this kind of faithfulness, so a citation can look correct without being the reason for the claim (Wallat et al., 2025, "Correctness is not Faithfulness in RAG Attributions").
   - Retrieval granularity rarely matches claim granularity. When chunks span many sentences or claims span many chunks, the system has no clean unit to cite, and the citation lands on whichever chunk was nearest or ranked highest.
 
 examples:
@@ -29,14 +32,14 @@ examples:
       Assistant: Upgrades take effect at the next billing cycle, and downgrades are refunded pro rata [3].
   - kind: fail
     label: Nearest-chunk citation
-    text: The claim comes from parametric knowledge, but a citation lands on the topically nearest retrieved chunk — which says nothing about the claim at all.
+    text: States a claim from parametric knowledge and attaches the citation to the topically nearest retrieved chunk, which says nothing about the claim at all.
     quote: |-
       [… retrieved chunk [1] describes how to generate an API key …]
       User: How long do API keys stay valid? Cite the docs.
       Assistant: API keys remain valid for 12 months from creation [1].
   - kind: warn
     label: Citation supports a weaker claim
-    text: The cited passage is on-topic and related, but supports a noticeably weaker statement than the one it is attached to.
+    text: Cites an on-topic, related passage that supports a noticeably weaker statement than the one it is attached to.
     quote: |-
       [… retrieved chunk [2] reads: "In our pilot, response times improved for most participants." …]
       User: Does the tool make teams faster? Cite the report.
@@ -52,24 +55,27 @@ examples:
 detection:
   - icon: 🔗
     heading: Entailment checking
-    body: Run an NLI model between each claim and the specific passage its citation points to. A half-supported sentence shows up directly — the cited span entails one clause and returns neutral on the rest, which is exactly the mismatch readers won't catch by eye.
+    body: Run an NLI model between each claim and the specific passage its citation points to. A half-supported sentence shows up directly, because the cited span entails one clause and returns neutral on the rest. Readers checking by eye miss exactly this mismatch.
   - icon: ⚖️
     heading: LLM-as-judge evaluation
-    body: Have a judge decompose each cited sentence into atomic claims, then answer for each one whether the cited passage supports it. This catches blended sentences where the citation lends its credibility to claims that came from other chunks or from parametric memory.
+    body: Have a judge decompose each cited sentence into atomic claims, then answer for each one whether the cited passage supports it. The decomposition catches blended sentences where the citation lends its credibility to claims that came from other chunks or from parametric memory.
   - icon: 🧪
     heading: Golden-set evals
-    body: Maintain cite-the-docs tasks over a fixed corpus and regression-test citation precision — the share of citations whose span actually supports the attached claim — alongside answer quality, so fluent-but-misattached citations show up as a tracked number.
+    body: Maintain cite-the-docs tasks over a fixed corpus and regression-test citation precision (the share of citations whose span actually supports the attached claim) alongside answer quality, so fluent-but-misattached citations show up as a tracked number.
+  - icon: 🔬
+    heading: Context ablation testing
+    body: Rerun the query with the cited passage removed or its key fact altered and compare. If the claim comes back unchanged, now resting on another citation or none, the passage was not what produced it; the citation was attached after the fact, which an entailment check alone will not reveal.
 
 mitigation:
   - icon: 📝
     heading: Instruction constraints
-    body: Require one citation per claim rather than per sentence, and make "the docs I retrieved don't say" an allowed move — so blended sentences get split and the unsupported half is flagged instead of riding on its neighbor's citation.
+    body: Require one citation per claim rather than per sentence, and make "the docs I retrieved don't say" an allowed move, so blended sentences get split and the unsupported half is flagged instead of riding on its neighbor's citation.
   - icon: 🚪
     heading: Entailment gating
     body: Before output, run each claim against the specific passage its citation points to and repair or drop citations that fail entailment. This converts the post-hoc check most pipelines skip into a gate, so nearest-chunk citations never reach the user.
   - icon: 🧩
     heading: Retrieval tuning
-    body: Align retrieval granularity to claim granularity — index at the sentence or proposition level, or have the model cite a quoted span within a chunk — so there is a clean unit to cite and the citation can't land on whichever chunk merely ranked highest.
+    body: Align retrieval granularity to claim granularity (index at the sentence or proposition level, or have the model cite a quoted span within a chunk) so there is a clean unit to cite and the citation can't land on whichever chunk merely ranked highest.
 
 related:
   - id: citation-hallucination

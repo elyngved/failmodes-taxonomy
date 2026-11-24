@@ -4,18 +4,22 @@ name: Incompleteness
 def: |-
   Leaves out information, constraints, caveats, steps, options, or outputs needed to satisfy the user's task.
 
-  Unlike Step Omission, the missing material appears in the final answer rather than necessarily in the work process. Unlike Concision Failure, incompleteness can happen even when the answer is not especially brief.
-updatedAt: "2026-06-13T09:00:00-04:00"
+  Unlike Step Omission, the missing material appears in the final answer rather than necessarily in the work process. Unlike Concision Failure, incompleteness can happen even when the answer is not especially brief. Unlike Action Misreporting, the response does not claim the missing part exists.
+updatedAt: "2026-11-18T22:00:00-05:00"
 
 searchPhrases:
   - left out part of the answer
   - incomplete answer
   - missed some of the steps
   - didn't cover everything
+  - left placeholders instead of code
 why:
-  - Instruction-following degrades with the number of requirements. As a request stacks parts, constraints, and asked-for outputs, the probability of satisfying all of them falls, and the dropped ones are simply absent rather than flagged.
-  - Attention to the request decays over a long generation. Early parts of the answer track the question closely, while later sections increasingly condition on the answer's own momentum, so trailing requirements are the ones that vanish.
+  - >-
+    Instruction-following degrades with the number of requirements. As a request stacks parts, constraints, and asked-for outputs, the probability of satisfying all of them falls, and the dropped ones are simply absent rather than flagged: at high instruction counts, even frontier models mostly fail by omitting a requirement outright rather than getting it wrong, with a bias toward honoring the earlier ones (Jaroslawicz et al., 2025, "How Many Instructions Can LLMs Follow at Once?").
+  - Attention to the request decays over a long generation. Early parts of the answer track the question closely, while later sections increasingly condition on the text the answer has already produced, so trailing requirements are the ones that vanish.
   - Nothing checks the answer against the request. Generation ends when a closing pattern becomes likely, not when a completeness check passes, and few scaffolds add a verification pass that re-reads the question before sending.
+  - >-
+    Long outputs get elided rather than written. Tuning data holds few very long responses, so effective generation length lags far behind context length (Bai et al., 2024, "LongWriter: Unleashing 10,000+ Word Generation from Long Context LLMs"), and human-written answers and diffs routinely say "rest unchanged." Asked for a full file, the model writes the edited part and a placeholder for the rest; in a coding agent that placeholder is written to disk in place of real code, and a TODO or stub reads as finished unless every line is checked (Collicutt, 2025, "Finding Plotholes in AI-Assisted Code: Missing or Incomplete Code, TODOs, and 'XXX Fix Later'").
   - Coverage requires knowing what the task implies, not just what it states. Necessary caveats, options, and prerequisites are part of domain pragmatics, and where the model's task model is shallow it does not know what a complete answer would contain.
 examples:
   - kind: fail
@@ -31,6 +35,15 @@ examples:
       User: How do I share this 30 GB file with a client?
       Assistant: Upload it to Google Drive and send them the link.
       [… no mention that free Drive accounts cap at 15 GB, or of alternatives that handle the size …]
+  - kind: fail
+    label: Placeholder written over real code
+    text: In a coding agent, rewrites a file in full but elides the part it did not change, and the placeholder replaces working code on disk.
+    quote: |-
+      User: Add input validation to create_order in api/orders.py.
+      Tool: write api/orders.py (412 lines → 96 lines)
+        def create_order(req): …validation added…
+        # ... rest of the handlers unchanged ...
+      Assistant: Added validation to create_order.
   - kind: ok
     label: Full coverage
     text: Satisfies each requested part, in the order asked, and flags the known limitation.
@@ -40,23 +53,27 @@ examples:
 detection:
   - icon: 📋
     heading: Instruction checklist scoring
-    body: Extract the request's enumerable parts — three questions asked, the constraint stated, the example demanded — and mechanically check each against the response. Two of three parts answered with the third silently absent is countable without judging quality, and per-part scoring shows which positions get dropped.
+    body: Extract the request's enumerable parts (three questions asked, the constraint stated, the example demanded) and mechanically check each against the response. Two of three parts answered with the third silently absent is countable without judging quality, and per-part scoring shows which positions get dropped.
   - icon: ⚖️
     heading: LLM-as-judge evaluation
-    body: Have the judge ask what a complete answer to this task would contain, beyond what was literally enumerated — the 15 GB cap that makes the suggested upload impossible, the option any practitioner would mention. Implied coverage is where checklist extraction runs out and judgment has to take over.
+    body: Have the judge ask what a complete answer to this task would contain beyond what was literally enumerated, such as the 15 GB cap on free Google Drive accounts that rules out a suggested upload of a larger file, or the alternative any practitioner would mention. Checklist extraction cannot find gaps in implied coverage, so judgment has to take over there.
   - icon: 🧪
     heading: Golden-set evals
-    body: Maintain multi-part requests with countable elements and chart per-part coverage against requirement count and position. Trailing requirements vanish first as requests stack up — the curve tells you how many parts a request can carry before the system starts shedding them.
+    body: Maintain multi-part requests with countable elements and chart per-part coverage against requirement count and position. Trailing requirements vanish first as requests stack up, and the curve shows how many parts a request can carry before the system starts shedding them.
+  - icon: 🔎
+    heading: Static analysis scanning
+    body: Scan generated code and agent file writes for elision markers before they land ("rest unchanged" and "..." comments, new TODOs, stubs that raise NotImplementedError or just pass), and flag any full-file write that shrinks the file sharply without a matching deletion request. For instance, a 412-line file rewritten to 96 lines for a validation change is countable in the diff.
 mitigation:
   - icon: ✅
     heading: Self-check pass
-    body: Before sending, have the model re-read the request, extract its enumerable parts, and point at where the response satisfies each — regex, explanation, and the incorrectly rejected input all get an address or the answer isn't done. Generation ends when a closing pattern becomes likely; this pass replaces that stopping rule with the request's own list.
+    body: Before sending, have the model re-read the request, extract its enumerable parts, and point to where the response satisfies each. A request for a regex, an explanation of it, and an input it incorrectly rejects is done only when all three have a location in the response. Generation ends when a closing pattern becomes likely, and this pass replaces that stopping rule with the request's own list.
   - icon: 🔁
     heading: Validate-and-retry loops
-    body: Run the checklist extraction mechanically in the scaffold and bounce incomplete responses back with the missing part named — "the third requested item, an input the regex incorrectly rejects, is absent." Per-part checking is exactly what raters skip and what made the shortcut survivable; the loop does it on every response.
+    body: >-
+      Run the checklist extraction mechanically in the scaffold and bounce incomplete responses back with the missing part named: "the third requested item, an input the regex incorrectly rejects, is absent." Raters skip per-part checking, which is how a silently omitted part survives review; the loop runs the check on every response. For code, have agents edit with targeted patches rather than full-file rewrites, and reject any write that still contains an elision marker.
   - icon: 🪜
     heading: Task decomposition
-    body: Split multi-part requests so each part is generated and verified on its own before assembly. Instruction-following degrades as requirements stack and trailing parts vanish first; decomposition means no part is ever trailing, which removes the position effect rather than fighting it.
+    body: Split multi-part requests so each part is generated and verified on its own before assembly. Instruction-following degrades as requirements stack and trailing parts vanish first; with decomposition no part is ever trailing, which removes the position effect.
 
 related:
   - id: step-omission
@@ -64,3 +81,4 @@ related:
   - id: premature-termination
   - id: genericism
   - id: output-truncation
+  - id: action-misreporting

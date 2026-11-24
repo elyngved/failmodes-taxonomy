@@ -4,8 +4,8 @@ name: Chunk Boundary Failure
 def: |-
   Misses, fragments, or misinterprets evidence because relevant information was split across retrieval chunks or separated from needed context.
 
-  Unlike Partial Retrieval, this identifies chunking as the mechanism. Unlike Context Dilution, the issue happens before or during retrieval packaging rather than after too much context reaches the model.
-updatedAt: "2026-06-13T09:00:00-04:00"
+  Unlike Partial Retrieval, this identifies chunking as the mechanism. Unlike Context Dilution, the issue happens before or during retrieval packaging rather than after too much context reaches the model. Unlike Document Parsing Error, the document's text and structure reached the splitter intact; the evidence was lost where the splitter or read window cut it, not when the file was converted to text.
+updatedAt: "2026-11-18T22:00:00-05:00"
 
 searchPhrases:
   - answer cut off between chunks
@@ -14,37 +14,38 @@ searchPhrases:
   - chunking broke the context
 
 why:
-  - Most pipelines split documents by token count, not meaning. Fixed-size splitting is cheap and predictable, but it cuts through sentences, tables, arguments, and definitions wherever the length limit happens to fall.
+  - >-
+    Most pipelines split documents by token count, not meaning. Fixed-size splitting is cheap and predictable, but it cuts through sentences, tables, arguments, and definitions wherever the length limit happens to fall. Size fails in both directions: chunks too small fragment the evidence, and chunks too large mix several topics, so irrelevant content dilutes the passage and lowers the retrieval score of the chunk that holds the answer (Leung et al., 2026, "Classifying and Addressing the Diversity of Errors in Retrieval-Augmented Generation Systems").
   - Chunks are embedded and ranked in isolation. A passage whose meaning depends on a heading, an earlier definition, or an antecedent two paragraphs back embeds poorly and retrieves poorly, because the embedding never saw the context that made it relevant (Anthropic, 2024, "Introducing Contextual Retrieval").
-  - Documents carry meaning through structure — section nesting, table headers, footnotes, cross-references — and common text extraction flattens that structure before splitting, so the chunker cannot respect boundaries it can no longer see.
+  - Documents carry meaning through structure (section nesting, table headers, footnotes, cross-references), and a splitter that ignores the headings, list items, and table rows it is given cuts across that structure. Agents show the same failure without any index. Reading a file or page in fixed line or token windows is chunking at read time, and the window edge lands at an arbitrary point in the text.
   - Pronouns and elided references stop resolving once text is cut. A retrieved chunk saying "this approach fails in production" is useless or misleading when the approach was named in the previous chunk.
 
 examples:
   - kind: fail
     label: Orphaned antecedent
-    text: The retrieved chunk's "this configuration" was named in the previous chunk, which didn't retrieve. The model resolves the dangling reference to the wrong thing.
+    text: Resolves a dangling "this configuration" in the retrieved chunk to the wrong thing, because the configuration was named in the previous chunk, which was not retrieved.
     quote: |-
       User: Is connection pooling safe to enable in production?
       [… retrieved chunk begins: "However, this configuration fails under production load and should be avoided." The configuration being warned against — an unrelated cache setting — was named in the preceding, unretrieved chunk …]
       Assistant: No — the docs explicitly warn that connection pooling fails under production load.
   - kind: fail
     label: Table split from its header
-    text: A fixed-size split lands mid-table, so the retrieved rows arrive without the header row that gives the numbers meaning, and the model maps values to the wrong columns.
+    text: Maps values to the wrong columns after a fixed-size split lands mid-table and the retrieved rows arrive without the header row that gives the numbers meaning.
     quote: |-
       User: What's the rate limit on the Enterprise tier?
       [… chunk contains table rows "Pro | 1,000 | 60" and "Enterprise | 10,000 | 600", but the header row landed in the previous chunk …]
       Assistant: The Enterprise tier is limited to 600 requests per minute.
       [… 600 is the burst allowance column; the rate limit is 10,000 …]
   - kind: warn
-    label: Mid-sentence fragment answered anyway
-    text: The chunk begins mid-sentence and the model builds its answer on the fragment without flagging that the evidence is visibly truncated.
+    label: Read window cuts the function
+    text: Reads a long file in a fixed line window (the read-time version of a chunk) and reasons from the part it saw, while the early return that changes the answer sits just past the window edge.
     quote: |-
-      User: When can customers get a refund?
-      [… retrieved chunk begins mid-sentence: "…except in these cases, refunds are processed within 14 days." …]
-      Assistant: Refunds are processed within 14 days.
+      Tool: read_file billing.py lines 1–200
+      Assistant: apply_discount() always applies the discount before tax, so the bug must be in the tax module.
+      [… line 214, just outside the window, returns early for tax-exempt accounts and skips the discount entirely …]
   - kind: ok
     label: Fragment recognized, context refetched
-    text: The model notices the evidence is cut off where it matters and pulls the surrounding context before answering.
+    text: Notices that the evidence is cut off where it matters and pulls the surrounding context before answering.
     quote: |-
       User: When can customers get a refund?
       Assistant: The passage I retrieved starts mid-sentence — it references exception cases defined just before the cut. Let me fetch the surrounding section.
@@ -54,26 +55,28 @@ examples:
 detection:
   - icon: 🔍
     heading: Corpus chunk auditing
-    body: Scan the index itself for boundary damage — chunks that begin mid-sentence, table rows separated from their header, dangling pronouns and "this configuration" references whose antecedent fell in the previous chunk. The failure is visible in the corpus before any query is run.
+    body: >-
+      Scan the index itself for boundary damage: chunks that begin mid-sentence, table rows separated from their header, dangling pronouns and "this configuration" references whose antecedent fell in the previous chunk. The failure is visible in the corpus before any query is run.
   - icon: ⚖️
     heading: LLM-as-judge evaluation
-    body: Run a judge over the retrieved set asking whether each chunk is self-contained enough to support the claims built on it — flagging answers grounded in visibly truncated evidence, like a refund rule quoted from a fragment that starts at "…except in these cases."
+    body: Run a judge over the retrieved set asking whether each chunk is self-contained enough to support the claims built on it. Flag answers grounded in visibly truncated evidence, like a refund rule quoted from a fragment that starts at "…except in these cases."
   - icon: 🧪
     heading: Golden-set evals
-    body: Maintain questions whose evidence is known to straddle split points — values inside long tables, definitions referenced sections later, exception lists that cross pages — and rerun them whenever chunk size, overlap, or the splitting strategy changes.
+    body: Maintain questions whose evidence is known to straddle split points (values inside long tables, definitions referenced sections later, exception lists that cross pages), and rerun them whenever chunk size, overlap, or the splitting strategy changes.
 
 mitigation:
   - icon: 🧱
     heading: Structure-aware chunking
-    body: Split on the document's own boundaries — sections, paragraphs, sentence ends — and keep atomic units intact, so tables travel with their header rows and exception lists stay attached to the rules they qualify, instead of cutting wherever the token limit falls.
+    body: Split on the document's own boundaries (sections, paragraphs, sentence ends) instead of wherever the token limit falls, and keep atomic units intact, so tables travel with their header rows and exception lists stay attached to the rules they qualify. These boundaries come from the document's own markup, not from embedding-similarity "semantic" splitting, which has not shown consistent gains over fixed-size chunks for its extra cost (Qu et al., 2024, "Is Semantic Chunking Worth the Computational Cost?").
   - icon: 🧾
     heading: Contextual chunk enrichment
-    body: Prepend each chunk with the context that makes it self-contained — document title, section path, the antecedent of its references — before embedding (Anthropic, 2024, "Introducing Contextual Retrieval"). "This configuration fails under load" only retrieves and reads correctly when the chunk says which configuration.
+    body: Prepend each chunk with the context that makes it self-contained (document title, section path, the antecedent of its references) before embedding (Anthropic, 2024, "Introducing Contextual Retrieval"). A chunk that says "this configuration fails under load" retrieves and reads correctly only when it also says which configuration.
   - icon: 🔁
     heading: Adjacent-chunk expansion
-    body: At read time, fetch the neighbors of any retrieved chunk that is visibly truncated — starts mid-sentence, opens with a dangling reference, contains headerless table rows — so the model answers from the restored passage rather than the fragment.
+    body: At read time, fetch the neighbors of any retrieved chunk that is visibly truncated (one that starts mid-sentence, opens with a dangling reference, or contains headerless table rows), so the model answers from the restored passage rather than the fragment. Agents reading files should extend a read to the enclosing function, section, or table rather than stopping at a fixed line count.
 
 related:
   - id: partial-retrieval
   - id: retrieval-miss
   - id: context-dilution
+  - id: document-parsing-error

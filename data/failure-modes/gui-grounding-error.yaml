@@ -1,0 +1,101 @@
+id: gui-grounding-error
+categoryId: perception
+name: GUI Grounding Error
+def: |-
+  Intends the right interface operation but carries it out on the wrong target or with the wrong mechanics: clicks the wrong coordinates or element, acts on a control that is hidden, occluded, or disabled, uses the wrong click, drag, or text-entry method, or acts on a screen that changed after it was observed.
+
+  Unlike Tool Argument Error, there is no schema to validate against; the "argument" is a location on a rendered screen, and a click that hits the wrong thing still registers as a successful input event. Unlike Visual Misperception, the screen was read correctly and the action missed. Unlike Wrong Tool Selection, the chosen operation was the right one.
+updatedAt: "2026-11-18T22:00:00-05:00"
+
+searchPhrases:
+  - clicked the wrong button
+  - clicked in the wrong spot
+  - typed into the wrong field
+  - clicked before the page finished loading
+
+why:
+  - >-
+    Locating small targets on dense, high-resolution screens is still hard. On professional software at full resolution, the best grounding model tested found the right element 18.9% of the time; adding a search step that narrows the screen before locating the target raised this to 48.1% without retraining (Li et al., 2025, "ScreenSpot-Pro: GUI Grounding for Professional High-Resolution Computer Use"). Dedicated grounding data closes part of the gap: on one benchmark, better grounding raised a general model's task success from 5% to 27% (Xie et al., 2025, "Scaling Computer-Use Grounding via User Interface Decomposition and Synthesis").
+  - >-
+    A screenshot is a snapshot, and the screen keeps changing. Between observation and action a modal opens, a lazy-loaded list reorders, or an animation finishes, and a click aimed at the right element lands on whatever moved into its place. No error comes back, so later steps build on a screen the agent never saw (Pan, 2026, "The GUI Agent That Clicked the Right Button on the Wrong Screen"). The same gap can be exploited: manipulated screenshots and races between observation and action can steer an agent into approving a click it misperceives (Liu et al., 2026, "Visual Confused Deputy: Exploiting and Defending Perception Failures in Computer-Using Agents").
+  - >-
+    Agents act on the screen they expect instead of the one in front of them. In one vendor's internal review, an agent told to fill a form and stop before submitting went ahead and submitted on several occasions, expecting another confirmation page to follow (Anthropic, 2026, "Investigating unintended model actions in our evaluations and internal use"). Interface conventions learned from training (a field enters edit mode on click, a final button always leads to a review screen) do not hold in every application.
+  - >-
+    Grounding is now a minority of computer-use failures, and a missed click becomes a failed task when nothing checks the result. In 204 annotated failed trajectories, grounding and interaction errors were the root cause in 25 and task reasoning and control in 110 (Zhang et al., 2026, "CUADebug: Diagnosing and Repairing Computer-Use Agent Failures"). An audit across five benchmarks put execution and grounding at 13.9% of genuine failures, against 39.3% for verification and feedback and 35.2% for planning (Dong et al., 2026, "How Benchmarks Mis-Score Computer-Use Agents"). Grounding and verification errors compound: a click that misses is recoverable only if the agent looks at what happened next.
+
+examples:
+  - kind: fail
+    label: Right row, shifted screen
+    text: Archives the wrong message because a new email arrives between the screenshot and the click aimed at row 3, then reports success.
+    quote: |-
+      User: Archive the email from the facilities team.
+      [… screenshot: inbox, facilities email in row 3 …]
+      Tool: click(x=640, y=312) → ok
+      [… a new message arrived before the click; row 3 is now a message from the finance director, which is archived …]
+      Assistant: Done. The facilities email is archived.
+  - kind: fail
+    label: Wrong entry mechanics
+    text: Selects the cell without opening it for editing, so the typed value goes into the grid's filter box.
+    quote: |-
+      User: Set the quantity on line 2 to 40.
+      Tool: click(line 2, Quantity cell) → ok
+      Tool: type("40") → ok
+      [… screenshot after: the cell is selected but unchanged; "40" is in the filter box, and the grid now shows only rows containing 40 …]
+      Assistant: Line 2's quantity is now 40.
+  - kind: warn
+    label: Lucky click, no check
+    text: Happens to hit the right one of two icons a few pixels apart on a 4K screen, and nothing in the trace confirms it.
+    quote: |-
+      User: Merge the approved pull request.
+      [… screenshot: 3840×2160; the "Merge" and "Close" icons are 14 px apart in the toolbar …]
+      Tool: click(x=3712, y=88) → ok
+      Assistant: Merged.
+  - kind: ok
+    label: Target by label, result checked
+    text: Re-observes before acting, targets the element by its label rather than its position, and confirms the outcome.
+    quote: |-
+      User: Archive the email from the facilities team.
+      Tool: find_element(role=row, text contains "Facilities") → row 4
+      Tool: archive(element=row 4) → ok
+      Tool: screenshot → facilities email gone; finance director's message still in row 3
+      Assistant: Archived the facilities email. A new message arrived while I was working, so I selected it by sender rather than by position.
+
+detection:
+  - icon: 🔍
+    heading: Action outcome checking
+    body: >-
+      Diff the screen or accessibility tree before and after every GUI action, and confirm that the expected change happened to the intended element. Flag actions reported as successful that changed nothing, or that changed something else. An "ok" from the input layer only means an event was delivered; the diff shows what the event hit.
+  - icon: 🧪
+    heading: Golden-set evals
+    body: >-
+      Test grounding at the resolution and density the agent will actually see, and on screens that move: injected modals and notifications, lists that load late and reorder, animations, disabled and off-screen controls, fields that need a double-click or focus before typing. Static benchmarks freeze the screen between observation and action, which removes the drift failure.
+  - icon: ⚖️
+    heading: LLM-as-judge evaluation
+    body: >-
+      Have the judge walk each failed trajectory and label the earliest faulty step as a perception, grounding, reasoning, or verification error. Work on grounding helps only if grounding is the cause. In current analyses it usually is not, and a missed click left unchecked counts as a verification failure as well.
+
+mitigation:
+  - icon: 🗂️
+    heading: Element-level actions
+    body: >-
+      Act on accessibility-tree nodes, DOM selectors, or stable element IDs where the application exposes them, and fall back to pixel coordinates only when it does not. An element reference survives layout shifts that coordinates do not, and it fails loudly when the element is gone. Many desktop applications expose incomplete or mislabeled accessibility metadata, so the pixel path still needs outcome checks.
+  - icon: 🔁
+    heading: Validate-and-retry loops
+    body: >-
+      Re-observe immediately before each action, wait for the screen to settle, and confirm that the target still carries the expected label and role at that location. If it has moved, re-plan instead of firing. After the action, check the outcome and retry from a fresh observation, never by replaying the same coordinates.
+  - icon: 🔬
+    heading: Region re-inspection
+    body: >-
+      Crop and enlarge the region before acting on a small or crowded target, and ground the click within the crop. Narrowing the search area is the single largest gain reported on high-resolution screens. Scale the extra steps with risk; a zoom pass per click is slow.
+  - icon: 🚦
+    heading: Human approval gates
+    body: >-
+      Show the approver a crop of the exact target with its label before irreversible clicks (submit, pay, delete, merge, send), in addition to the agent's description of what it is about to do. Reserve the gate for consequential actions; approvers who are asked about every click stop looking.
+
+related:
+  - id: visual-misperception
+  - id: tool-argument-error
+  - id: verification-failure
+  - id: state-inconsistency
+  - id: indirect-prompt-injection
+  - id: wrong-tool-selection
